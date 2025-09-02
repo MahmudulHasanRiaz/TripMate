@@ -1,4 +1,5 @@
 
+
 'use server';
 import 'dotenv/config';
 
@@ -183,6 +184,17 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'id'>) {
             google_map_embed_code: `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v1622542023537!5m2!1sen!2sbd" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`
         });
         if(settingsError) throw settingsError;
+        
+        const { error: homeSettingsError } = await supabase.from('home_page_settings').insert({
+            id: 'home',
+            hero_image_url: "https://images.pexels.com/photos/33041/antelope-canyon-lower-canyon-arizona.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+            hero_title: "Your Ultimate Adventure Awaits",
+            hero_subtitle: "Discover breathtaking destinations and create unforgettable memories with our curated travel packages.",
+            hero_button_label: "Explore All Packages",
+            hero_button_link: "/packages",
+            status: 'published'
+        });
+        if(homeSettingsError) throw homeSettingsError;
 
         const destToSeed = destinations.map(d => ({...d, id: d.slug}));
         const { error: destError } = await supabase.from('destinations').insert(destToSeed);
@@ -309,5 +321,3 @@ export async function updatePageStatus(id: string, type: 'Dynamic' | 'Static' | 
         return { success: false, message: error.message };
     }
 }
-
-    

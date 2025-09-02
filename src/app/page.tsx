@@ -16,7 +16,7 @@ async function getHomePageData() {
 
     const defaultHomeSettings: HomePageSettings = {
         id: 'home',
-        hero_image_url: "https://placehold.co/1920x1080.png",
+        hero_image_url: "https://images.pexels.com/photos/33041/antelope-canyon-lower-canyon-arizona.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
         hero_title: "Your Adventure Awaits",
         hero_subtitle: "Discover breathtaking destinations and create unforgettable memories.",
         hero_button_label: "Explore Packages",
