@@ -8,23 +8,21 @@ import { useAuth, User } from "@/hooks/use-auth";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { getFirestore, doc, updateDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
   const { user, setUser, loading } = useAuth();
   const { toast } = useToast();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const supabase = getSupabaseClient_client();
 
   const handleSaveProfile = async (updatedUser: User) => {
     try {
-        const db = getFirestore(getFirebaseApp());
-        const userRef = doc(db, "users", updatedUser.uid);
         const { uid, password, ...dataToSave } = updatedUser;
-        await updateDoc(userRef, dataToSave);
+        const { error } = await supabase.from('users').update(dataToSave).eq('id', uid);
+        if (error) throw error;
         
-        // Immediately update the user state in the context
         setUser(updatedUser);
 
         setIsProfileModalOpen(false);
@@ -32,9 +30,9 @@ export default function DashboardPage() {
           title: "Profile Updated",
           description: "Your profile has been successfully updated."
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error saving profile:", error);
-        toast({ title: "Error", description: "Failed to save your profile.", variant: "destructive" });
+        toast({ title: "Error", description: `Failed to save your profile: ${error.message}`, variant: "destructive" });
     }
   };
 
@@ -43,7 +41,7 @@ export default function DashboardPage() {
       <div className="container mx-auto px-4 py-12">
           <header className="mb-8">
               <h1 className="text-4xl font-headline font-bold">My Dashboard</h1>
-              <p className="text-muted-foreground">Welcome back, {loading ? "..." : user?.firstName || 'happy traveler'}!</p>
+              <p className="text-muted-foreground">Welcome back, {loading ? "..." : user?.name || 'happy traveler'}!</p>
           </header>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -61,7 +59,7 @@ export default function DashboardPage() {
                         </div>
                       ) : user ? (
                         <div className="text-sm space-y-2 text-muted-foreground">
-                          <p><strong>Name:</strong> {user.firstName} {user.lastName}</p>
+                          <p><strong>Name:</strong> {user.name}</p>
                           <p><strong>Email:</strong> {user.email}</p>
                         </div>
                       ) : (

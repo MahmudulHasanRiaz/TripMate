@@ -10,8 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Textarea } from "@/components/ui/textarea";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { HomePageSettings } from "@/lib/data";
 
 
@@ -19,34 +18,39 @@ export default function AdminHomePageSettings() {
     const { toast } = useToast();
     const [settings, setSettings] = useState<HomePageSettings | null>(null);
     const [loading, setLoading] = useState(true);
+    const supabase = getSupabaseClient_client();
 
     useEffect(() => {
         const fetchSettings = async () => {
             setLoading(true);
             try {
-                const db = getFirestore(getFirebaseApp());
-                const settingsDoc = await getDoc(doc(db, "settings", "homePage"));
-                if (settingsDoc.exists()) {
-                    setSettings(settingsDoc.data() as HomePageSettings);
+                const { data, error } = await supabase.from('home_page_settings').select('*').eq('id', 'home').maybeSingle();
+                
+                if (error) throw error; 
+
+                if (data) {
+                    setSettings(data as HomePageSettings);
                 } else {
-                    // Initialize with default values if not found
+                    // Initialize with default values if not found in the database
                     setSettings({
-                        heroImageUrl: "https://placehold.co/1920x1080.png",
-                        heroTitle: "Your Adventure Awaits",
-                        heroSubtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
-                        heroButtonLabel: "Explore Packages",
-                        heroButtonLink: "/packages",
+                        id: 'home', // Important to set the ID
+                        hero_image_url: "https://placehold.co/1920x1080.png",
+                        hero_title: "Your Adventure Awaits",
+                        hero_subtitle: "Discover breathtaking destinations and create unforgettable memories with Flight Blu.",
+                        hero_button_label: "Explore Packages",
+                        hero_button_link: "/packages",
+                        status: 'published',
                     });
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error fetching homepage settings:", error);
-                toast({ title: "Error", description: "Could not load homepage settings.", variant: "destructive"});
+                toast({ title: "Error", description: `Could not load homepage settings: ${error.message}`, variant: "destructive"});
             } finally {
                 setLoading(false);
             }
         };
         fetchSettings();
-    }, [toast]);
+    }, [toast, supabase]);
     
     const handleSettingsChange = (field: keyof HomePageSettings, value: any) => {
         setSettings(prev => prev ? ({...prev, [field]: value}) : null);
@@ -54,17 +58,17 @@ export default function AdminHomePageSettings() {
     
     const handleSaveChanges = async () => {
         if (!settings) return;
-        const db = getFirestore(getFirebaseApp());
-        const settingsRef = doc(db, "settings", "homePage");
         try {
-            await setDoc(settingsRef, settings, { merge: true });
+            // Use upsert to either create the row if it doesn't exist or update it if it does.
+            const { error } = await supabase.from('home_page_settings').upsert({ ...settings }, { onConflict: 'id' });
+            if (error) throw error;
             toast({
                 title: "Settings Saved!",
                 description: "Your homepage settings have been updated.",
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving settings:", error);
-            toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+            toast({ title: "Error", description: `Failed to save settings: ${error.message}`, variant: "destructive" });
         }
     };
     
@@ -105,42 +109,42 @@ export default function AdminHomePageSettings() {
             <div className="space-y-2">
                 <Label>Hero Image</Label>
                 <MediaPicker 
-                    imageUrl={settings.heroImageUrl} 
-                    onImageUrlChange={(url) => handleSettingsChange('heroImageUrl', url)}
+                    imageUrl={settings.hero_image_url} 
+                    onImageUrlChange={(url) => handleSettingsChange('hero_image_url', url)}
                 />
                 <p className="text-sm text-muted-foreground">Recommended size: 1920x1080px. This will be the main background image.</p>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="heroTitle">Hero Title</Label>
+                <Label htmlFor="hero_title">Hero Title</Label>
                 <Input 
-                    id="heroTitle" 
-                    value={settings.heroTitle}
-                    onChange={(e) => handleSettingsChange('heroTitle', e.target.value)}
+                    id="hero_title" 
+                    value={settings.hero_title}
+                    onChange={(e) => handleSettingsChange('hero_title', e.target.value)}
                 />
             </div>
              <div className="space-y-2">
-                <Label htmlFor="heroSubtitle">Hero Subtitle</Label>
+                <Label htmlFor="hero_subtitle">Hero Subtitle</Label>
                 <Textarea 
-                    id="heroSubtitle" 
-                    value={settings.heroSubtitle}
-                    onChange={(e) => handleSettingsChange('heroSubtitle', e.target.value)}
+                    id="hero_subtitle" 
+                    value={settings.hero_subtitle}
+                    onChange={(e) => handleSettingsChange('hero_subtitle', e.target.value)}
                 />
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                    <Label htmlFor="heroButtonLabel">Button Label</Label>
+                    <Label htmlFor="hero_button_label">Button Label</Label>
                     <Input 
-                        id="heroButtonLabel" 
-                        value={settings.heroButtonLabel}
-                        onChange={(e) => handleSettingsChange('heroButtonLabel', e.target.value)}
+                        id="hero_button_label" 
+                        value={settings.hero_button_label}
+                        onChange={(e) => handleSettingsChange('hero_button_label', e.target.value)}
                     />
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="heroButtonLink">Button Link</Label>
+                    <Label htmlFor="hero_button_link">Button Link</Label>
                     <Input 
-                        id="heroButtonLink" 
-                        value={settings.heroButtonLink}
-                        onChange={(e) => handleSettingsChange('heroButtonLink', e.target.value)}
+                        id="hero_button_link" 
+                        value={settings.hero_button_link}
+                        onChange={(e) => handleSettingsChange('hero_button_link', e.target.value)}
                         placeholder="/packages"
                     />
                 </div>

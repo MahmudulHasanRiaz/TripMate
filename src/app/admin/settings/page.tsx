@@ -11,8 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TextCursorInput, Pilcrow, Loader2, PlusCircle, Trash2, SearchX, AlertTriangle, Database, Link as LinkIcon, ExternalLink, ShieldAlert } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { useAppContext } from "@/context/AppContext";
 import type { GlobalSettings, SocialLinkPlatform, SocialLink, FooterLink } from "@/lib/data";
 import { Switch } from "@/components/ui/switch";
@@ -37,7 +36,6 @@ function ResetApplicationZone() {
                     title: "Application Reset Successful",
                     description: "The application has been reset to its initial state. You will now be logged out.",
                 });
-                // Logout and redirect.
                 await logout();
                 window.location.href = '/'; 
             } else {
@@ -109,99 +107,15 @@ const socialPlatforms: { value: SocialLinkPlatform, label: string }[] = [
 ];
 
 function IndexManagementZone() {
-    const { user } = useAuth();
-    const [indexState, setIndexState] = useState<{ loading: boolean, needsIndex: boolean, creationLink: string }>({
-        loading: true,
-        needsIndex: false,
-        creationLink: ''
-    });
-
-    useEffect(() => {
-        const checkIndex = async () => {
-            if (user?.role !== 'superadmin') {
-                setIndexState({ loading: false, needsIndex: false, creationLink: '' });
-                return;
-            }
-            try {
-                const response = await fetch('/api/admin/check-firestore-index');
-                const data = await response.json();
-                setIndexState({
-                    loading: false,
-                    needsIndex: data.needsIndex,
-                    creationLink: data.indexCreationLink
-                });
-            } catch (error) {
-                console.error("Failed to check Firestore index:", error);
-                setIndexState(prev => ({ ...prev, loading: false }));
-            }
-        };
-
-        checkIndex();
-    }, [user]);
-
-    if (user?.role !== 'superadmin') {
-        return null;
-    }
-
-    return (
-        <Card>
-            <CardHeader>
-                <div className="flex items-center gap-4">
-                    <Database className="h-6 w-6 text-primary" />
-                    <div>
-                        <CardTitle>Firestore Index Management</CardTitle>
-                        <CardDescription>Manage required database indexes for optimal performance.</CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                {indexState.loading ? (
-                    <div className="flex items-center gap-4 p-4 border rounded-md">
-                        <Skeleton className="h-8 w-8 rounded-full" />
-                        <div className="space-y-2">
-                           <Skeleton className="h-4 w-48" />
-                           <Skeleton className="h-3 w-64" />
-                        </div>
-                    </div>
-                ) : indexState.needsIndex ? (
-                    <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Action Required: Create Firestore Index</AlertTitle>
-                        <AlertDescription className="flex flex-col md:flex-row md:items-center md:justify-between">
-                            <span className="max-w-xl">
-                                A required Firestore index for querying media files is missing. This can cause errors in the Media Library.
-                            </span>
-                             <Button asChild size="sm" className="mt-4 shrink-0 md:mt-0 md:ml-4">
-                                <a href={indexState.creationLink} target="_blank" rel="noopener noreferrer">
-                                    <ExternalLink className="mr-2 h-4 w-4"/> Create Index Now
-                                </a>
-                            </Button>
-                        </AlertDescription>
-                    </Alert>
-                ) : (
-                    <Alert className="border-green-500 text-green-700 [&>svg]:text-green-500">
-                        <Database className="h-4 w-4" />
-                        <AlertTitle className="text-green-800">All Indexes Are Set Up</AlertTitle>
-                        <AlertDescription>
-                            Your Firestore database has all the necessary indexes for the application to function correctly.
-                        </AlertDescription>
-                    </Alert>
-                )}
-                 <div className="text-sm text-muted-foreground p-4 border rounded-lg bg-secondary/50">
-                    <h4 className="font-semibold text-foreground mb-2">Note on Deleting Indexes</h4>
-                    <p>
-                        The "Reset Application" button does not automatically delete Firestore indexes. This is a manual process. If you need a completely clean slate after a reset, you must go to the Firebase Console, navigate to <code className="bg-muted px-1 py-0.5 rounded text-foreground">Firestore Database &gt; Indexes</code>, and manually delete the indexes.
-                    </p>
-                </div>
-            </CardContent>
-        </Card>
-    )
+    // This component is no longer needed as we are not using Firestore indexes
+    return null;
 }
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
     const { settings: contextSettings, setSettings: setContextSettings, loading: contextLoading } = useAppContext();
     const [settings, setSettings] = useState<GlobalSettings | null>(contextSettings);
+    const supabase = getSupabaseClient_client();
 
     useEffect(() => {
         setSettings(contextSettings);
@@ -211,7 +125,7 @@ export default function AdminSettingsPage() {
         setSettings(prev => prev ? ({...prev, [field]: value}) : null);
     };
     
-    const handleLinkColumnChange = (field: 'quickLinks' | 'supportLinks', subField: 'title' | 'links', value: any) => {
+    const handleLinkColumnChange = (field: 'quick_links' | 'support_links', subField: 'title' | 'links', value: any) => {
         setSettings(prev => {
             if (!prev) return null;
             return {
@@ -224,7 +138,7 @@ export default function AdminSettingsPage() {
         });
     };
     
-    const handleFooterLinkChange = (columnKey: 'quickLinks' | 'supportLinks', linkIndex: number, field: 'label' | 'url', value: string) => {
+    const handleFooterLinkChange = (columnKey: 'quick_links' | 'support_links', linkIndex: number, field: 'label' | 'url', value: string) => {
         setSettings(prev => {
             if (!prev) return null;
             const newLinks = [...prev[columnKey].links];
@@ -236,7 +150,7 @@ export default function AdminSettingsPage() {
         });
     };
 
-    const addFooterLink = (columnKey: 'quickLinks' | 'supportLinks') => {
+    const addFooterLink = (columnKey: 'quick_links' | 'support_links') => {
         setSettings(prev => {
             if (!prev) return null;
             const newLinks = [...prev[columnKey].links, { id: `fl-${Date.now()}`, label: 'New Link', url: '/' }];
@@ -247,7 +161,7 @@ export default function AdminSettingsPage() {
         });
     };
 
-    const removeFooterLink = (columnKey: 'quickLinks' | 'supportLinks', linkIndex: number) => {
+    const removeFooterLink = (columnKey: 'quick_links' | 'support_links', linkIndex: number) => {
         setSettings(prev => {
             if (!prev) return null;
             const newLinks = prev[columnKey].links.filter((_, i) => i !== linkIndex);
@@ -260,37 +174,36 @@ export default function AdminSettingsPage() {
 
     const handleSocialLinkChange = (index: number, field: 'platform' | 'url', value: string) => {
         if (!settings) return;
-        const newLinks = [...settings.socialLinks];
+        const newLinks = [...settings.social_links];
         newLinks[index] = { ...newLinks[index], [field]: value as any };
-        handleSettingsChange('socialLinks', newLinks);
+        handleSettingsChange('social_links', newLinks);
     }
 
     const addSocialLink = () => {
         if (!settings) return;
-        const newLinks = [...settings.socialLinks, { id: `soc-${Date.now()}`, platform: 'twitter', url: '' }];
-        handleSettingsChange('socialLinks', newLinks);
+        const newLinks = [...settings.social_links, { id: `soc-${Date.now()}`, platform: 'twitter', url: '' }];
+        handleSettingsChange('social_links', newLinks);
     };
 
     const removeSocialLink = (index: number) => {
         if (!settings) return;
-        const newLinks = settings.socialLinks.filter((_, i) => i !== index);
-        handleSettingsChange('socialLinks', newLinks);
+        const newLinks = settings.social_links.filter((_, i) => i !== index);
+        handleSettingsChange('social_links', newLinks);
     };
 
     const handleSaveChanges = async () => {
         if (!settings) return;
-        const db = getFirestore(getFirebaseApp());
-        const settingsRef = doc(db, "settings", "global");
         try {
-            await setDoc(settingsRef, settings, { merge: true });
+            const { error } = await supabase.from('global_settings').upsert({ id: 1, ...settings });
+            if (error) throw error;
             setContextSettings(settings); 
             toast({
                 title: "Settings Saved!",
                 description: "Your changes have been saved to the database.",
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving settings:", error);
-            toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+            toast({ title: "Error", description: `Failed to save settings: ${error.message}`, variant: "destructive" });
         }
     };
     
@@ -339,11 +252,11 @@ export default function AdminSettingsPage() {
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium">Site Identity</h3>
                             <div>
-                                <Label htmlFor="siteTitle">Site Title</Label>
+                                <Label htmlFor="site_title">Site Title</Label>
                                 <Input 
-                                    id="siteTitle" 
-                                    value={settings.siteTitle} 
-                                    onChange={(e) => handleSettingsChange('siteTitle', e.target.value)}
+                                    id="site_title" 
+                                    value={settings.site_title} 
+                                    onChange={(e) => handleSettingsChange('site_title', e.target.value)}
                                     placeholder="Your awesome travel agency"
                                 />
                                 <p className="text-sm text-muted-foreground mt-2">
@@ -357,11 +270,11 @@ export default function AdminSettingsPage() {
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium">Branding</h3>
                             <div>
-                                <Label htmlFor="logoUrl">Site Logo URL</Label>
+                                <Label htmlFor="logo_url">Site Logo URL</Label>
                                 <Input 
-                                    id="logoUrl" 
-                                    value={settings.logoUrl} 
-                                    onChange={(e) => handleSettingsChange('logoUrl', e.target.value)}
+                                    id="logo_url" 
+                                    value={settings.logo_url} 
+                                    onChange={(e) => handleSettingsChange('logo_url', e.target.value)}
                                     placeholder="https://example.com/logo.png"
                                 />
                                 <p className="text-sm text-muted-foreground mt-2">
@@ -369,11 +282,11 @@ export default function AdminSettingsPage() {
                                 </p>
                             </div>
                             <div>
-                                <Label htmlFor="faviconUrl">Favicon URL</Label>
+                                <Label htmlFor="favicon_url">Favicon URL</Label>
                                 <Input 
-                                    id="faviconUrl" 
-                                    value={settings.faviconUrl} 
-                                    onChange={(e) => handleSettingsChange('faviconUrl', e.target.value)}
+                                    id="favicon_url" 
+                                    value={settings.favicon_url} 
+                                    onChange={(e) => handleSettingsChange('favicon_url', e.target.value)}
                                     placeholder="https://example.com/favicon.svg"
                                 />
                                 <p className="text-sm text-muted-foreground mt-2">
@@ -388,13 +301,13 @@ export default function AdminSettingsPage() {
                             <h3 className="text-lg font-medium">Search Engine Visibility</h3>
                             <div className="flex items-center space-x-2">
                                 <Switch
-                                    id="searchEngineVisibility"
-                                    checked={settings.searchEngineVisibility}
-                                    onCheckedChange={(checked) => handleSettingsChange('searchEngineVisibility', checked)}
+                                    id="search_engine_visibility"
+                                    checked={settings.search_engine_visibility}
+                                    onCheckedChange={(checked) => handleSettingsChange('search_engine_visibility', checked)}
                                 />
-                                <Label htmlFor="searchEngineVisibility">Discourage search engines from indexing this site</Label>
+                                <Label htmlFor="search_engine_visibility">Discourage search engines from indexing this site</Label>
                             </div>
-                            {settings.searchEngineVisibility === false && (
+                            {settings.search_engine_visibility === false && (
                                 <Alert variant="destructive">
                                     <SearchX className="h-4 w-4" />
                                     <AlertTitle>Visibility Hidden</AlertTitle>
@@ -416,17 +329,17 @@ export default function AdminSettingsPage() {
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium">Column 1: Description & Socials</h3>
                             <div>
-                                <Label htmlFor="footerDescription">Text under logo</Label>
+                                <Label htmlFor="footer_description">Text under logo</Label>
                                 <Textarea 
-                                    id="footerDescription" 
-                                    value={settings.footerDescription} 
-                                    onChange={(e) => handleSettingsChange('footerDescription', e.target.value)}
+                                    id="footer_description" 
+                                    value={settings.footer_description} 
+                                    onChange={(e) => handleSettingsChange('footer_description', e.target.value)}
                                     placeholder="Your adventure starts here..."
                                 />
                             </div>
                             <div className="space-y-3 pt-4">
                                 <Label>Social Media Links</Label>
-                                {settings.socialLinks.map((link, index) => (
+                                {settings.social_links.map((link, index) => (
                                     <div key={link.id} className="flex items-end gap-2">
                                         <div className="flex-grow grid grid-cols-3 gap-2">
                                             <select
@@ -462,23 +375,23 @@ export default function AdminSettingsPage() {
                             <div>
                                 <Label>Column Title</Label>
                                 <Input 
-                                    value={settings.quickLinks.title} 
-                                    onChange={(e) => handleLinkColumnChange('quickLinks', 'title', e.target.value)}
+                                    value={settings.quick_links.title} 
+                                    onChange={(e) => handleLinkColumnChange('quick_links', 'title', e.target.value)}
                                 />
                             </div>
                             <Label>Links</Label>
                             <div className="space-y-2">
-                                {settings.quickLinks.links.map((link, index) => (
+                                {settings.quick_links.links.map((link, index) => (
                                     <div key={link.id} className="flex items-center gap-2">
-                                        <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('quickLinks', index, 'label', e.target.value)} />
-                                        <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('quickLinks', index, 'url', e.target.value)} />
-                                        <Button variant="ghost" size="icon" onClick={() => removeFooterLink('quickLinks', index)}>
+                                        <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('quick_links', index, 'label', e.target.value)} />
+                                        <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('quick_links', index, 'url', e.target.value)} />
+                                        <Button variant="ghost" size="icon" onClick={() => removeFooterLink('quick_links', index)}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </div>
                                 ))}
                             </div>
-                            <Button variant="outline" size="sm" onClick={() => addFooterLink('quickLinks')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
+                            <Button variant="outline" size="sm" onClick={() => addFooterLink('quick_links')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
                         </div>
                         
                         <Separator />
@@ -488,23 +401,23 @@ export default function AdminSettingsPage() {
                             <div>
                                 <Label>Column Title</Label>
                                 <Input 
-                                    value={settings.supportLinks.title} 
-                                    onChange={(e) => handleLinkColumnChange('supportLinks', 'title', e.target.value)}
+                                    value={settings.support_links.title} 
+                                    onChange={(e) => handleLinkColumnChange('support_links', 'title', e.target.value)}
                                 />
                             </div>
                             <Label>Links</Label>
                             <div className="space-y-2">
-                                {settings.supportLinks.links.map((link, index) => (
+                                {settings.support_links.links.map((link, index) => (
                                     <div key={link.id} className="flex items-center gap-2">
-                                        <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('supportLinks', index, 'label', e.target.value)} />
-                                        <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('supportLinks', index, 'url', e.target.value)} />
-                                        <Button variant="ghost" size="icon" onClick={() => removeFooterLink('supportLinks', index)}>
+                                        <Input placeholder="Label" value={link.label} onChange={(e) => handleFooterLinkChange('support_links', index, 'label', e.target.value)} />
+                                        <Input placeholder="URL" value={link.url} onChange={(e) => handleFooterLinkChange('support_links', index, 'url', e.target.value)} />
+                                        <Button variant="ghost" size="icon" onClick={() => removeFooterLink('support_links', index)}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </div>
                                 ))}
                             </div>
-                            <Button variant="outline" size="sm" onClick={() => addFooterLink('supportLinks')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
+                            <Button variant="outline" size="sm" onClick={() => addFooterLink('support_links')}><PlusCircle className="mr-2 h-4 w-4"/> Add Link</Button>
                         </div>
 
                         <Separator/>
@@ -512,11 +425,11 @@ export default function AdminSettingsPage() {
                         <div className="space-y-4">
                             <h3 className="text-lg font-medium">Column 4: Location Map</h3>
                             <div>
-                                <Label htmlFor="googleMapEmbedCode">Google Maps Embed Code</Label>
+                                <Label htmlFor="google_map_embed_code">Google Maps Embed Code</Label>
                                 <Textarea 
-                                    id="googleMapEmbedCode" 
-                                    value={settings.googleMapEmbedCode} 
-                                    onChange={(e) => handleSettingsChange('googleMapEmbedCode', e.target.value)}
+                                    id="google_map_embed_code" 
+                                    value={settings.google_map_embed_code} 
+                                    onChange={(e) => handleSettingsChange('google_map_embed_code', e.target.value)}
                                     placeholder='Go to Google Maps, find your location, click "Share", then "Embed a map", and copy the HTML here.'
                                     rows={4}
                                 />
@@ -529,7 +442,6 @@ export default function AdminSettingsPage() {
                 </TabsContent>
                 
                 <TabsContent value="advanced" className="pt-6 space-y-6">
-                    <IndexManagementZone />
                     <ResetApplicationZone />
                 </TabsContent>
 
@@ -543,3 +455,5 @@ export default function AdminSettingsPage() {
     </div>
     );
 }
+
+    

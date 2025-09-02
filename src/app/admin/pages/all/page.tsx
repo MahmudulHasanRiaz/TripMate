@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Page, SitePagesSettings } from "@/lib/data";
+import { Page } from "@/lib/data";
 import { PlusCircle, Pencil, Trash2, Home, FileText, Info, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { getFirestore, collection, getDocs, doc, getDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { useRouter } from "next/navigation";
@@ -31,49 +30,48 @@ export default function AdminAllPagesPage() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
+  const supabase = getSupabaseClient_client();
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const db = getFirestore(getFirebaseApp());
       const displayPages: DisplayPage[] = [];
 
       // 1. Fetch Dynamic Pages
-      const pagesSnapshot = await getDocs(collection(db, "pages"));
-      pagesSnapshot.forEach(doc => {
-          const data = doc.data() as Page;
-          if (!data.deletedAt) { // Only show non-trashed pages
-              displayPages.push({
-                  id: doc.id,
-                  title: data.title,
-                  slug: `/${data.slug}`,
-                  status: data.status,
-                  type: 'Dynamic'
-              });
-          }
+      const { data: dynamicPages, error: dynamicError } = await supabase.from('pages').select('*').is('deleted_at', null);
+      if (dynamicError) throw dynamicError;
+      dynamicPages.forEach(page => {
+        displayPages.push({
+            id: page.id,
+            title: page.title,
+            slug: `/${page.slug}`,
+            status: page.status,
+            type: 'Dynamic'
+        });
       });
       
-      // 2. Fetch Static & Home Pages
-      const settingsDoc = await getDoc(doc(db, "settings", "sitePages"));
-      if (settingsDoc.exists()) {
-          const data = settingsDoc.data() as SitePagesSettings;
-          displayPages.push({ id: 'about-us', title: 'About Us', slug: '/about-us', status: data.aboutUs.status || 'published', type: 'Static' });
-          displayPages.push({ id: 'faq', title: 'FAQ', slug: '/faq', status: data.faq.status || 'published', type: 'Static' });
-          displayPages.push({ id: 'terms-of-service', title: 'Terms of Service', slug: '/terms-of-service', status: data.terms.status || 'published', type: 'Static' });
-          displayPages.push({ id: 'privacy-policy', title: 'Privacy Policy', slug: '/privacy-policy', status: data.privacy.status || 'published', type: 'Static' });
+      // 2. Fetch Static Pages
+      const { data: staticPages, error: staticError } = await supabase.from('site_pages').select('*');
+      if (staticError) throw staticError;
+      staticPages.forEach(page => {
+        displayPages.push({ id: page.id, title: page.title, slug: `/${page.id}`, status: page.status || 'published', type: 'Static' });
+      });
+
+      // 3. Fetch Home Page Settings
+      const { data: homeData, error: homeError } = await supabase.from('home_page_settings').select('*').eq('id', 'home').maybeSingle();
+      if (homeError) {
+          console.warn("Could not fetch home page settings for listing, this might be normal during setup.", homeError.message)
       }
-      const homeSettingsDoc = await getDoc(doc(db, "settings", "homePage"));
-       if (homeSettingsDoc.exists()) {
-          const homeData = homeSettingsDoc.data()
-          displayPages.push({ id: 'home', title: 'Home Page', slug: '/', status: homeData?.status || 'published', type: 'Home' });
-       }
+      if (homeData) {
+         displayPages.push({ id: 'home', title: 'Home Page', slug: '/', status: homeData.status || 'published', type: 'Home' });
+      }
 
 
       setPages(displayPages);
 
-    } catch(e) {
+    } catch(e: any) {
       console.error("Error loading pages:", e);
-      toast({ title: "Error", description: "Could not fetch pages.", variant: "destructive"});
+      toast({ title: "Error", description: `Could not fetch pages: ${e.message}`, variant: "destructive"});
     } finally {
       setLoading(false);
     }
@@ -89,8 +87,7 @@ export default function AdminAllPagesPage() {
 
       if (result.success) {
           toast({ title: "Status Updated", description: `Page has been set to ${newStatus}.` });
-          // Optimistically update UI
-          setPages(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+          loadData();
       } else {
           toast({ title: "Error", description: result.message, variant: "destructive" });
       }

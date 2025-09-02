@@ -61,15 +61,10 @@ export default function SignupPage() {
   async function onSubmit(values: z.infer<typeof signupSchema>) {
     setFormLoading(true);
     try {
-      const nameParts = values.name.split(' ');
-      const firstName = nameParts[0] || values.name;
-      const lastName = nameParts.slice(1).join(' ') || '';
-      
       const userData: Omit<User, 'uid'> = {
         email: values.email,
         password: values.password,
-        firstName,
-        lastName,
+        name: values.name,
         role: 'customer', // Default role for public signup is always customer
       };
       

@@ -1,12 +1,7 @@
 
-"use client";
-
-import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
-import { SitePagesSettings } from "@/lib/data";
-import { Skeleton } from "@/components/ui/skeleton";
+import { notFound } from "next/navigation";
+import { SitePage } from "@/lib/data";
+import { getSupabaseClient_server } from "@/lib/supabase";
 import Head from "next/head";
 
 // A simple Markdown to HTML converter
@@ -18,45 +13,27 @@ const Markdown = ({ content }: { content: string }) => {
     return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
 };
 
-export default function AboutUsPage() {
-    const [pageContent, setPageContent] = useState<SitePagesSettings['aboutUs'] | null>(null);
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchContent = async () => {
-            setLoading(true);
-            try {
-                const db = getFirestore(getFirebaseApp());
-                const settingsDoc = await getDoc(doc(db, "settings", "sitePages"));
-                if (settingsDoc.exists()) {
-                    const data = settingsDoc.data() as SitePagesSettings;
-                    setPageContent(data.aboutUs);
-                }
-            } catch (error) {
-                console.error("Error fetching 'About Us' content:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchContent();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-16 max-w-4xl">
-                 <Skeleton className="h-12 w-3/4 mx-auto mb-6" />
-                 <Skeleton className="h-6 w-1/2 mx-auto mb-12" />
-                 <div className="space-y-4">
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-5 w-5/6" />
-                </div>
-            </div>
-        );
-    }
+async function getAboutUsContent(): Promise<SitePage | null> {
+    const supabase = getSupabaseClient_server();
+    const { data, error } = await supabase
+        .from('site_pages')
+        .select('*')
+        .eq('id', 'about-us')
+        .maybeSingle();
     
-    if (!pageContent) {
-        return <div className="text-center py-20">Content not found.</div>;
+    if (error) {
+        console.error("Error fetching 'About Us' content:", error);
+        return null;
+    }
+    return data;
+}
+
+export default async function AboutUsPage() {
+    const pageContent = await getAboutUsContent();
+    
+    if (!pageContent || pageContent.status !== 'published') {
+        notFound();
     }
 
     const pageDescription = pageContent.content.substring(0, 160);

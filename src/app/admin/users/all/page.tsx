@@ -13,8 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import AddUserModal from "@/components/admin/AddUserModal";
 import { getInitials, cn } from "@/lib/utils";
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, writeBatch } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { deleteUser } from "@/lib/actions";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -34,20 +33,19 @@ export default function AdminAllUsersPage() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { signup } = useAuth();
+  const supabase = getSupabaseClient_client();
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-        const db = getFirestore(getFirebaseApp());
-        const usersCollection = collection(db, "users");
-        const usersSnapshot = await getDocs(usersCollection);
-        const usersList = usersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
-        setUsers(usersList);
-    } catch (error) {
+        const { data, error } = await supabase.from('users').select('*');
+        if (error) throw error;
+        setUsers(data as User[]);
+    } catch (error: any) {
         console.error("Error fetching users:", error);
         toast({
             title: "Error loading users",
-            description: "Could not fetch user data from the database.",
+            description: `Could not fetch user data: ${error.message}`,
             variant: "destructive"
         });
     } finally {
@@ -60,31 +58,30 @@ export default function AdminAllUsersPage() {
   }, []);
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    const userToUpdate = users.find(u => u.uid === userId);
+    const userToUpdate = users.find(u => u.id === userId);
     if (!userToUpdate || userToUpdate.role === 'superadmin') {
       toast({ title: "Operation not allowed", variant: "destructive" });
       return;
     }
     
     try {
-      const db = getFirestore(getFirebaseApp());
-      const userRef = doc(db, "users", userId);
-      await updateDoc(userRef, { role: newRole });
+      const { error } = await supabase.from('users').update({ role: newRole }).eq('id', userId);
+      if(error) throw error;
       
-      setUsers(prevUsers => prevUsers.map(user => (user.uid === userId ? { ...user, role: newRole } : user)));
+      setUsers(prevUsers => prevUsers.map(user => (user.id === userId ? { ...user, role: newRole } : user)));
       
       toast({
           title: "Role Updated",
-          description: `${userToUpdate.firstName}'s role has been changed to ${newRole}.`
+          description: `${userToUpdate.name}'s role has been changed to ${newRole}.`
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating role:", error);
-      toast({ title: "Error", description: "Failed to update user role.", variant: "destructive" });
+      toast({ title: "Error", description: `Failed to update user role: ${error.message}`, variant: "destructive" });
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    const userToDelete = users.find(u => u.uid === userId);
+    const userToDelete = users.find(u => u.id === userId);
     if (!userToDelete || userToDelete.role === 'superadmin') {
       toast({ title: "Operation not allowed", description: "Super admin cannot be deleted.", variant: "destructive"});
       return;
@@ -93,10 +90,10 @@ export default function AdminAllUsersPage() {
     const result = await deleteUser(userId);
 
     if (result.success) {
-        setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
         toast({
             title: "User Deleted",
-            description: `User ${userToDelete.firstName} has been removed from Authentication and Firestore.`,
+            description: `User ${userToDelete.name} has been removed from Authentication and Firestore.`,
             variant: "destructive"
         });
     } else {
@@ -104,12 +101,12 @@ export default function AdminAllUsersPage() {
     }
   }
   
-  const handleAddUser = async (newUser: Omit<User, 'uid'>) => {
+  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
     try {
       await signup(newUser);
       toast({
         title: "User Added",
-        description: `User ${newUser.firstName} has been created.`
+        description: `User ${newUser.name} has been created.`
       });
       setIsAddModalOpen(false);
       loadUsers(); // Refresh the user list
@@ -130,21 +127,19 @@ export default function AdminAllUsersPage() {
 
   const handleSaveUser = async (updatedUser: User) => {
     try {
-        const db = getFirestore(getFirebaseApp());
-        const userRef = doc(db, "users", updatedUser.uid);
-        
-        const { uid, password, ...dataToSave } = updatedUser;
-        
-        await updateDoc(userRef, dataToSave);
-        setUsers(prevUsers => prevUsers.map(user => user.uid === updatedUser.uid ? updatedUser : user));
+        const { id, password, ...dataToSave } = updatedUser;
+        const { error } = await supabase.from('users').update(dataToSave).eq('id', id);
+        if (error) throw error;
+
+        setUsers(prevUsers => prevUsers.map(user => user.id === updatedUser.id ? updatedUser : user));
         setIsProfileModalOpen(false);
         toast({
-        title: "User Updated",
-        description: `${updatedUser.firstName}'s profile has been saved.`
+          title: "User Updated",
+          description: `${updatedUser.name}'s profile has been saved.`
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error saving user:", error);
-        toast({ title: "Error", description: "Failed to save user details.", variant: "destructive" });
+        toast({ title: "Error", description: `Failed to save user details: ${error.message}`, variant: "destructive" });
     }
   }
 
@@ -185,14 +180,14 @@ export default function AdminAllUsersPage() {
                      ))
                   ) : (
                     users.map((user) => (
-                        <TableRow key={user.uid}>
+                        <TableRow key={user.id}>
                             <TableCell>
                                 <div className="flex items-center gap-3">
                                     <Avatar>
-                                        <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
-                                        <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                                        <AvatarImage src={user.photo_url || undefined} alt={user.name} />
+                                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                                     </Avatar>
-                                    <span className="font-medium">{user.firstName} {user.lastName}</span>
+                                    <span className="font-medium">{user.name}</span>
                                 </div>
                             </TableCell>
                             <TableCell>{user.username}</TableCell>
@@ -217,7 +212,7 @@ export default function AdminAllUsersPage() {
                                     <DropdownMenuSub>
                                         <DropdownMenuSubTrigger disabled={user.role === 'superadmin'}>Change Role</DropdownMenuSubTrigger>
                                         <DropdownMenuSubContent>
-                                            <DropdownMenuRadioGroup value={user.role} onValueChange={(role) => handleRoleChange(user.uid, role as UserRole)}>
+                                            <DropdownMenuRadioGroup value={user.role} onValueChange={(role) => handleRoleChange(user.id, role as UserRole)}>
                                                 <DropdownMenuRadioItem value="customer">Customer</DropdownMenuRadioItem>
                                                 <DropdownMenuRadioItem value="staff">Staff</DropdownMenuRadioItem>
                                                 <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
@@ -241,7 +236,7 @@ export default function AdminAllUsersPage() {
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
                                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                            <AlertDialogAction onClick={() => handleDeleteUser(user.uid)} className="bg-destructive hover:bg-destructive/90">
+                                            <AlertDialogAction onClick={() => handleDeleteUser(user.id)} className="bg-destructive hover:bg-destructive/90">
                                                 Delete
                                             </AlertDialogAction>
                                             </AlertDialogFooter>

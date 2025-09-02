@@ -19,8 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Package, Destination, PackageType } from "@/lib/data";
 import { useState, useEffect } from "react";
 import MediaPicker from "./MediaPicker";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { Label } from "../ui/label";
@@ -32,38 +31,40 @@ const formSchema = z.object({
   duration: z.coerce.number().min(1, "Duration must be at least 1 day."),
   price: z.coerce.number().min(1, "Price is required."),
   rating: z.coerce.number().min(0).max(5).default(4.5),
-  galleryImages: z.array(z.object({
+  gallery_images: z.array(z.object({
     url: z.string().url("A valid gallery image URL is required."),
     hint: z.string().optional(),
   })).min(1, "At least one image is required."),
-  videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
+  video_url: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
   description: z.string().min(20, "Description must be at least 20 characters."),
 });
 
 type AddPackageFormProps = {
-  onSave: (newPackage: Omit<Package, 'id'>) => void;
+  onSave: (newPackage: Omit<Package, 'id' | 'deleted_at'>) => void;
   setDialogOpen: (open: boolean) => void;
 }
 
 export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageFormProps) {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [packageTypes, setPackageTypes] = useState<PackageType[]>([]);
+  const supabase = getSupabaseClient_client();
 
   useEffect(() => {
     const fetchDropdownData = async () => {
-      const db = getFirestore(getFirebaseApp());
       try {
-        const destSnapshot = await getDocs(collection(db, "destinations"));
-        setDestinations(destSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Destination)));
+        const { data: destData, error: destError } = await supabase.from("destinations").select('*');
+        if (destError) throw destError;
+        setDestinations(destData as Destination[]);
         
-        const typesSnapshot = await getDocs(collection(db, "packageTypes"));
-        setPackageTypes(typesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PackageType)));
+        const { data: typesData, error: typesError } = await supabase.from("package_types").select('*');
+        if (typesError) throw typesError;
+        setPackageTypes(typesData as PackageType[]);
       } catch (e) {
         console.error("Failed to fetch form data:", e);
       }
     }
     fetchDropdownData();
-  }, []);
+  }, [supabase]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -74,27 +75,27 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
       duration: 7,
       price: 100000,
       rating: 4.5,
-      galleryImages: [{ url: 'https://placehold.co/1200x800.png', hint: '' }],
-      videoUrl: "",
+      gallery_images: [{ url: 'https://placehold.co/1200x800.png', hint: '' }],
+      video_url: "",
       description: "",
     },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "galleryImages",
+    name: "gallery_images",
   });
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const { galleryImages, ...rest } = values;
+    const { gallery_images, ...rest } = values;
     const slug = values.title.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
-    const newPackage: Omit<Package, 'id'> = {
+    const newPackage: Omit<Package, 'id' | 'deleted_at'> = {
         ...rest,
         slug,
-        imageUrl: galleryImages[0].url,
-        imageHint: galleryImages[0].hint,
-        galleryImages: galleryImages.slice(1), // Use the rest as gallery
+        image_url: gallery_images[0].url,
+        image_hint: gallery_images[0].hint,
+        gallery_images: gallery_images.slice(1), // Use the rest as gallery
         itinerary: [{ day: "1", title: "Arrival & Welcome", details: "Arrive and check into your accommodation." }],
         inclusions: ["Accommodation", "Daily Breakfast"],
         exclusions: ["Flights", "Visa Fees"],
@@ -235,7 +236,7 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
                 <div className="flex-grow space-y-4">
                    <Controller
                     control={form.control}
-                    name={`galleryImages.${index}.url`}
+                    name={`gallery_images.${index}.url`}
                     render={({ field }) => (
                       <div className="space-y-2">
                         <Label>Image {index + 1}</Label>
@@ -245,7 +246,7 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
                   />
                    <Controller
                     control={form.control}
-                    name={`galleryImages.${index}.hint`}
+                    name={`gallery_images.${index}.hint`}
                     render={({ field }) => (
                        <div className="space-y-2">
                         <Label>Image Hint {index + 1} (for AI)</Label>
@@ -267,14 +268,14 @@ export default function AddPackageForm({ onSave, setDialogOpen }: AddPackageForm
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Gallery Image
             </Button>
-             {form.formState.errors.galleryImages && <p className="text-sm text-destructive">{form.formState.errors.galleryImages.message}</p>}
+             {form.formState.errors.gallery_images && <p className="text-sm text-destructive">{form.formState.errors.gallery_images.message}</p>}
           </div>
 
         <Separator />
 
         <FormField
             control={form.control}
-            name="videoUrl"
+            name="video_url"
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Video URL (Optional)</FormLabel>

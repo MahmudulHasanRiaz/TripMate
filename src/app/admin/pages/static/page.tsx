@@ -9,33 +9,36 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, PlusCircle, Trash2 } from "lucide-react";
-import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
-import { SitePagesSettings, FaqItem } from "@/lib/data";
+import { getSupabaseClient_client } from "@/lib/supabase";
+import { SitePage, FaqItem } from "@/lib/data";
 import { Separator } from "@/components/ui/separator";
+
+type SitePagesData = {
+    'about-us': SitePage,
+    'faq': SitePage,
+    'terms-of-service': SitePage,
+    'privacy-policy': SitePage
+}
 
 export default function AdminStaticPages() {
     const { toast } = useToast();
-    const [settings, setSettings] = useState<SitePagesSettings | null>(null);
+    const [pages, setPages] = useState<SitePagesData | null>(null);
     const [loading, setLoading] = useState(true);
-    const db = getFirestore(getFirebaseApp());
-    const settingsRef = doc(db, "settings", "sitePages");
+    const supabase = getSupabaseClient_client();
 
     useEffect(() => {
         const fetchSettings = async () => {
             setLoading(true);
             try {
-                const settingsDoc = await getDoc(settingsRef);
-                if (settingsDoc.exists()) {
-                    setSettings(settingsDoc.data() as SitePagesSettings);
-                } else {
-                    setSettings({
-                        aboutUs: { title: "", content: "", status: 'published' },
-                        faq: { title: "", items: [], status: 'published' },
-                        terms: { title: "", content: "", status: 'published' },
-                        privacy: { title: "", content: "", status: 'published' },
-                    });
-                }
+                const { data, error } = await supabase.from("site_pages").select('*');
+                if (error) throw error;
+                
+                const pagesData = data.reduce((acc, page) => {
+                    acc[page.id as keyof SitePagesData] = page;
+                    return acc;
+                }, {} as SitePagesData);
+
+                setPages(pagesData);
             } catch (error) {
                 console.error("Error fetching static page settings:", error);
                 toast({ title: "Error", description: "Could not load page settings.", variant: "destructive" });
@@ -44,45 +47,48 @@ export default function AdminStaticPages() {
             }
         };
         fetchSettings();
-    }, [toast]);
+    }, [toast, supabase]);
     
-    const handleSettingsChange = (page: keyof SitePagesSettings, field: string, value: any) => {
-        setSettings(prev => prev ? ({
+    const handlePageChange = (pageId: keyof SitePagesData, field: keyof SitePage, value: any) => {
+        setPages(prev => prev ? ({
             ...prev,
-            [page]: { ...prev[page], [field]: value }
+            [pageId]: { ...prev[pageId], [field]: value }
         }) : null);
     }
 
     const handleFaqChange = (index: number, field: 'question' | 'answer', value: string) => {
-        if (!settings) return;
-        const newItems = [...settings.faq.items];
+        if (!pages) return;
+        const newItems = [...(pages.faq.items || [])];
         newItems[index] = { ...newItems[index], [field]: value };
-        handleSettingsChange('faq', 'items', newItems);
+        handlePageChange('faq', 'items', newItems);
     }
     
     const addFaqItem = () => {
-        if (!settings) return;
-        const newItems = [...settings.faq.items, { id: `faq-${Date.now()}`, question: "", answer: "" }];
-        handleSettingsChange('faq', 'items', newItems);
+        if (!pages) return;
+        const newItems = [...(pages.faq.items || []), { id: `faq-${Date.now()}`, question: "", answer: "" }];
+        handlePageChange('faq', 'items', newItems);
     }
 
     const removeFaqItem = (index: number) => {
-        if (!settings) return;
-        const newItems = settings.faq.items.filter((_, i) => i !== index);
-        handleSettingsChange('faq', 'items', newItems);
+        if (!pages) return;
+        const newItems = (pages.faq.items || []).filter((_, i) => i !== index);
+        handlePageChange('faq', 'items', newItems);
     }
 
     const handleSaveChanges = async () => {
-        if (!settings) return;
+        if (!pages) return;
         try {
-            await setDoc(settingsRef, settings, { merge: true });
+            const pagesToUpdate = Object.values(pages);
+            const { error } = await supabase.from('site_pages').upsert(pagesToUpdate);
+            if (error) throw error;
+
             toast({
                 title: "Settings Saved!",
                 description: "Your static page content has been updated.",
             });
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving settings:", error);
-            toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" });
+            toast({ title: "Error", description: `Failed to save settings: ${error.message}`, variant: "destructive" });
         }
     };
     
@@ -117,11 +123,11 @@ export default function AdminStaticPages() {
             <CardContent className="space-y-4">
                 <div>
                     <Label htmlFor="aboutTitle">Page Title</Label>
-                    <Input id="aboutTitle" value={settings?.aboutUs?.title || ''} onChange={(e) => handleSettingsChange('aboutUs', 'title', e.target.value)} />
+                    <Input id="aboutTitle" value={pages?.['about-us']?.title || ''} onChange={(e) => handlePageChange('about-us', 'title', e.target.value)} />
                 </div>
                  <div>
                     <Label htmlFor="aboutContent">Page Content (Markdown supported)</Label>
-                    <Textarea id="aboutContent" value={settings?.aboutUs?.content || ''} onChange={(e) => handleSettingsChange('aboutUs', 'content', e.target.value)} rows={10} />
+                    <Textarea id="aboutContent" value={pages?.['about-us']?.content || ''} onChange={(e) => handlePageChange('about-us', 'content', e.target.value)} rows={10} />
                 </div>
             </CardContent>
         </Card>
@@ -134,11 +140,11 @@ export default function AdminStaticPages() {
             <CardContent className="space-y-4">
                  <div>
                     <Label htmlFor="faqTitle">Page Title</Label>
-                    <Input id="faqTitle" value={settings?.faq?.title || ''} onChange={(e) => handleSettingsChange('faq', 'title', e.target.value)} />
+                    <Input id="faqTitle" value={pages?.faq?.title || ''} onChange={(e) => handlePageChange('faq', 'title', e.target.value)} />
                 </div>
                 <Separator />
                 <Label>Questions & Answers</Label>
-                {settings?.faq?.items.map((item, index) => (
+                {pages?.faq?.items?.map((item, index) => (
                     <div key={item.id} className="space-y-2 p-4 border rounded-md relative">
                          <Button variant="ghost" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => removeFaqItem(index)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
@@ -165,11 +171,11 @@ export default function AdminStaticPages() {
             <CardContent className="space-y-4">
                 <div>
                     <Label htmlFor="termsTitle">Page Title</Label>
-                    <Input id="termsTitle" value={settings?.terms?.title || ''} onChange={(e) => handleSettingsChange('terms', 'title', e.target.value)} />
+                    <Input id="termsTitle" value={pages?.['terms-of-service']?.title || ''} onChange={(e) => handlePageChange('terms-of-service', 'title', e.target.value)} />
                 </div>
                  <div>
                     <Label htmlFor="termsContent">Page Content (Markdown supported)</Label>
-                    <Textarea id="termsContent" value={settings?.terms?.content || ''} onChange={(e) => handleSettingsChange('terms', 'content', e.target.value)} rows={10} />
+                    <Textarea id="termsContent" value={pages?.['terms-of-service']?.content || ''} onChange={(e) => handlePageChange('terms-of-service', 'content', e.target.value)} rows={10} />
                 </div>
             </CardContent>
         </Card>
@@ -182,11 +188,11 @@ export default function AdminStaticPages() {
             <CardContent className="space-y-4">
                 <div>
                     <Label htmlFor="privacyTitle">Page Title</Label>
-                    <Input id="privacyTitle" value={settings?.privacy?.title || ''} onChange={(e) => handleSettingsChange('privacy', 'title', e.target.value)} />
+                    <Input id="privacyTitle" value={pages?.['privacy-policy']?.title || ''} onChange={(e) => handlePageChange('privacy-policy', 'title', e.target.value)} />
                 </div>
                  <div>
                     <Label htmlFor="privacyContent">Page Content (Markdown supported)</Label>
-                    <Textarea id="privacyContent" value={settings?.privacy?.content || ''} onChange={(e) => handleSettingsChange('privacy', 'content', e.target.value)} rows={10} />
+                    <Textarea id="privacyContent" value={pages?.['privacy-policy']?.content || ''} onChange={(e) => handlePageChange('privacy-policy', 'content', e.target.value)} rows={10} />
                 </div>
             </CardContent>
         </Card>

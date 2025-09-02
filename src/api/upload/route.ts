@@ -1,9 +1,7 @@
-
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
-import { getAdminFirestore } from '@/lib/firebase-admin';
-import { FieldValue } from "firebase-admin/firestore";
+import { getSupabaseClient_server } from "@/lib/supabase";
 
 // This function generates a URL-friendly slug from a filename
 const createSlug = (fileName: string): string => {
@@ -17,11 +15,13 @@ const createSlug = (fileName: string): string => {
       .replace(/\s+/g, '-') // Replace spaces with hyphens
       .replace(/-+/g, '-'); // Replace multiple hyphens with a single one
   
-    // The unique ID will come from the Firestore document ID now
-    return extension ? `${cleanedName}.${extension}` : cleanedName;
+    // Add a unique identifier to prevent collisions
+    const uniqueId = Date.now().toString(36).slice(-4);
+    
+    return extension ? `${cleanedName}-${uniqueId}.${extension}` : `${cleanedName}-${uniqueId}`;
 };
 
-// This handles the main POST request to get a pre-signed URL
+// This handles the main POST request to get a pre-signed URL and create a media record
 export async function POST(request: Request) {
   const { filename, contentType, size, altText, dataAiHint } = await request.json();
 
@@ -42,15 +42,34 @@ export async function POST(request: Request) {
   }
 
   try {
-    const db = getAdminFirestore();
-    // Create a new document in Firestore to get a unique ID
-    const newFileRef = db.collection('media').doc();
-    const fileId = newFileRef.id;
+    const supabase = getSupabaseClient_server();
+    
+    const slug = createSlug(filename);
+    const finalUrl = `${publicUrl}/${slug}`;
 
-    const baseSlug = createSlug(filename);
-    const uniqueSlug = `${fileId}-${baseSlug}`;
+    // 1. Create a new media record in Supabase first to get an ID
+    const { data: newMedia, error: insertError } = await supabase
+      .from('media')
+      .insert({
+        name: filename,
+        type: contentType.split('/')[0] || 'file',
+        url: finalUrl, // Store the final public URL
+        size: size,
+        alt_text: altText || '',
+        data_ai_hint: dataAiHint || '',
+        // uploaded_at and modified_at have default values in the DB
+      })
+      .select('id')
+      .single();
 
+    if (insertError) {
+      throw insertError;
+    }
+    
+    const fileId = newMedia.id;
+    const objectKey = `${fileId}/${slug}`; // Use a more structured key if desired, e.g., using the ID
 
+    // 2. Generate the pre-signed URL for the specific object key
     const R2 = new S3Client({
       region: "auto",
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
@@ -62,26 +81,13 @@ export async function POST(request: Request) {
 
     const command = new PutObjectCommand({
       Bucket: bucketName,
-      Key: uniqueSlug,
+      Key: slug, // Use the simple slug as the key for direct public access
       ContentType: contentType,
+      ContentLength: size,
     });
 
     const uploadUrl = await getSignedUrl(R2, command, { expiresIn: 3600 });
-    const finalUrl = `${publicUrl}/${uniqueSlug}`;
     
-    // Save metadata to Firestore immediately
-     await newFileRef.set({
-      name: filename,
-      type: contentType.split('/')[0] || 'file',
-      url: finalUrl,
-      size: size,
-      altText: altText || '',
-      dataAiHint: dataAiHint || '',
-      uploadedAt: FieldValue.serverTimestamp(),
-      modifiedAt: FieldValue.serverTimestamp(),
-      deletedAt: null,
-    });
-
     // Return the URLs and the unique ID for the client to use
     return NextResponse.json({ uploadUrl, finalUrl, fileId });
 

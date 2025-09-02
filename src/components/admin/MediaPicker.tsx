@@ -9,40 +9,36 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, Link, Library, Loader2, Video, File as FileIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { MediaFile } from '@/app/admin/media/page'; // Reuse type from media page
+import type { MediaFile } from '@/lib/data';
 import { Label } from "@/components/ui/label";
-import { getFirestore, collection, query, where, orderBy, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
-import { getFirebaseApp } from '@/lib/firebase';
+import { getSupabaseClient_client } from '@/lib/supabase';
 import { Skeleton } from '../ui/skeleton';
 
 // Simplified version of MediaGrid for the picker
 const LibraryGrid = ({ onSelectFile, refreshTrigger }: { onSelectFile: (file: MediaFile) => void, refreshTrigger: number }) => {
     const [files, setFiles] = useState<MediaFile[]>([]);
     const [loading, setLoading] = useState(true);
+    const supabase = getSupabaseClient_client();
 
     useEffect(() => {
         const fetchImages = async () => {
             setLoading(true);
-            const db = getFirestore(getFirebaseApp());
-            const mediaCollection = collection(db, "media");
-            const q = query(
-                mediaCollection, 
-                where("type", "==", "image"), 
-                where("deletedAt", "==", null),
-                orderBy("uploadedAt", "desc")
-            );
+            const { data, error } = await supabase
+                .from("media")
+                .select('*')
+                .eq("type", "image")
+                .is("deleted_at", null)
+                .order("uploaded_at", { ascending: false });
 
-            try {
-                const snapshot = await getDocs(q);
-                setFiles(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile)));
-            } catch (e) {
-                console.error("Failed to fetch library images:", e);
-            } finally {
-                setLoading(false);
+            if (error) {
+                console.error("Failed to fetch library images:", error);
+            } else {
+                setFiles(data as MediaFile[]);
             }
+            setLoading(false);
         };
         fetchImages();
-    }, [refreshTrigger]);
+    }, [refreshTrigger, supabase]);
 
     if (loading) {
         return (
@@ -65,7 +61,7 @@ const LibraryGrid = ({ onSelectFile, refreshTrigger }: { onSelectFile: (file: Me
                     <div className="aspect-square relative rounded-md overflow-hidden ring-2 ring-transparent group-hover:ring-primary">
                         <Image 
                             src={file.url}
-                            alt={file.altText || file.name}
+                            alt={file.alt_text || file.name}
                             fill
                             className="object-cover"
                         />
@@ -89,6 +85,7 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const [libraryRefreshTrigger, setLibraryRefreshTrigger] = useState(0);
+  const supabase = getSupabaseClient_client();
 
 
   const handleUrlConfirm = () => {
@@ -152,27 +149,26 @@ export default function MediaPicker({ imageUrl, onImageUrlChange }: MediaPickerP
             throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
         }
 
-        const db = getFirestore(getFirebaseApp());
-        await addDoc(collection(db, "media"), {
+        const { error } = await supabase.from("media").insert({
             name: file.name,
             type: "image",
             url: finalUrl,
             size: formatFileSize(file.size),
-            altText: "",
-            dataAiHint: "",
-            uploadedAt: serverTimestamp(),
-            modifiedAt: serverTimestamp(),
-            deletedAt: null,
+            alt_text: "",
+            data_ai_hint: "",
+            deleted_at: null,
         });
+
+        if (error) throw error;
 
         onImageUrlChange(finalUrl);
         setModalOpen(false);
         toast({ title: "Image Uploaded", description: "The image was successfully uploaded and saved." });
         setLibraryRefreshTrigger(prev => prev + 1); // Trigger library refresh
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Upload error:", error);
-        toast({ title: "Upload Failed", description: "Could not upload the file. Please check console for details.", variant: "destructive" });
+        toast({ title: "Upload Failed", description: `Could not upload the file: ${error.message}`, variant: "destructive" });
     } finally {
         setIsUploading(false);
         if (fileInputRef.current) {

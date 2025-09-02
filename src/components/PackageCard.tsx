@@ -19,12 +19,12 @@ export default function PackageCard({ pkg }: PackageCardProps) {
             {pkg.type}
           </Badge>
           <Image
-            src={pkg.imageUrl}
+            src={pkg.image_url}
             alt={pkg.title}
             width={600}
             height={400}
             className="aspect-[3/2] w-full object-cover"
-            data-ai-hint={pkg.imageHint}
+            data-ai-hint={pkg.image_hint}
           />
         </Link>
       </CardHeader>

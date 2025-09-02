@@ -16,8 +16,7 @@ import { Package, Destination, PackageType, GalleryImage } from "@/lib/data";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -25,11 +24,11 @@ const packageSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
   slug: z.string().min(1, "Slug is required."),
   description: z.string().min(20, "Description must be at least 20 characters long."),
-  galleryImages: z.array(z.object({
+  gallery_images: z.array(z.object({
     url: z.string().url("A valid gallery image URL is required."),
     hint: z.string().optional(),
   })).min(1, "At least one gallery image is required."),
-  videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
+  video_url: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
   type: z.string().min(1, "Package type is required."),
   destination: z.string().min(1, "Destination is required."),
   duration: z.coerce.number().min(1, "Duration must be at least 1 day."),
@@ -52,8 +51,7 @@ export default function EditPackagePage() {
   const [pkg, setPkg] = useState<Package | null | undefined>(undefined);
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [packageTypes, setPackageTypes] = useState<PackageType[]>([]);
-  
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
 
   const form = useForm<z.infer<typeof packageSchema>>({
     resolver: zodResolver(packageSchema),
@@ -66,7 +64,7 @@ export default function EditPackagePage() {
   
   const { fields: galleryFields, append: appendGallery, remove: removeGallery } = useFieldArray({
     control: form.control,
-    name: "galleryImages"
+    name: "gallery_images"
   });
 
   const { fields: inclusionFields, append: appendInclusion, remove: removeInclusion } = useFieldArray({
@@ -82,74 +80,75 @@ export default function EditPackagePage() {
   useEffect(() => {
     const loadDropdownData = async () => {
         try {
-            const destSnapshot = await getDocs(collection(db, "destinations"));
-            setDestinations(destSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Destination)));
+            const { data: destData, error: destError } = await supabase.from("destinations").select('*');
+            if (destError) throw destError;
+            setDestinations(destData as Destination[]);
             
-            const typesSnapshot = await getDocs(collection(db, "packageTypes"));
-            setPackageTypes(typesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PackageType)));
-        } catch (e) {
+            const { data: typesData, error: typesError } = await supabase.from("package_types").select('*');
+            if (typesError) throw typesError;
+            setPackageTypes(typesData as PackageType[]);
+        } catch (e: any) {
             console.error("Failed to fetch form data:", e);
-            toast({ title: "Error", description: "Could not load destinations or types." });
+            toast({ title: "Error", description: `Could not load destinations or types: ${e.message}` });
         }
     }
     loadDropdownData();
-  }, [db, toast]);
+  }, [supabase, toast]);
 
   useEffect(() => {
     const loadPackage = async () => {
       if (!packageId) return;
-      const packageRef = doc(db, "packages", packageId);
-      const docSnap = await getDoc(packageRef);
+      const { data, error } = await supabase.from('packages').select('*').eq('id', packageId).single();
       
-      if (docSnap.exists()) {
-        const packageData = { id: docSnap.id, ...docSnap.data() } as Package;
+      if (error) {
+        setPkg(null);
+      } else {
+        const packageData = data as Package;
         setPkg(packageData);
         
-        // Correctly combine imageUrl and galleryImages for the form
         const allImages: GalleryImage[] = [
-            { url: packageData.imageUrl, hint: packageData.imageHint },
-            ...(packageData.galleryImages || [])
+            { url: packageData.image_url, hint: packageData.image_hint },
+            ...(packageData.gallery_images || [])
         ];
 
         form.reset({
           ...packageData,
-          galleryImages: allImages, // Use the combined array
+          gallery_images: allImages,
           itinerary: packageData.itinerary || [],
           inclusions: packageData.inclusions?.map(v => ({ value: v })) || [],
           exclusions: packageData.exclusions?.map(e => ({ value: e })) || [],
         });
-      } else {
-        setPkg(null);
       }
     };
     loadPackage();
-  }, [packageId, db, form]);
+  }, [packageId, supabase, form]);
 
   const onSubmit = async (data: z.infer<typeof packageSchema>) => {
     if (!pkg) return;
 
     try {
-      const packageRef = doc(db, "packages", pkg.id);
-      const { galleryImages, inclusions, exclusions, ...rest } = data;
+      const { gallery_images, inclusions, exclusions, ...rest } = data;
       
       const finalData = {
           ...rest,
-          imageUrl: galleryImages[0].url, // First image is the main one
-          imageHint: galleryImages[0].hint,
-          galleryImages: galleryImages.slice(1), // The rest are gallery images
+          image_url: gallery_images[0].url, 
+          image_hint: gallery_images[0].hint,
+          gallery_images: gallery_images.slice(1), 
           inclusions: inclusions?.map(i => i.value),
           exclusions: exclusions?.map(e => e.value),
       };
 
-      await updateDoc(packageRef, finalData);
+      const { error } = await supabase.from('packages').update(finalData).eq('id', pkg.id);
+      if (error) throw error;
+      
       toast({
         title: "Package Updated!",
         description: "The package has been successfully updated.",
       });
       router.push("/admin/packages/all");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
-      toast({ title: "Error", description: "Failed to update package.", variant: "destructive" });
+      toast({ title: "Error", description: `Failed to update package: ${e.message}`, variant: "destructive" });
     }
   };
   
@@ -262,7 +261,7 @@ export default function EditPackagePage() {
                 <div className="flex-grow space-y-4">
                    <Controller
                     control={form.control}
-                    name={`galleryImages.${index}.url`}
+                    name={`gallery_images.${index}.url`}
                     render={({ field }) => (
                       <div className="space-y-2">
                         <Label>Image {index + 1}</Label>
@@ -272,7 +271,7 @@ export default function EditPackagePage() {
                   />
                    <Controller
                     control={form.control}
-                    name={`galleryImages.${index}.hint`}
+                    name={`gallery_images.${index}.hint`}
                     render={({ field }) => (
                        <div className="space-y-2">
                         <Label>Image Hint {index + 1} (for AI)</Label>
@@ -294,15 +293,15 @@ export default function EditPackagePage() {
               <PlusCircle className="mr-2 h-4 w-4" />
               Add Gallery Image
             </Button>
-            {form.formState.errors.galleryImages && <p className="text-sm text-destructive">{form.formState.errors.galleryImages.message}</p>}
+            {form.formState.errors.gallery_images && <p className="text-sm text-destructive">{form.formState.errors.gallery_images.message}</p>}
           </div>
 
           <Separator />
 
            <div className="space-y-2">
-            <Label htmlFor="videoUrl">Video URL (Optional)</Label>
-            <Input id="videoUrl" {...form.register("videoUrl")} placeholder="https://www.youtube.com/watch?v=..." />
-            {form.formState.errors.videoUrl && <p className="text-sm text-destructive">{form.formState.errors.videoUrl.message}</p>}
+            <Label htmlFor="video_url">Video URL (Optional)</Label>
+            <Input id="video_url" {...form.register("video_url")} placeholder="https://www.youtube.com/watch?v=..." />
+            {form.formState.errors.video_url && <p className="text-sm text-destructive">{form.formState.errors.video_url.message}</p>}
           </div>
 
            <Separator />

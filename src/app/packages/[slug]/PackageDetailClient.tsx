@@ -20,14 +20,14 @@ type Props = {
 
 export default function PackageDetailClient({ pkg }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const embedUrl = pkg.videoUrl ? getEmbedUrl(pkg.videoUrl) : null;
+  const embedUrl = pkg.video_url ? getEmbedUrl(pkg.video_url) : null;
   const plugin = useRef(
     Autoplay({ delay: 5000, stopOnInteraction: true })
   );
   
   const allImages = [
-    { url: pkg.imageUrl, hint: pkg.imageHint || '' },
-    ...(pkg.galleryImages || [])
+    { url: pkg.image_url, hint: pkg.image_hint || '' },
+    ...(pkg.gallery_images || [])
   ];
 
   return (
@@ -58,11 +58,11 @@ export default function PackageDetailClient({ pkg }: Props) {
           </Carousel>
         ) : (
           <Image
-            src={pkg.imageUrl}
+            src={pkg.image_url}
             alt={pkg.title}
             fill
             className="object-cover brightness-75"
-            data-ai-hint={pkg.imageHint}
+            data-ai-hint={pkg.image_hint}
           />
         )}
         <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent">

@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -23,8 +22,7 @@ import { getInitials } from "@/lib/utils";
 import { useAppContext } from "@/context/AppContext";
 import { Page } from "@/lib/data";
 import { useState, useEffect } from "react";
-import { getFirestore, collection, query, where, orderBy, getDocs } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import Image from "next/image";
 
 
@@ -45,32 +43,24 @@ export default function Header() {
   useEffect(() => {
     const fetchPages = async () => {
       try {
-        const db = getFirestore(getFirebaseApp());
-        const pagesRef = collection(db, "pages");
-        const q = query(
-          pagesRef,
-          where("showInMenu", "==", true),
-          where("status", "==", "published")
-        );
-        const querySnapshot = await getDocs(q);
-
-        const fetchedPages = querySnapshot.docs.map(doc => {
-          const data = doc.data() as Page;
-          return {
-            href: `/${data.slug}`,
-            label: data.title,
-            order: data.menuOrder ?? 99
-          }
-        });
+        const supabase = getSupabaseClient_client();
+        const { data, error } = await supabase
+          .from("pages")
+          .select('slug,title,menu_order')
+          .eq("show_in_menu", true)
+          .eq("status", "published")
+          .order('menu_order');
         
-        // Sort pages client-side
-        fetchedPages.sort((a, b) => a.order - b.order);
+        if (error) throw error;
 
-        // Combine default links with fetched pages
+        const fetchedPages = data.map((page: any) => ({
+            href: `/${page.slug}`,
+            label: page.title,
+            order: page.menu_order ?? 99
+        }));
+        
         const allLinks = [...defaultNavLinks];
         fetchedPages.forEach(page => {
-            // Insert sorted pages into the default links
-            // This logic can be adjusted based on desired merge strategy
              if (page.order < allLinks.length) {
                 allLinks.splice(page.order, 0, { href: page.href, label: page.label });
             } else {
@@ -78,7 +68,6 @@ export default function Header() {
             }
         });
          
-        // A simple way to avoid duplicates if a dynamic page has same route as a default one.
         const uniqueLinks = allLinks.filter((link, index, self) =>
             index === self.findIndex((l) => (
                 l.href === link.href
@@ -89,7 +78,7 @@ export default function Header() {
         
       } catch (error) {
         console.error("Failed to fetch dynamic pages for menu:", error);
-        setNavLinks(defaultNavLinks); // Fallback to default on error
+        setNavLinks(defaultNavLinks);
       }
     };
 
@@ -101,12 +90,12 @@ export default function Header() {
       <div className="container flex h-16 items-center justify-between">
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
-            {settings?.logoUrl ? (
-                <Image src={settings.logoUrl} alt={settings.siteTitle} width={32} height={32} className="h-8 w-8" />
+            {settings?.logo_url ? (
+                <Image src={settings.logo_url} alt={settings.site_title} width={32} height={32} className="h-8 w-8" />
             ) : (
                 <Logo className="h-8 w-8 text-primary" />
             )}
-            <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'TripMate'}</span>
+            <span className="font-bold font-headline text-xl">{settings?.site_title || 'TripMate'}</span>
           </Link>
         </div>
 
@@ -171,12 +160,12 @@ export default function Header() {
                 <SheetHeader className="p-6 pb-0">
                    <SheetTitle>
                      <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
-                        {settings?.logoUrl ? (
-                            <Image src={settings.logoUrl} alt={settings.siteTitle} width={32} height={32} className="h-8 w-8" />
+                        {settings?.logo_url ? (
+                            <Image src={settings.logo_url} alt={settings.site_title} width={32} height={32} className="h-8 w-8" />
                         ) : (
                             <Logo className="h-8 w-8 text-primary" />
                         )}
-                        <span className="font-bold font-headline text-xl">{settings?.siteTitle || 'TripMate'}</span>
+                        <span className="font-bold font-headline text-xl">{settings?.site_title || 'TripMate'}</span>
                     </Link>
                    </SheetTitle>
                 </SheetHeader>

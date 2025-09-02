@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,8 +21,7 @@ import { Calendar } from "./ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { Booking } from "@/lib/data";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 
 const formSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters."),
@@ -41,7 +41,7 @@ type BookingFormProps = {
 
 export default function BookingForm({ packageId, packageName, setDialogOpen }: BookingFormProps) {
   const { toast } = useToast();
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -57,18 +57,19 @@ export default function BookingForm({ packageId, packageName, setDialogOpen }: B
     
     try {
         const newBooking: Omit<Booking, 'id'> = {
-            packageId,
-            packageName,
-            customerName: values.fullName,
-            customerEmail: values.email,
-            customerPhone: values.phone,
+            package_id: packageId,
+            package_name: packageName,
+            customer_name: values.fullName,
+            customer_email: values.email,
+            customer_phone: values.phone,
             travelers: values.travelers,
-            departureDate: values.departureDate.toISOString(),
-            bookingDate: new Date().toISOString(),
+            departure_date: values.departureDate.toISOString(),
+            booking_date: new Date().toISOString(),
             status: "Pending"
         };
         
-        await addDoc(collection(db, "bookings"), newBooking);
+        const { error } = await supabase.from('bookings').insert(newBooking);
+        if (error) throw error;
 
         toast({
           title: "Booking Submitted!",
@@ -76,11 +77,11 @@ export default function BookingForm({ packageId, packageName, setDialogOpen }: B
         });
         setDialogOpen(false);
         form.reset();
-    } catch(e) {
+    } catch(e: any) {
         console.error("Booking Error:", e);
         toast({
           title: "Booking Failed",
-          description: "There was an error submitting your booking. Please try again.",
+          description: `There was an error submitting your booking: ${e.message}`,
           variant: "destructive"
         });
     }

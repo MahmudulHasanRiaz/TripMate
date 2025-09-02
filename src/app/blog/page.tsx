@@ -9,8 +9,7 @@ import { User as UserData } from '@/hooks/use-auth';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ArrowRight, Calendar, User as UserIcon, Loader2, Search, CalendarIcon, Filter } from 'lucide-react';
 import { format, subDays, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
-import { getFirestore, collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { getFirebaseApp } from '@/lib/firebase';
+import { getSupabaseClient_client } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -24,14 +23,14 @@ import { useIsMobile } from '@/hooks/use-mobile';
 function PostCard({ post, author }: { post: Post, author?: UserData }) {
   const getAuthorName = () => {
     if (!author) return "Unknown Author";
-    const fullName = `${author.firstName || ''} ${author.lastName || ''}`.trim();
-     if (fullName.length > 15) {
-        return `${fullName.substring(0, 15)}...`;
+    const authorName = author.name || "Unknown Author";
+     if (authorName.length > 15) {
+        return `${authorName.substring(0, 15)}...`;
     }
-    return fullName || "Unknown Author";
+    return authorName;
   };
   
-  const imageUrl = post.featuredImageUrl || "https://placehold.co/1200x600.png";
+  const imageUrl = post.featured_image_url || "https://placehold.co/1200x600.png";
 
   return (
     <Card className="overflow-hidden group">
@@ -40,10 +39,9 @@ function PostCard({ post, author }: { post: Post, author?: UserData }) {
           <Image
             src={imageUrl}
             alt={post.title}
-            layout="fill"
-            objectFit="cover"
-            className="transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint={post.featuredImageHint}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            data-ai-hint={post.featured_image_hint}
           />
         </Link>
       </CardHeader>
@@ -55,7 +53,7 @@ function PostCard({ post, author }: { post: Post, author?: UserData }) {
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span>{format(new Date(post.publishedAt), 'PPP')}</span>
+            <span>{format(new Date(post.published_at), 'PPP')}</span>
           </div>
         </div>
         <h2 className="text-2xl font-headline font-bold mb-3">
@@ -91,7 +89,6 @@ export default function BlogPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const isMobile = useIsMobile();
   
-  // Open filters by default on desktop
   useEffect(() => {
     if (!isMobile) {
       setIsFilterOpen(true);
@@ -101,21 +98,22 @@ export default function BlogPage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      const db = getFirestore(getFirebaseApp());
+      const supabase = getSupabaseClient_client();
       try {
-        const postsCollection = collection(db, 'posts');
-        const postsQuery = query(postsCollection, orderBy("publishedAt", "desc"));
-        const postsSnapshot = await getDocs(postsQuery);
-        const postsList = postsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Post));
-        setAllPosts(postsList);
-        
-        const usersSnapshot = await getDocs(collection(db, 'users'));
-        const usersList = usersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as UserData));
-        setAllUsers(usersList);
+        const postsPromise = supabase.from('posts').select('*').order('published_at', { ascending: false });
+        const usersPromise = supabase.from('users').select('*');
+        const categoriesPromise = supabase.from('categories').select('*');
 
-        const categoriesSnapshot = await getDocs(collection(db, 'categories'));
-        const categoriesList = categoriesSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Category));
-        setAllCategories(categoriesList);
+        const [postsRes, usersRes, categoriesRes] = await Promise.all([postsPromise, usersPromise, categoriesPromise]);
+
+        if(postsRes.error) throw postsRes.error;
+        setAllPosts(postsRes.data as Post[]);
+
+        if(usersRes.error) throw usersRes.error;
+        setAllUsers(usersRes.data as UserData[]);
+
+        if(categoriesRes.error) throw categoriesRes.error;
+        setAllCategories(categoriesRes.data as Category[]);
 
       } catch (error) {
         console.error("Error fetching blog data:", error);
@@ -128,10 +126,10 @@ export default function BlogPage() {
 
   const filteredAndSortedPosts = useMemo(() => {
     let filtered = allPosts.filter(post => {
-      const postDate = new Date(post.publishedAt);
+      const postDate = new Date(post.published_at);
       const matchesSearch = searchTerm.trim() === '' || post.title.toLowerCase().includes(searchTerm.toLowerCase()) || post.content.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || post.categoryId === selectedCategory;
-      const matchesAuthor = selectedAuthor === 'all' || post.authorId === selectedAuthor;
+      const matchesCategory = selectedCategory === 'all' || post.category_id === selectedCategory;
+      const matchesAuthor = selectedAuthor === 'all' || post.author_id === selectedAuthor;
       
       let matchesRange = true;
       if (selectedRange !== 'all' && selectedRange !== 'custom') {
@@ -152,10 +150,10 @@ export default function BlogPage() {
 
     switch (sortBy) {
         case 'newest':
-            filtered.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+            filtered.sort((a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime());
             break;
         case 'oldest':
-            filtered.sort((a, b) => new Date(a.publishedAt).getTime() - new Date(b.publishedAt).getTime());
+            filtered.sort((a, b) => new Date(a.published_at).getTime() - new Date(b.published_at).getTime());
             break;
         case 'title-asc':
             filtered.sort((a, b) => a.title.localeCompare(b.title));
@@ -168,7 +166,7 @@ export default function BlogPage() {
     return filtered;
   }, [allPosts, searchTerm, selectedCategory, selectedAuthor, selectedRange, sortBy, startDate, endDate]);
 
-  const findAuthor = (authorId?: string) => allUsers.find(user => user.uid === authorId);
+  const findAuthor = (authorId?: string) => allUsers.find(user => user.id === authorId);
 
   return (
     <div className="container mx-auto px-4 py-12">
@@ -216,7 +214,7 @@ export default function BlogPage() {
                             <SelectTrigger><SelectValue placeholder="All Authors" /></SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Authors</SelectItem>
-                                {allUsers.map(user => <SelectItem key={user.uid} value={user.uid}>{user.firstName} {user.lastName}</SelectItem>)}
+                                {allUsers.map(user => <SelectItem key={user.id} value={user.id}>{user.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -291,7 +289,7 @@ export default function BlogPage() {
         ) : filteredAndSortedPosts.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredAndSortedPosts.map(post => (
-              <PostCard key={post.id} post={post} author={findAuthor(post.authorId)} />
+              <PostCard key={post.id} post={post} author={findAuthor(post.author_id)} />
             ))}
           </div>
         ) : (

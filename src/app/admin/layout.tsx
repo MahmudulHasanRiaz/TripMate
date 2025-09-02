@@ -50,10 +50,9 @@ import { getInitials } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import { useToast } from "@/hooks/use-toast";
-import { getFirestore, doc, updateDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAppContext } from "@/context/AppContext";
+import { getSupabaseClient_client } from "@/lib/supabase";
 
 
 const menuItems = [
@@ -206,13 +205,11 @@ export default function AdminLayout({
 
   const handleSaveProfile = async (updatedUser: User) => {
      try {
-        const db = getFirestore(getFirebaseApp());
-        const userRef = doc(db, "users", updatedUser.uid);
-        
-        // Prepare data for Firestore by removing fields we don't want to save directly
+        const supabase = getSupabaseClient_client();
         const { uid, password, ...dataToSave } = updatedUser;
+        const { error } = await supabase.from('users').update(dataToSave).eq('id', uid);
         
-        await updateDoc(userRef, dataToSave);
+        if (error) throw error;
         
         // Update the user state in the context to reflect changes immediately
         setUser(currentUser => currentUser ? { ...currentUser, ...dataToSave } : null);
@@ -223,9 +220,9 @@ export default function AdminLayout({
           title: "Profile Updated",
           description: "Your profile has been successfully updated."
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error saving profile:", error);
-        toast({ title: "Error", description: "Failed to save your profile.", variant: "destructive" });
+        toast({ title: "Error", description: `Failed to save your profile: ${error.message}`, variant: "destructive" });
     }
   }
 
@@ -240,13 +237,13 @@ export default function AdminLayout({
       <Sidebar>
         <SidebarHeader>
            <div className="flex items-center gap-2 p-2">
-            {settings?.logoUrl ? (
-                <Image src={settings.logoUrl} alt={settings.siteTitle} width={32} height={32} className="h-8 w-8" />
+            {settings?.logo_url ? (
+                <Image src={settings.logo_url} alt={settings.site_title} width={32} height={32} className="h-8 w-8" />
             ) : (
                 <Logo className="size-8 text-sidebar-primary" />
             )}
             <span className="text-xl font-headline font-semibold text-sidebar-foreground">
-              {settings?.siteTitle || "TripMate"}
+              {settings?.site_title || "TripMate"}
             </span>
           </div>
         </SidebarHeader>
@@ -334,11 +331,11 @@ export default function AdminLayout({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 gap-2 px-2">
                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
-                      <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                      <AvatarImage src={user.photo_url || undefined} alt={user.name} />
+                      <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start">
-                     <span className="text-sm font-medium">{user.firstName} {user.lastName}</span>
+                     <span className="text-sm font-medium">{user.name}</span>
                      <span className="text-xs text-muted-foreground">{user.role}</span>
                   </div>
                 </Button>
@@ -346,7 +343,7 @@ export default function AdminLayout({
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.firstName} {user.lastName}</p>
+                    <p className="text-sm font-medium leading-none">{user.name}</p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email}
                     </p>

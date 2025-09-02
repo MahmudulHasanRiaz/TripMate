@@ -14,8 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import MediaPicker from "@/components/admin/MediaPicker";
-import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminDestinationsPage() {
@@ -25,9 +24,7 @@ export default function AdminDestinationsPage() {
   const [editingDestination, setEditingDestination] = useState<Destination | null>(null);
   const [currentDestination, setCurrentDestination] = useState<Partial<Destination>>({});
   const { toast } = useToast();
-
-  const db = getFirestore(getFirebaseApp());
-  const destinationsCollection = collection(db, "destinations");
+  const supabase = getSupabaseClient_client();
   
   const generateSlug = (name: string) => {
     return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
@@ -36,11 +33,11 @@ export default function AdminDestinationsPage() {
   const loadDestinations = async () => {
     setLoading(true);
     try {
-      const snapshot = await getDocs(destinationsCollection);
-      const destList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Destination));
-      setDestinations(destList);
-    } catch (e) {
-      toast({ title: "Error", description: "Could not fetch destinations.", variant: "destructive" });
+      const { data, error } = await supabase.from('destinations').select('*');
+      if (error) throw error;
+      setDestinations(data as Destination[]);
+    } catch (e: any) {
+      toast({ title: "Error", description: `Could not fetch destinations: ${e.message}`, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -55,7 +52,7 @@ export default function AdminDestinationsPage() {
     setCurrentDestination({
       name: "",
       slug: "",
-      imageUrl: "https://placehold.co/600x400.png"
+      image_url: "https://placehold.co/600x400.png"
     });
     setIsDialogOpen(true);
   }
@@ -68,15 +65,16 @@ export default function AdminDestinationsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, "destinations", id));
+      const { error } = await supabase.from('destinations').delete().eq('id', id);
+      if (error) throw error;
       toast({
           title: "Destination Deleted",
           description: "The destination has been successfully deleted.",
           variant: "destructive"
       });
       loadDestinations();
-    } catch(e) {
-      toast({ title: "Error", description: "Could not delete destination.", variant: "destructive" });
+    } catch(e: any) {
+      toast({ title: "Error", description: `Could not delete destination: ${e.message}`, variant: "destructive" });
     }
   }
 
@@ -91,23 +89,19 @@ export default function AdminDestinationsPage() {
     }
 
     const slug = currentDestination.slug || generateSlug(currentDestination.name);
-    const dataToSave = { ...currentDestination, slug };
+    const dataToSave = { ...currentDestination, slug, id: editingDestination ? editingDestination.id : slug };
 
     try {
       if (editingDestination) {
-        // Editing existing destination
-        const destDoc = doc(db, "destinations", editingDestination.id);
-        await updateDoc(destDoc, dataToSave);
+        const { error } = await supabase.from('destinations').update(dataToSave).eq('id', editingDestination.id);
+        if (error) throw error;
         toast({
           title: "Destination Updated",
           description: "The destination has been successfully updated.",
         });
       } else {
-        // Adding new destination
-        await addDoc(destinationsCollection, {
-            ...dataToSave,
-            imageUrl: currentDestination.imageUrl || "https://placehold.co/600x400.png"
-        });
+        const { error } = await supabase.from('destinations').insert(dataToSave);
+        if (error) throw error;
         toast({
           title: "Destination Added",
           description: `"${currentDestination.name}" has been added.`,
@@ -117,8 +111,8 @@ export default function AdminDestinationsPage() {
       setIsDialogOpen(false);
       setCurrentDestination({});
       setEditingDestination(null);
-    } catch(e) {
-       toast({ title: "Error", description: "Could not save destination.", variant: "destructive" });
+    } catch(e: any) {
+       toast({ title: "Error", description: `Could not save destination: ${e.message}`, variant: "destructive" });
     }
   };
 
@@ -157,7 +151,7 @@ export default function AdminDestinationsPage() {
                   <TableRow key={dest.id}>
                     <TableCell>
                       <Image 
-                        src={dest.imageUrl} 
+                        src={dest.image_url} 
                         alt={dest.name} 
                         width={64} 
                         height={48} 
@@ -221,8 +215,8 @@ export default function AdminDestinationsPage() {
                 <div className="space-y-2">
                   <Label>Image</Label>
                   <MediaPicker 
-                    imageUrl={currentDestination.imageUrl || ""}
-                    onImageUrlChange={(url) => setCurrentDestination(prev => ({...prev, imageUrl: url}))}
+                    imageUrl={currentDestination.image_url || ""}
+                    onImageUrlChange={(url) => setCurrentDestination(prev => ({...prev, image_url: url}))}
                   />
                 </div>
             </div>

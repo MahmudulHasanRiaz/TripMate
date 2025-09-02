@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useForm } from "react-hook-form";
@@ -11,8 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { ContactMessage } from "@/lib/data";
 import { useAppContext } from "@/context/AppContext";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters."),
@@ -24,7 +24,7 @@ const contactSchema = z.object({
 export default function ContactForm() {
   const { isContactFormOpen, setContactFormOpen } = useAppContext();
   const { toast } = useToast();
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
 
   const form = useForm<z.infer<typeof contactSchema>>({
     resolver: zodResolver(contactSchema),
@@ -45,11 +45,12 @@ export default function ContactForm() {
     try {
       const newMessage: Omit<ContactMessage, 'id'> = {
         ...data,
-        submittedAt: new Date().toISOString(),
-        isRead: false,
+        submitted_at: new Date().toISOString(),
+        is_read: false,
       };
       
-      await addDoc(collection(db, "contactMessages"), newMessage);
+      const { error } = await supabase.from('contact_messages').insert(newMessage);
+      if (error) throw error;
 
       toast({
         title: "Message Sent!",
@@ -58,10 +59,10 @@ export default function ContactForm() {
 
       handleClose();
 
-    } catch (e) {
+    } catch (e: any) {
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again later.",
+        description: `Failed to send message: ${e.message}`,
         variant: "destructive"
       });
     }

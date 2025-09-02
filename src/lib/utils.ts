@@ -44,17 +44,13 @@ export function getEmbedUrl(url: string): string | null {
   return null; // Return null if no matching service is found
 }
 
-export function getInitials(firstName?: string | null, lastName?: string | null): string {
-    const firstInitial = firstName ? firstName.charAt(0) : '';
-    const lastInitial = lastName ? lastName.charAt(0) : '';
-    if (firstInitial && lastInitial) {
+export function getInitials(name?: string | null): string {
+    if (!name) return "U";
+    const nameParts = name.trim().split(' ');
+    if (nameParts.length > 1) {
+        const firstInitial = nameParts[0].charAt(0);
+        const lastInitial = nameParts[nameParts.length - 1].charAt(0);
         return `${firstInitial}${lastInitial}`.toUpperCase();
     }
-    if (firstName) {
-        return firstName.slice(0, 2).toUpperCase();
-    }
-    if (lastName) {
-        return lastName.slice(0, 2).toUpperCase();
-    }
-    return "U";
+    return name.slice(0, 2).toUpperCase();
 }

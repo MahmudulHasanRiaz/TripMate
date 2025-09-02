@@ -1,61 +1,44 @@
-"use client"
 
-import { useState, useEffect } from 'react';
+import { notFound } from "next/navigation";
 import { Package } from "@/lib/data";
-import { notFound, useParams } from "next/navigation";
+import { getSupabaseClient_server } from "@/lib/supabase";
 import PackageDetailClient from "./PackageDetailClient";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
-import { getFirebaseApp } from '@/lib/firebase';
-import { Skeleton } from '@/components/ui/skeleton';
+import Head from 'next/head';
 
-export default function PackageDetailPage() {
-  const [pkg, setPkg] = useState<Package | null | undefined>(undefined); // undefined: loading, null: not found
-  const params = useParams();
-  const slug = params.slug as string;
-
-  useEffect(() => {
-    const fetchPackage = async () => {
-        if (!slug) return;
-        const db = getFirestore(getFirebaseApp());
-        const packagesRef = collection(db, 'packages');
-        const q = query(packagesRef, where("slug", "==", slug));
-        const querySnapshot = await getDocs(q);
-
-        if (!querySnapshot.empty) {
-            const doc = querySnapshot.docs[0];
-            setPkg({ id: doc.id, ...doc.data() } as Package);
-        } else {
-            setPkg(null);
-        }
-    };
+async function getPackage(slug: string): Promise<Package | null> {
+    const supabase = getSupabaseClient_server();
+    const { data, error } = await supabase
+        .from('packages')
+        .select('*')
+        .eq('slug', slug)
+        .is('deleted_at', null)
+        .single();
     
-    fetchPackage();
+    if (error) {
+        console.error(`Error fetching package with slug "${slug}":`, error.message);
+        return null;
+    }
     
-  }, [slug]);
+    return data as Package | null;
+}
 
-  if (pkg === undefined) {
-    return (
-        <div className="space-y-4">
-            <Skeleton className="h-96 w-full" />
-            <div className="container mx-auto grid grid-cols-3 gap-8">
-                <div className="col-span-2 space-y-4">
-                    <Skeleton className="h-8 w-1/2" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-8 w-1/3 mt-8" />
-                    <Skeleton className="h-12 w-full" />
-                     <Skeleton className="h-12 w-full" />
-                </div>
-                <div className="col-span-1 space-y-4">
-                     <Skeleton className="h-64 w-full" />
-                </div>
-            </div>
-        </div>
-    )
-  }
-
-  if (pkg === null) {
+export default async function PackageDetailPage({ params }: { params: { slug: string } }) {
+  const pkg = await getPackage(params.slug);
+  
+  if (!pkg) {
     notFound();
   }
+  
+  const pageTitle = pkg.title;
+  const pageDescription = pkg.description.substring(0, 160);
 
-  return <PackageDetailClient pkg={pkg} />;
+  return (
+    <>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name="description" content={pageDescription} />
+      </Head>
+      <PackageDetailClient pkg={pkg} />
+    </>
+  );
 }

@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 import { Search, Loader2 } from 'lucide-react';
-import { getFirestore, collection, getDocs, query } from 'firebase/firestore';
-import { getFirebaseApp } from '@/lib/firebase';
+import { getSupabaseClient_client } from '@/lib/supabase';
 
 export default function PackagesPage() {
     const [allPackages, setAllPackages] = useState<Package[]>([]);
@@ -24,14 +23,15 @@ export default function PackagesPage() {
         const fetchPackages = async () => {
             setLoading(true);
             try {
-                const db = getFirestore(getFirebaseApp());
-                const packagesCollection = collection(db, 'packages');
-                const packagesQuery = query(packagesCollection); // Removed incorrect where clause
-                const packagesSnapshot = await getDocs(packagesQuery);
-                const packagesList = packagesSnapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() } as Package))
-                    .filter(pkg => !pkg.deletedAt); // Filter for active packages on client-side
+                const supabase = getSupabaseClient_client();
+                const { data, error } = await supabase
+                    .from('packages')
+                    .select('*')
+                    .is('deleted_at', null);
 
+                if (error) throw error;
+                
+                const packagesList = data as Package[];
                 setAllPackages(packagesList);
 
                 if (packagesList.length > 0) {
@@ -45,7 +45,6 @@ export default function PackagesPage() {
                     setPriceRange({ min: newMin, max: newMax });
                     setMaxPrice(newMax); 
                 } else {
-                    // Default values if no packages are found
                     setPriceRange({ min: 0, max: 500000 });
                     setMaxPrice(500000);
                 }

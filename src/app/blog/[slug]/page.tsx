@@ -1,17 +1,12 @@
 
-"use client";
-
-import { useState, useEffect } from 'react';
-import { useParams, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Image from "next/image";
 import { Post } from "@/lib/data";
 import { User as UserData } from '@/hooks/use-auth';
 import { Calendar, User } from 'lucide-react';
 import { format } from 'date-fns';
-import { Skeleton } from '@/components/ui/skeleton';
 import { getEmbedUrl } from "@/lib/utils";
-import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
-import { getFirebaseApp } from '@/lib/firebase';
+import { getSupabaseClient_server } from '@/lib/supabase';
 import Head from 'next/head';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
@@ -23,89 +18,54 @@ const Markdown = ({ content }: { content: string }) => {
         .join('')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
         .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
-        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-primary underline hover:no-underline">$1</a>'); // Links
+        .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-primary underline hover:no-underline" target="_blank" rel="noopener noreferrer">$1</a>'); // Links
 
     return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
 };
 
 
-export default function BlogPostPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const [post, setPost] = useState<Post | null | undefined>(undefined);
-  const [author, setAuthor] = useState<UserData | null>(null);
+async function getPost(slug: string): Promise<{ post: Post | null, author: UserData | null }> {
+    const supabase = getSupabaseClient_server();
+    const { data: post, error } = await supabase
+        .from('posts')
+        .select(`
+            *,
+            users(*)
+        `)
+        .eq('slug', slug)
+        .single();
+    
+    if (error || !post) {
+        return { post: null, author: null };
+    }
+
+    const { users: author, ...restOfPost } = post;
+
+    return { post: restOfPost as Post, author: author as UserData | null };
+}
+
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const { post, author } = await getPost(params.slug);
+
+  if (!post) {
+    notFound();
+  }
   
-  const embedUrl = post?.videoUrl ? getEmbedUrl(post.videoUrl) : null;
+  const embedUrl = post?.video_url ? getEmbedUrl(post.video_url) : null;
   
   const galleryImages = post ? [
-    { url: post.featuredImageUrl, hint: post.featuredImageHint || '' },
-    ...(post.galleryImages || [])
+    { url: post.featured_image_url, hint: post.featured_image_hint || '' },
+    ...(post.gallery_images || [])
   ] : [];
-
-  useEffect(() => {
-    const fetchPostAndAuthor = async () => {
-      if (!slug) return;
-      const db = getFirestore(getFirebaseApp());
-      
-      // Fetch Post
-      const postsRef = collection(db, "posts");
-      const q = query(postsRef, where("slug", "==", slug));
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        setPost(null);
-        return;
-      }
-      
-      const postDoc = querySnapshot.docs[0];
-      const postData = { id: postDoc.id, ...postDoc.data() } as Post;
-      setPost(postData);
-
-      // Fetch Author if authorId exists
-      if (postData.authorId) {
-        const authorRef = doc(db, "users", postData.authorId);
-        const authorSnap = await getDoc(authorRef);
-        if (authorSnap.exists()) {
-          setAuthor(authorSnap.data() as UserData);
-        }
-      }
-    };
-
-    if (slug) {
-      fetchPostAndAuthor();
-    }
-  }, [slug]);
 
   const getAuthorName = () => {
     if (!author) return "Unknown Author";
-    const fullName = `${author.firstName || ''} ${author.lastName || ''}`.trim();
-    if (fullName.length > 20) {
-        return `${fullName.substring(0, 20)}...`;
+    const authorName = author.name || "Unknown Author";
+    if (authorName.length > 20) {
+        return `${authorName.substring(0, 20)}...`;
     }
-    return fullName || "Unknown Author";
+    return authorName;
   };
-
-
-  if (post === undefined) {
-    return (
-        <div className="container mx-auto px-4 py-12 max-w-4xl">
-            <Skeleton className="h-12 w-3/4 mx-auto mb-4" />
-            <Skeleton className="h-6 w-1/2 mx-auto mb-8" />
-            <Skeleton className="h-96 w-full rounded-lg mb-8" />
-            <div className="space-y-4">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-5/6" />
-                <Skeleton className="h-5 w-full mt-4" />
-                <Skeleton className="h-5 w-2/3" />
-            </div>
-        </div>
-    )
-  }
-
-  if (post === null) {
-    notFound();
-  }
   
   const pageTitle = post.title;
   const pageDescription = post.content.substring(0, 160);
@@ -126,8 +86,8 @@ export default function BlogPostPage() {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              <time dateTime={post.publishedAt}>
-                {format(new Date(post.publishedAt), 'PPP')}
+              <time dateTime={post.published_at}>
+                {format(new Date(post.published_at), 'PPP')}
               </time>
             </div>
           </div>

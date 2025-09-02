@@ -15,21 +15,20 @@ import MediaPicker from "./MediaPicker";
 import { Separator } from "../ui/separator";
 
 const addUserSchema = z.object({
-    firstName: z.string().min(1, "First name is required."),
-    lastName: z.string().min(1, "Last name is required."),
+    name: z.string().min(1, "Name is required."),
     email: z.string().email("A valid email is required."),
     password: z.string().min(6, "Password must be at least 6 characters."),
     role: z.enum(["customer", "staff", "admin"]), // superadmin cannot be added manually
     username: z.string().min(3, "Username must be at least 3 characters.").regex(/^[a-z0-9_.-]+$/, "Username can only contain lowercase letters, numbers, and symbols: . _ -").optional().or(z.literal('')),
     phone: z.string().optional(),
-    photoURL: z.string().url().optional().or(z.literal('')),
+    photo_url: z.string().url().optional().or(z.literal('')),
 });
 
 
 type AddUserModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newUser: Omit<User, 'uid'>) => void;
+  onSave: (newUser: Omit<User, 'id'>) => void;
   defaultRole: UserRole;
 };
 
@@ -38,20 +37,19 @@ export default function AddUserModal({ isOpen, onClose, onSave, defaultRole }: A
   const form = useForm<z.infer<typeof addUserSchema>>({
     resolver: zodResolver(addUserSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      name: "",
       email: "",
       password: "",
       role: defaultRole,
       username: "",
       phone: "",
-      photoURL: "",
+      photo_url: "",
     },
   });
 
   // Reset form when modal opens with a new default role
   useEffect(() => {
-    form.reset({ role: defaultRole, firstName: "", lastName: "", email: "", password: "", username: "", phone: "", photoURL: "" });
+    form.reset({ role: defaultRole, name: "", email: "", password: "", username: "", phone: "", photo_url: "" });
   }, [isOpen, defaultRole, form]);
 
   if (!isOpen) {
@@ -59,7 +57,7 @@ export default function AddUserModal({ isOpen, onClose, onSave, defaultRole }: A
   }
 
   const onSubmit = (data: z.infer<typeof addUserSchema>) => {
-    const newUser: Omit<User, 'uid'> = {
+    const newUser: Omit<User, 'id'> = {
         ...data,
     };
     onSave(newUser);
@@ -76,17 +74,10 @@ export default function AddUserModal({ isOpen, onClose, onSave, defaultRole }: A
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 flex-grow overflow-y-auto pr-4 pl-1">
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" {...form.register("firstName")} />
-                    {form.formState.errors.firstName && <p className="text-destructive text-sm mt-1">{form.formState.errors.firstName.message}</p>}
-                </div>
-                 <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" {...form.register("lastName")} />
-                     {form.formState.errors.lastName && <p className="text-destructive text-sm mt-1">{form.formState.errors.lastName.message}</p>}
-                </div>
+            <div>
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" {...form.register("name")} />
+                {form.formState.errors.name && <p className="text-destructive text-sm mt-1">{form.formState.errors.name.message}</p>}
             </div>
              <div>
                 <Label htmlFor="email">Email</Label>
@@ -137,7 +128,7 @@ export default function AddUserModal({ isOpen, onClose, onSave, defaultRole }: A
             <div>
                 <Label>Profile Picture</Label>
                 <Controller
-                    name="photoURL"
+                    name="photo_url"
                     control={form.control}
                     render={({ field }) => (
                         <MediaPicker imageUrl={field.value || ""} onImageUrlChange={field.onChange} />

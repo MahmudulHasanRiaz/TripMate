@@ -21,10 +21,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, orderBy, query, serverTimestamp, writeBatch, where } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { emptyTrash } from "@/lib/actions";
@@ -41,19 +39,18 @@ export default function AdminBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
   const router = useRouter();
 
   const loadBookings = async () => {
     setLoading(true);
     try {
-      const bookingsCollection = collection(db, "bookings");
-      const q = query(bookingsCollection, orderBy("bookingDate", "desc"));
-      const snapshot = await getDocs(q);
-      const allBookings = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Booking));
+      const { data, error } = await supabase.from('bookings').select('*').order('booking_date', { ascending: false });
+      if (error) throw error;
+      const allData = data as Booking[];
       
-      setAllBookings(allBookings.filter(b => !b.deletedAt));
-      setTrashedBookings(allBookings.filter(b => !!b.deletedAt));
+      setAllBookings(allData.filter(b => !b.deleted_at));
+      setTrashedBookings(allData.filter(b => !!b.deleted_at));
 
     } catch (e) {
       console.error("Error fetching bookings:", e);
@@ -70,18 +67,21 @@ export default function AdminBookingsPage() {
   const handleAction = async (action: 'trash' | 'restore' | 'delete', bookingId: string) => {
     try {
         if (action === 'trash') {
-            await updateDoc(doc(db, 'bookings', bookingId), { deletedAt: serverTimestamp() });
+            const { error } = await supabase.from('bookings').update({ deleted_at: new Date().toISOString() }).eq('id', bookingId);
+            if (error) throw error;
             toast({ title: 'Booking moved to trash' });
         } else if (action === 'restore') {
-            await updateDoc(doc(db, 'bookings', bookingId), { deletedAt: null });
+            const { error } = await supabase.from('bookings').update({ deleted_at: null }).eq('id', bookingId);
+            if (error) throw error;
             toast({ title: 'Booking restored' });
         } else if (action === 'delete') {
-            await deleteDoc(doc(db, 'bookings', bookingId));
+            const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
+            if (error) throw error;
             toast({ title: 'Booking permanently deleted', variant: 'destructive' });
         }
         loadBookings();
-    } catch(e) {
-        toast({ title: 'Error', description: `Failed to ${action} booking.`, variant: 'destructive' });
+    } catch(e: any) {
+        toast({ title: 'Error', description: `Failed to ${action} booking. ${e.message}`, variant: 'destructive' });
     }
   };
   
@@ -98,8 +98,8 @@ export default function AdminBookingsPage() {
 
   const updateBookingStatus = async (bookingId: string, status: Booking['status']) => {
     try {
-      const bookingRef = doc(db, "bookings", bookingId);
-      await updateDoc(bookingRef, { status });
+      const { error } = await supabase.from('bookings').update({ status }).eq('id', bookingId);
+      if(error) throw error;
       toast({
         title: "Booking Status Updated",
         description: `Booking has been marked as ${status}.`
@@ -200,12 +200,12 @@ const BookingsTable = ({ loading, bookings, isTrash, onAction, onEdit, onStatusC
             {bookings.map((booking) => (
               <TableRow key={booking.id}>
                 <TableCell>
-                  <div className="font-medium">{booking.customerName}</div>
-                  <div className="text-sm text-muted-foreground">{booking.customerEmail}</div>
+                  <div className="font-medium">{booking.customer_name}</div>
+                  <div className="text-sm text-muted-foreground">{booking.customer_email}</div>
                 </TableCell>
-                <TableCell>{booking.packageName}</TableCell>
-                <TableCell>{format(new Date(booking.departureDate), "PPP")}</TableCell>
-                <TableCell>{format(new Date(booking.bookingDate), "PPP")}</TableCell>
+                <TableCell>{booking.package_name}</TableCell>
+                <TableCell>{format(new Date(booking.departure_date), "PPP")}</TableCell>
+                <TableCell>{format(new Date(booking.booking_date), "PPP")}</TableCell>
                 {!isTrash && 
                   <TableCell>
                     <Badge variant={statusColors[booking.status]}>{booking.status}</Badge>
@@ -223,14 +223,14 @@ const BookingsTable = ({ loading, bookings, isTrash, onAction, onEdit, onStatusC
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       {!isTrash && (
                         <>
-                          <DropdownMenuItem onClick={() => onEdit(booking.id)}>
+                          <DropdownMenuItem onClick={() => onEdit(booking.id!)}>
                             <Pencil className="mr-2 h-4 w-4" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSub>
                               <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
                               <DropdownMenuSubContent>
-                                  <DropdownMenuRadioGroup value={booking.status} onValueChange={(status) => onStatusChange(booking.id, status as Booking['status'])}>
+                                  <DropdownMenuRadioGroup value={booking.status} onValueChange={(status) => onStatusChange(booking.id!, status as Booking['status'])}>
                                       <DropdownMenuRadioItem value="Pending">Pending</DropdownMenuRadioItem>
                                       <DropdownMenuRadioItem value="Confirmed">Confirmed</DropdownMenuRadioItem>
                                       <DropdownMenuRadioItem value="Cancelled">Cancelled</DropdownMenuRadioItem>
@@ -242,7 +242,7 @@ const BookingsTable = ({ loading, bookings, isTrash, onAction, onEdit, onStatusC
 
                       {isTrash ? (
                         <>
-                            <DropdownMenuItem onClick={() => onAction('restore', booking.id)}>
+                            <DropdownMenuItem onClick={() => onAction('restore', booking.id!)}>
                                 <RotateCw className="mr-2 h-4 w-4" /> Restore
                             </DropdownMenuItem>
                             <AlertDialog>
@@ -256,13 +256,13 @@ const BookingsTable = ({ loading, bookings, isTrash, onAction, onEdit, onStatusC
                                     <AlertDialogDescription>This will permanently delete this booking. This action cannot be undone.</AlertDialogDescription>
                                     <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => onAction('delete', booking.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => onAction('delete', booking.id!)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
                         </>
                       ) : (
-                         <DropdownMenuItem className="text-destructive" onClick={() => onAction('trash', booking.id)}>
+                         <DropdownMenuItem className="text-destructive" onClick={() => onAction('trash', booking.id!)}>
                             <Trash className="mr-2 h-4 w-4" /> Move to Trash
                         </DropdownMenuItem>
                       )}

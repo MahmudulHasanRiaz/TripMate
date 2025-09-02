@@ -69,17 +69,9 @@ export default function LoginPage() {
 
     } catch (error: any) {
       console.error("Login Failed", error);
-      let errorMessage = "An unexpected error occurred. Please try again.";
-       if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = "Invalid credentials. Please try again.";
-      } else if (error.code === 'auth/configuration-not-found' || error.message.includes("Firebase is not initialized")) {
-        errorMessage = "Authentication service is not ready. Please try again in a moment.";
-      } else {
-        errorMessage = error.message; // Use custom error message from the hook
-      }
       toast({
         title: "Login Failed",
-        description: errorMessage,
+        description: error.message || "Invalid credentials. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -180,3 +172,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

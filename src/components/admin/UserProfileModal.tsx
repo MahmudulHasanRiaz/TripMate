@@ -19,11 +19,10 @@ import { Separator } from "@/components/ui/separator";
 
 const profileSchema = z.object({
     username: z.string().min(3, "Username must be at least 3 characters.").regex(/^[a-z0-9_.-]+$/, "Username can only contain lowercase letters, numbers, and symbols: . _ -"),
-    firstName: z.string().min(1, "First name is required."),
-    lastName: z.string().min(1, "Last name is required."),
+    name: z.string().min(1, "Name is required."),
     email: z.string().email(),
     phone: z.string().optional(),
-    photoURL: z.string().url().optional(),
+    photo_url: z.string().url().optional(),
     role: z.enum(["customer", "staff", "admin", "superadmin"]),
     newPassword: z.string().optional().or(z.literal('')),
 });
@@ -43,11 +42,10 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
     resolver: zodResolver(profileSchema),
     defaultValues: {
         username: user?.username || "",
-        firstName: user?.firstName || "",
-        lastName: user?.lastName || "",
+        name: user?.name || "",
         email: user?.email || "",
         phone: user?.phone || "",
-        photoURL: user?.photoURL || "",
+        photo_url: user?.photo_url || "",
         role: user?.role || "customer",
         newPassword: "",
     }
@@ -57,11 +55,10 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
     if (user) {
       form.reset({
         username: user.username || "",
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
+        name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
-        photoURL: user.photoURL || "",
+        photo_url: user.photo_url || "",
         role: user.role || "customer",
         newPassword: "",
       });
@@ -107,15 +104,15 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex-grow overflow-y-auto pr-4 pl-1 space-y-4">
             <div className="flex items-center gap-4">
                  <Avatar className="h-24 w-24">
-                    <AvatarImage src={form.watch('photoURL') || undefined} />
+                    <AvatarImage src={form.watch('photo_url') || undefined} />
                     <AvatarFallback className="text-3xl">
-                        {getInitials(form.watch('firstName'), form.watch('lastName'))}
+                        {getInitials(form.watch('name'))}
                     </AvatarFallback>
                 </Avatar>
                 <div className="w-full">
                     <Label>Profile Picture</Label>
                     <Controller
-                        name="photoURL"
+                        name="photo_url"
                         control={form.control}
                         render={({ field }) => (
                             <MediaPicker imageUrl={field.value || ""} onImageUrlChange={field.onChange} />
@@ -129,17 +126,10 @@ export default function UserProfileModal({ isOpen, onClose, user, onSave, isEdit
                 <Input id="username" {...form.register("username")} />
                 {form.formState.errors.username && <p className="text-destructive text-sm mt-1">{form.formState.errors.username.message}</p>}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" {...form.register("firstName")} />
-                    {form.formState.errors.firstName && <p className="text-destructive text-sm mt-1">{form.formState.errors.firstName.message}</p>}
-                </div>
-                 <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" {...form.register("lastName")} />
-                     {form.formState.errors.lastName && <p className="text-destructive text-sm mt-1">{form.formState.errors.lastName.message}</p>}
-                </div>
+            <div>
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" {...form.register("name")} />
+                {form.formState.errors.name && <p className="text-destructive text-sm mt-1">{form.formState.errors.name.message}</p>}
             </div>
              <div>
                 <Label htmlFor="email">Email Address</Label>

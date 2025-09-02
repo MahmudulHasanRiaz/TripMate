@@ -16,8 +16,7 @@ import { Post, Category } from "@/lib/data";
 import MediaPicker from "@/components/admin/MediaPicker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { PlusCircle, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -25,12 +24,12 @@ import { Separator } from "@/components/ui/separator";
 const postSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters long."),
   content: z.string().min(100, "Content must be at least 100 characters long."),
-  featuredImageUrl: z.string().url("A valid featured image URL is required."),
-  featuredImageHint: z.string().optional(),
+  featured_image_url: z.string().url("A valid featured image URL is required."),
+  featured_image_hint: z.string().optional(),
   slug: z.string().min(1, "Slug is required."),
-  videoUrl: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
-  categoryId: z.string().optional(),
-  galleryImages: z.array(z.object({
+  video_url: z.string().url("Must be a valid video URL.").optional().or(z.literal('')),
+  category_id: z.string().optional(),
+  gallery_images: z.array(z.object({
     url: z.string().url("A valid gallery image URL is required."),
     hint: z.string().optional(),
   })).optional(),
@@ -43,8 +42,7 @@ export default function EditPostPage() {
   const { toast } = useToast();
   const [post, setPost] = useState<Post | null | undefined>(undefined);
   const [categories, setCategories] = useState<Category[]>([]);
-  
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
 
   const form = useForm<z.infer<typeof postSchema>>({
     resolver: zodResolver(postSchema),
@@ -52,45 +50,43 @@ export default function EditPostPage() {
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "galleryImages",
+    name: "gallery_images",
   });
   
   useEffect(() => {
     const loadCategories = async () => {
-      const snapshot = await getDocs(collection(db, "categories"));
-      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+      const { data, error } = await supabase.from('categories').select('*');
+      if (error) console.error("Error loading categories", error);
+      else setCategories(data as Category[]);
     };
     loadCategories();
-  }, [db]);
+  }, [supabase]);
 
   useEffect(() => {
     const loadPost = async () => {
       if (!slug) return;
-      const postsRef = collection(db, "posts");
-      const q = query(postsRef, where("slug", "==", slug));
-      const querySnapshot = await getDocs(q);
+      const { data, error } = await supabase.from('posts').select('*').eq('slug', slug).single();
       
-      if (querySnapshot.empty) {
+      if (error) {
         setPost(null);
       } else {
-        const postDoc = querySnapshot.docs[0];
-        const postData = { id: postDoc.id, ...postDoc.data() } as Post;
+        const postData = data as Post;
         setPost(postData);
         form.reset({
           ...postData,
-          galleryImages: postData.galleryImages || [] // Ensure galleryImages is an array
+          gallery_images: postData.gallery_images || []
         });
       }
     };
     loadPost();
-  }, [slug, db, form]);
+  }, [slug, supabase, form]);
 
   const onSubmit = async (data: z.infer<typeof postSchema>) => {
-    if (!post) return;
+    if (!post || !post.id) return;
 
     try {
-      const postRef = doc(db, "posts", post.id);
-      await updateDoc(postRef, { ...data });
+      const { error } = await supabase.from('posts').update(data).eq('id', post.id);
+      if (error) throw error;
       toast({
         title: "Post Updated!",
         description: "Your blog post has been successfully updated.",
@@ -144,9 +140,9 @@ export default function EditPostPage() {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="categoryId">Category</Label>
+            <Label htmlFor="category_id">Category</Label>
              <Controller
-                name="categoryId"
+                name="category_id"
                 control={form.control}
                 render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value}>
@@ -176,18 +172,18 @@ export default function EditPostPage() {
           <div className="space-y-2">
             <Label>Featured Image</Label>
             <Controller
-              name="featuredImageUrl"
+              name="featured_image_url"
               control={form.control}
               render={({ field }) => (
                 <MediaPicker imageUrl={field.value} onImageUrlChange={field.onChange} />
               )}
             />
-            {form.formState.errors.featuredImageUrl && <p className="text-sm text-destructive">{form.formState.errors.featuredImageUrl.message}</p>}
+            {form.formState.errors.featured_image_url && <p className="text-sm text-destructive">{form.formState.errors.featured_image_url.message}</p>}
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="featuredImageHint">Featured Image Hint (for AI)</Label>
-            <Input id="featuredImageHint" {...form.register("featuredImageHint")} />
+            <Label htmlFor="featured_image_hint">Featured Image Hint (for AI)</Label>
+            <Input id="featured_image_hint" {...form.register("featured_image_hint")} />
           </div>
 
            <Separator />
@@ -199,7 +195,7 @@ export default function EditPostPage() {
                 <div className="flex-grow space-y-4">
                    <Controller
                     control={form.control}
-                    name={`galleryImages.${index}.url`}
+                    name={`gallery_images.${index}.url`}
                     render={({ field }) => (
                       <div className="space-y-2">
                         <Label>Image {index + 1}</Label>
@@ -209,7 +205,7 @@ export default function EditPostPage() {
                   />
                    <Controller
                     control={form.control}
-                    name={`galleryImages.${index}.hint`}
+                    name={`gallery_images.${index}.hint`}
                     render={({ field }) => (
                        <div className="space-y-2">
                         <Label>Image Hint {index + 1} (for AI)</Label>
@@ -237,9 +233,9 @@ export default function EditPostPage() {
 
 
           <div className="space-y-2">
-            <Label htmlFor="videoUrl">Video URL (Optional)</Label>
-            <Input id="videoUrl" {...form.register("videoUrl")} placeholder="https://www.youtube.com/watch?v=..." />
-            {form.formState.errors.videoUrl && <p className="text-sm text-destructive">{form.formState.errors.videoUrl.message}</p>}
+            <Label htmlFor="video_url">Video URL (Optional)</Label>
+            <Input id="video_url" {...form.register("video_url")} placeholder="https://www.youtube.com/watch?v=..." />
+            {form.formState.errors.video_url && <p className="text-sm text-destructive">{form.formState.errors.video_url.message}</p>}
           </div>
 
           <div className="flex justify-end gap-2">

@@ -21,27 +21,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import MediaDetailModal from '@/components/admin/MediaDetailModal';
-import { getFirestore, collection, getDocs, doc, updateDoc, writeBatch, query, orderBy, serverTimestamp, Timestamp, addDoc } from 'firebase/firestore';
-import { getFirebaseApp } from '@/lib/firebase';
+import type { MediaFile } from '@/lib/data';
+import { getSupabaseClient_client } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export type MediaType = "image" | "video" | "pdf" | "file";
-
-export type MediaFile = {
-  id: string;
-  name: string;
-  type: MediaType;
-  url: string;
-  size: string;
-  uploadedAt: Timestamp;
-  modifiedAt?: Timestamp;
-  altText?: string;
-  deletedAt?: Timestamp | null;
-  dataAiHint?: string;
-};
-
-
-const getIconForType = (type: MediaType) => {
+const getIconForType = (type: MediaFile['type']) => {
     switch (type) {
         case "image": return <ImageIcon className="h-10 w-10 text-muted-foreground" />;
         case "video": return <Video className="h-10 w-10 text-muted-foreground" />;
@@ -51,18 +35,18 @@ const getIconForType = (type: MediaType) => {
 }
 
 const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { file: MediaFile, onSelect: (id: string, checked: boolean) => void, isSelected: boolean, onAction: (action: "copy" | "trash" | "restore" | "delete", id: string) => void, onCardClick: (file: MediaFile) => void }) => {
-    const isTrashed = !!file.deletedAt;
+    const isTrashed = !!file.deleted_at;
     const [daysLeft, setDaysLeft] = useState<number | null>(null);
 
     useEffect(() => {
-        if (isTrashed && file.deletedAt) {
-            const deletedDate = file.deletedAt.toDate();
+        if (isTrashed && file.deleted_at) {
+            const deletedDate = new Date(file.deleted_at);
             const daysInTrash = Math.ceil((Date.now() - deletedDate.getTime()) / (1000 * 60 * 60 * 24));
             setDaysLeft(30 - daysInTrash);
         }
-    }, [file.deletedAt, isTrashed]);
+    }, [file.deleted_at, isTrashed]);
 
-    const imageProps = file.dataAiHint ? { "data-ai-hint": file.dataAiHint } : {};
+    const imageProps = file.data_ai_hint ? { "data-ai-hint": file.data_ai_hint } : {};
 
     const handleCheckboxClick = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card click when checkbox is clicked
@@ -130,7 +114,7 @@ const MediaFileCard = ({ file, onSelect, isSelected, onAction, onCardClick }: { 
             </div>
           <div className="aspect-square bg-muted flex items-center justify-center">
              {file.type === 'image' ? (
-                 <Image src={file.url} alt={file.altText || file.name} width={200} height={200} className="object-cover h-full w-full" {...imageProps} />
+                 <Image src={file.url} alt={file.alt_text || file.name} width={200} height={200} className="object-cover h-full w-full" {...imageProps} />
              ) : (
                 getIconForType(file.type)
              )}
@@ -194,18 +178,17 @@ export default function AdminMediaPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const db = getFirestore(getFirebaseApp());
-  const mediaCollection = collection(db, "media");
+  const supabase = getSupabaseClient_client();
 
   const fetchMedia = async () => {
     setLoading(true);
     try {
-        const allFilesQuery = query(mediaCollection, orderBy("uploadedAt", "desc"));
-        const snapshot = await getDocs(allFilesQuery);
-        const allFiles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MediaFile));
+        const { data, error } = await supabase.from('media').select('*').order('uploaded_at', { ascending: false });
+        if (error) throw error;
         
-        const active = allFiles.filter(file => !file.deletedAt);
-        const trashed = allFiles.filter(file => !!file.deletedAt);
+        const allFiles = data as MediaFile[];
+        const active = allFiles.filter(file => !file.deleted_at);
+        const trashed = allFiles.filter(file => !!file.deleted_at);
         
         setMediaFiles(active);
         setTrashedFiles(trashed);
@@ -252,24 +235,25 @@ export default function AdminMediaPage() {
             break;
         case "trash":
             try {
-                await updateDoc(doc(db, "media", id), { deletedAt: serverTimestamp() });
+                const { error } = await supabase.from('media').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+                if(error) throw error;
                 toast({ title: "File Moved to Trash" });
                 fetchMedia();
-            } catch (e) {
-                toast({ title: "Error", description: "Could not move file to trash.", variant: "destructive" });
+            } catch (e: any) {
+                toast({ title: "Error", description: `Could not move file to trash: ${e.message}`, variant: "destructive" });
             }
             break;
         case "restore":
              try {
-                await updateDoc(doc(db, "media", id), { deletedAt: null });
+                const { error } = await supabase.from('media').update({ deleted_at: null }).eq('id', id);
+                if(error) throw error;
                 toast({ title: "File Restored" });
                 fetchMedia();
-            } catch (e) {
-                toast({ title: "Error", description: "Could not restore file.", variant: "destructive" });
+            } catch (e: any) {
+                toast({ title: "Error", description: `Could not restore file: ${e.message}`, variant: "destructive" });
             }
             break;
         case "delete":
-            // TODO: Implement actual R2 deletion API call
             toast({ title: "Permanent Delete Not Implemented", description: "This requires server-side logic to delete from R2."});
             break;
      }
@@ -279,38 +263,28 @@ export default function AdminMediaPage() {
   const handleBulkAction = async (action: "trash" | "restore" | "delete") => {
     if (selectedFiles.length === 0) return;
     
-    const batch = writeBatch(db);
-
     try {
         if (action === "trash") {
-            selectedFiles.forEach(id => {
-                const docRef = doc(db, "media", id);
-                batch.update(docRef, { deletedAt: serverTimestamp() });
-            });
-            await batch.commit();
+            const { error } = await supabase.from('media').update({ deleted_at: new Date().toISOString() }).in('id', selectedFiles);
+            if (error) throw error;
             toast({ title: `${selectedFiles.length} file(s) moved to Trash.` });
         } else if (action === "restore") {
-            selectedFiles.forEach(id => {
-                const docRef = doc(db, "media", id);
-                batch.update(docRef, { deletedAt: null });
-            });
-            await batch.commit();
+            const { error } = await supabase.from('media').update({ deleted_at: null }).in('id', selectedFiles);
+            if (error) throw error;
             toast({ title: `${selectedFiles.length} file(s) restored.` });
         } else if (action === "delete") {
-            // TODO: Implement actual R2 deletion API call for multiple files
             toast({ title: "Permanent Delete Not Implemented", description: "This requires server-side logic to delete from R2."});
             return;
         }
         
         fetchMedia(); // Refresh data from Firestore
         setSelectedFiles([]);
-    } catch(e) {
-        toast({ title: "Error", description: "Could not perform bulk action.", variant: "destructive" });
+    } catch(e: any) {
+        toast({ title: "Error", description: `Could not perform bulk action: ${e.message}`, variant: "destructive" });
     }
   };
 
   const handleEmptyTrash = () => {
-    // TODO: Implement actual R2 deletion API call for all trashed files
     toast({ title: "Empty Trash Not Implemented", description: "This requires server-side logic to delete from R2."});
     setSelectedFiles([]);
   }
@@ -336,7 +310,6 @@ export default function AdminMediaPage() {
   
     for (const file of Array.from(files)) {
       try {
-        // 1. Get pre-signed URL
         const presignResponse = await fetch('/api/upload', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -353,7 +326,6 @@ export default function AdminMediaPage() {
   
         const { uploadUrl, finalUrl } = await presignResponse.json();
   
-        // 2. Upload the file to R2
         const uploadResponse = await fetch(uploadUrl, {
           method: 'PUT',
           headers: { 'Content-Type': file.type },
@@ -365,20 +337,18 @@ export default function AdminMediaPage() {
            throw new Error(`File upload to R2 failed. R2 responded with: ${errorBody || uploadResponse.statusText}`);
         }
 
-        // 3. Save metadata to Firestore
         const fileType = file.type.split('/')[0] || 'file';
-        await addDoc(collection(db, "media"), {
+        const { error: insertError } = await supabase.from("media").insert({
             name: file.name,
             type: fileType as MediaType,
             url: finalUrl,
             size: formatFileSize(file.size),
-            altText: "",
-            dataAiHint: "",
-            uploadedAt: serverTimestamp(),
-            modifiedAt: serverTimestamp(),
-            deletedAt: null,
+            alt_text: "",
+            data_ai_hint: "",
+            deleted_at: null,
         });
 
+        if (insertError) throw insertError;
         uploadSuccessCount++;
   
       } catch (error) {
@@ -392,7 +362,7 @@ export default function AdminMediaPage() {
             title: "Uploads Complete",
             description: `${uploadSuccessCount} of ${files.length} file(s) uploaded successfully.`
         });
-        fetchMedia(); // Refresh the library
+        fetchMedia();
     }
     
     setIsUploading(false);
@@ -408,19 +378,17 @@ export default function AdminMediaPage() {
 
   const handleSaveFileDetails = async (updatedFile: MediaFile) => {
      try {
-        const fileToSave = { ...updatedFile, modifiedAt: serverTimestamp() };
-        // We need to remove the id from the object before saving as it's the doc id
-        const { id, ...dataToSave } = fileToSave;
-        
-        await updateDoc(doc(db, "media", id), dataToSave as any);
+        const { id, ...dataToSave } = updatedFile;
+        const { error } = await supabase.from('media').update(dataToSave).eq('id', id);
+        if (error) throw error;
 
         setDetailModalOpen(false);
         fetchMedia();
         toast({ title: "File details saved!" });
 
-     } catch (e) {
+     } catch (e: any) {
         console.error("Failed to save file details", e);
-        toast({ title: "Error", description: "Could not save file details.", variant: "destructive" });
+        toast({ title: "Error", description: `Could not save file details: ${e.message}`, variant: "destructive" });
      }
   };
 

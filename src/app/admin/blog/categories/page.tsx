@@ -12,8 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminBlogCategoriesPage() {
@@ -23,9 +22,7 @@ export default function AdminBlogCategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [currentCategory, setCurrentCategory] = useState<Partial<Category>>({});
   const { toast } = useToast();
-
-  const db = getFirestore(getFirebaseApp());
-  const categoriesCollection = collection(db, "categories");
+  const supabase = getSupabaseClient_client();
 
   const generateSlug = (name: string) => {
     return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
@@ -34,9 +31,9 @@ export default function AdminBlogCategoriesPage() {
   const loadCategories = async () => {
     setLoading(true);
     try {
-      const snapshot = await getDocs(categoriesCollection);
-      const catList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-      setCategories(catList);
+      const { data, error } = await supabase.from('categories').select('*');
+      if (error) throw error;
+      setCategories(data as Category[]);
     } catch (e) {
       toast({ title: "Error", description: "Could not fetch categories.", variant: "destructive" });
     } finally {
@@ -62,7 +59,8 @@ export default function AdminBlogCategoriesPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, "categories", id));
+      const { error } = await supabase.from('categories').delete().eq('id', id);
+      if (error) throw error;
       toast({
           title: "Category Deleted",
           description: "The category has been successfully deleted.",
@@ -85,18 +83,19 @@ export default function AdminBlogCategoriesPage() {
     }
     
     const slug = currentCategory.slug || generateSlug(currentCategory.name);
-    const dataToSave = { ...currentCategory, slug };
+    const dataToSave = { ...currentCategory, slug, id: editingCategory ? editingCategory.id : slug };
 
     try {
         if (editingCategory) {
-          const catDoc = doc(db, "categories", editingCategory.id);
-          await updateDoc(catDoc, dataToSave);
+          const { error } = await supabase.from('categories').update(dataToSave).eq('id', editingCategory.id);
+          if (error) throw error;
           toast({
             title: "Category Updated",
             description: "The category has been successfully updated.",
           });
         } else {
-          await addDoc(categoriesCollection, dataToSave);
+          const { error } = await supabase.from('categories').insert(dataToSave);
+          if (error) throw error;
           toast({
             title: "Category Added",
             description: `"${currentCategory.name}" has been added.`,

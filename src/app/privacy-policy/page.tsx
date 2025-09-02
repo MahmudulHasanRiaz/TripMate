@@ -1,13 +1,8 @@
 
-"use client";
-
-import { useState, useEffect } from "react";
-import { Loader2 } from "lucide-react";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
-import { SitePagesSettings } from "@/lib/data";
-import { Skeleton } from "@/components/ui/skeleton";
+import { SitePage } from "@/lib/data";
+import { getSupabaseClient_server } from "@/lib/supabase";
 import Head from "next/head";
+import { notFound } from "next/navigation";
 
 // A simple Markdown to HTML converter
 const Markdown = ({ content }: { content: string }) => {
@@ -18,48 +13,28 @@ const Markdown = ({ content }: { content: string }) => {
     return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
 };
 
-export default function PrivacyPolicyPage() {
-    const [pageContent, setPageContent] = useState<SitePagesSettings['privacy'] | null>(null);
-    const [loading, setLoading] = useState(true);
+async function getPrivacyPolicyContent(): Promise<SitePage | null> {
+    const supabase = getSupabaseClient_server();
+    const { data, error } = await supabase
+        .from('site_pages')
+        .select('*')
+        .eq('id', 'privacy-policy')
+        .maybeSingle();
 
-    useEffect(() => {
-        const fetchContent = async () => {
-            setLoading(true);
-            try {
-                const db = getFirestore(getFirebaseApp());
-                const settingsDoc = await getDoc(doc(db, "settings", "sitePages"));
-                if (settingsDoc.exists()) {
-                    const data = settingsDoc.data() as SitePagesSettings;
-                    setPageContent(data.privacy);
-                }
-            } catch (error) {
-                console.error("Error fetching Privacy Policy content:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchContent();
-    }, []);
+    if(error) {
+        console.error("Error fetching Privacy Policy content:", error);
+        return null;
+    }
+    return data;
+}
 
-    if (loading) {
-         return (
-            <div className="container mx-auto px-4 py-16 max-w-4xl">
-                 <Skeleton className="h-12 w-3/4 mx-auto mb-12" />
-                 <div className="space-y-4">
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-5 w-5/6" />
-                    <Skeleton className="h-5 w-full mt-6" />
-                    <Skeleton className="h-5 w-2/3" />
-                </div>
-            </div>
-        );
+export default async function PrivacyPolicyPage() {
+    const pageContent = await getPrivacyPolicyContent();
+
+    if (!pageContent || pageContent.status !== 'published') {
+        notFound();
     }
     
-    if (!pageContent) {
-        return <div className="text-center py-20">Content not found.</div>;
-    }
-
     const pageDescription = pageContent.content.substring(0, 160);
 
     return (

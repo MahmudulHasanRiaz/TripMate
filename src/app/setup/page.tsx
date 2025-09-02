@@ -59,15 +59,10 @@ export default function SetupPage() {
   async function onSubmit(values: z.infer<typeof setupSchema>) {
     setIsLoading(true);
     try {
-        const nameParts = values.name.split(' ');
-        const firstName = nameParts[0] || values.name;
-        const lastName = nameParts.slice(1).join(' ') || '';
-
       const result = await setupSuperAdminAndSeed({
         email: values.email,
         password: values.password,
-        firstName,
-        lastName,
+        name: values.name,
         role: "superadmin" // Role is fixed for setup
       });
 

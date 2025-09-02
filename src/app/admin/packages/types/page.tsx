@@ -14,8 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import MediaPicker from "@/components/admin/MediaPicker";
-import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminPackageTypesPage() {
@@ -25,9 +24,7 @@ export default function AdminPackageTypesPage() {
   const [editingType, setEditingType] = useState<PackageType | null>(null);
   const [currentType, setCurrentType] = useState<Partial<PackageType>>({});
   const { toast } = useToast();
-
-  const db = getFirestore(getFirebaseApp());
-  const typesCollection = collection(db, "packageTypes");
+  const supabase = getSupabaseClient_client();
 
   const generateSlug = (name: string) => {
     return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-');
@@ -36,11 +33,11 @@ export default function AdminPackageTypesPage() {
   const loadPackageTypes = async () => {
     setLoading(true);
     try {
-      const snapshot = await getDocs(typesCollection);
-      const typesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PackageType));
-      setPackageTypes(typesList);
-    } catch (e) {
-      toast({ title: "Error", description: "Could not fetch package types.", variant: "destructive" });
+      const { data, error } = await supabase.from('package_types').select('*');
+      if (error) throw error;
+      setPackageTypes(data as PackageType[]);
+    } catch (e: any) {
+      toast({ title: "Error", description: `Could not fetch package types: ${e.message}`, variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -55,7 +52,7 @@ export default function AdminPackageTypesPage() {
     setCurrentType({
       name: "",
       slug: "",
-      imageUrl: "https://placehold.co/600x400.png"
+      image_url: "https://placehold.co/600x400.png"
     });
     setIsDialogOpen(true);
   }
@@ -68,15 +65,16 @@ export default function AdminPackageTypesPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteDoc(doc(db, "packageTypes", id));
+      const { error } = await supabase.from('package_types').delete().eq('id', id);
+      if (error) throw error;
       toast({
           title: "Package Type Deleted",
           description: "The package type has been successfully deleted.",
           variant: "destructive"
       });
       loadPackageTypes();
-    } catch (e) {
-       toast({ title: "Error", description: "Could not delete package type.", variant: "destructive" });
+    } catch (e: any) {
+       toast({ title: "Error", description: `Could not delete package type: ${e.message}`, variant: "destructive" });
     }
   }
 
@@ -91,21 +89,19 @@ export default function AdminPackageTypesPage() {
     }
     
     const slug = currentType.slug || generateSlug(currentType.name);
-    const dataToSave = { ...currentType, slug };
+    const dataToSave = { ...currentType, slug, id: editingType ? editingType.id : slug };
 
     try {
       if (editingType) {
-        const typeDoc = doc(db, "packageTypes", editingType.id);
-        await updateDoc(typeDoc, dataToSave);
+        const { error } = await supabase.from('package_types').update(dataToSave).eq('id', editingType.id);
+        if (error) throw error;
         toast({
           title: "Package Type Updated",
           description: "The package type has been successfully updated.",
         });
       } else {
-        await addDoc(typesCollection, {
-            ...dataToSave,
-            imageUrl: currentType.imageUrl || "https://placehold.co/600x400.png"
-        });
+        const { error } = await supabase.from('package_types').insert(dataToSave);
+        if (error) throw error;
         toast({
           title: "Package Type Added",
           description: `"${currentType.name}" has been added.`,
@@ -115,8 +111,8 @@ export default function AdminPackageTypesPage() {
       setIsDialogOpen(false);
       setCurrentType({});
       setEditingType(null);
-    } catch (e) {
-      toast({ title: "Error", description: "Could not save package type.", variant: "destructive" });
+    } catch (e: any) {
+      toast({ title: "Error", description: `Could not save package type: ${e.message}`, variant: "destructive" });
     }
   };
 
@@ -155,7 +151,7 @@ export default function AdminPackageTypesPage() {
                   <TableRow key={type.id}>
                      <TableCell>
                       <Image 
-                        src={type.imageUrl} 
+                        src={type.image_url} 
                         alt={type.name} 
                         width={64} 
                         height={48} 
@@ -220,8 +216,8 @@ export default function AdminPackageTypesPage() {
                  <div className="space-y-2">
                   <Label>Image</Label>
                   <MediaPicker 
-                    imageUrl={currentType.imageUrl || ""}
-                    onImageUrlChange={(url) => setCurrentType(prev => ({...prev, imageUrl: url}))}
+                    imageUrl={currentType.image_url || ""}
+                    onImageUrlChange={(url) => setCurrentType(prev => ({...prev, image_url: url}))}
                   />
                 </div>
             </div>

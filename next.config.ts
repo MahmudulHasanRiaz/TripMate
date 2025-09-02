@@ -1,8 +1,8 @@
 
 import type {NextConfig} from 'next';
 
-const r2Hostname = process.env.NEXT_PUBLIC_R2_PUBLIC_URL
-  ? new URL(process.env.NEXT_PUBLIC_R2_PUBLIC_URL).hostname
+const r2Hostname = process.env.R2_PUBLIC_URL
+  ? new URL(process.env.R2_PUBLIC_URL).hostname
   : undefined;
 
 const remotePatterns = [
@@ -73,7 +73,11 @@ if (r2Hostname) {
 
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  experimental: {
+    // This is required to allow the Next.js dev server to work inside of
+    // Firebase Studio. This is not needed for production builds.
+    allowedDevOrigins: ['*.cloudworkstations.dev'],
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

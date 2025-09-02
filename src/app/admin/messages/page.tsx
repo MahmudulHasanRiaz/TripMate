@@ -12,8 +12,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy, serverTimestamp, where, writeBatch } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { emptyTrash } from "@/lib/actions";
@@ -21,32 +20,32 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 function MessageRow({ message, handleRowClick, markAsRead, onAction }: { message: ContactMessage, handleRowClick: (msg: ContactMessage) => void, markAsRead: (id: string, isRead: boolean) => void, onAction: (action: 'trash' | 'restore' | 'delete', id: string) => void }) {
     const [receivedAt, setReceivedAt] = useState("");
-    const isTrashed = !!message.deletedAt;
+    const isTrashed = !!message.deleted_at;
 
     useEffect(() => {
-        setReceivedAt(formatDistanceToNow(new Date(message.submittedAt), { addSuffix: true }));
-    }, [message.submittedAt]);
+        setReceivedAt(formatDistanceToNow(new Date(message.submitted_at), { addSuffix: true }));
+    }, [message.submitted_at]);
 
     return (
         <TableRow 
             key={message.id} 
             onClick={() => handleRowClick(message)} 
-            className={cn("cursor-pointer", !message.isRead && !isTrashed && "font-bold")}
+            className={cn("cursor-pointer", !message.is_read && !isTrashed && "font-bold")}
         >
             <TableCell className="text-center">
-                {message.isRead || isTrashed ? <MailOpen className="h-5 w-5 text-muted-foreground" /> : <Mail className="h-5 w-5 text-primary" />}
+                {message.is_read || isTrashed ? <MailOpen className="h-5 w-5 text-muted-foreground" /> : <Mail className="h-5 w-5 text-primary" />}
             </TableCell>
             <TableCell>
                 <div className="flex flex-col">
                     <span>{message.name}</span>
-                    <span className={cn("text-xs", message.isRead || isTrashed ? "text-muted-foreground" : "")}>{message.email}</span>
+                    <span className={cn("text-xs", message.is_read || isTrashed ? "text-muted-foreground" : "")}>{message.email}</span>
                 </div>
             </TableCell>
             <TableCell>{message.subject}</TableCell>
             <TableCell>
                 <div className="flex flex-col">
                     <span>{receivedAt || "..."}</span>
-                    <span className={cn("text-xs", message.isRead || isTrashed ? "text-muted-foreground" : "")}>{format(new Date(message.submittedAt), "PPpp")}</span>
+                    <span className={cn("text-xs", message.is_read || isTrashed ? "text-muted-foreground" : "")}>{format(new Date(message.submitted_at), "PPpp")}</span>
                 </div>
             </TableCell>
             <TableCell className="text-right">
@@ -58,14 +57,14 @@ function MessageRow({ message, handleRowClick, markAsRead, onAction }: { message
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                          {!isTrashed && (
-                            <DropdownMenuItem onClick={(e) => {e.stopPropagation(); markAsRead(message.id, !message.isRead);}}>
-                                {message.isRead ? <Mail className="mr-2 h-4 w-4"/> : <MailOpen className="mr-2 h-4 w-4"/>}
-                                Mark as {message.isRead ? "Unread" : "Read"}
+                            <DropdownMenuItem onClick={(e) => {e.stopPropagation(); markAsRead(message.id!, !message.is_read);}}>
+                                {message.is_read ? <Mail className="mr-2 h-4 w-4"/> : <MailOpen className="mr-2 h-4 w-4"/>}
+                                Mark as {message.is_read ? "Unread" : "Read"}
                             </DropdownMenuItem>
                          )}
                          {isTrashed ? (
                             <>
-                                <DropdownMenuItem onClick={() => onAction("restore", message.id)}>
+                                <DropdownMenuItem onClick={() => onAction("restore", message.id!)}>
                                     <RotateCw className="mr-2 h-4 w-4" /> Restore
                                 </DropdownMenuItem>
                                  <AlertDialog>
@@ -79,13 +78,13 @@ function MessageRow({ message, handleRowClick, markAsRead, onAction }: { message
                                         <AlertDialogDescription>This will permanently delete this message. This action cannot be undone.</AlertDialogDescription>
                                         <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => onAction('delete', message.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => onAction('delete', message.id!)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
                             </>
                          ) : (
-                             <DropdownMenuItem onClick={(e) => {e.stopPropagation(); onAction('trash', message.id)}} className="text-destructive">
+                             <DropdownMenuItem onClick={(e) => {e.stopPropagation(); onAction('trash', message.id!)}} className="text-destructive">
                                 <Trash className="mr-2 h-4 w-4"/> Move to Trash
                             </DropdownMenuItem>
                          )}
@@ -103,20 +102,20 @@ export default function AdminMessagesPage() {
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null);
   const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
 
   const loadMessages = async () => {
     setLoading(true);
     try {
-      const messagesCollection = collection(db, "contactMessages");
-      const q = query(messagesCollection, orderBy("submittedAt", "desc"));
-      const snapshot = await getDocs(q);
-      const allData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as ContactMessage));
+      const { data, error } = await supabase.from('contact_messages').select('*').order('submitted_at', { ascending: false });
+      if(error) throw error;
 
-      setAllMessages(allData.filter(m => !m.deletedAt));
-      setTrashedMessages(allData.filter(m => !!m.deletedAt));
+      const allData = data as ContactMessage[];
 
-    } catch(e) {
+      setAllMessages(allData.filter(m => !m.deleted_at));
+      setTrashedMessages(allData.filter(m => !!m.deleted_at));
+
+    } catch(e: any) {
       console.error("Failed to load messages:", e);
       toast({ title: "Error", description: "Could not fetch messages.", variant: "destructive" });
     } finally {
@@ -130,36 +129,39 @@ export default function AdminMessagesPage() {
 
   const handleRowClick = (message: ContactMessage) => {
     setSelectedMessage(message);
-    if (!message.isRead && !message.deletedAt) {
-      markAsRead(message.id, true);
+    if (!message.is_read && !message.deleted_at) {
+      markAsRead(message.id!, true);
     }
   };
 
   const markAsRead = async (messageId: string, isRead: boolean) => {
     try {
-        const messageRef = doc(db, "contactMessages", messageId);
-        await updateDoc(messageRef, { isRead });
+        const { error } = await supabase.from('contact_messages').update({ is_read: isRead }).eq('id', messageId);
+        if (error) throw error;
         loadMessages(); 
-    } catch(e) {
-        console.error("Failed to update message status:", e);
+    } catch(e: any) {
+        console.error("Failed to update message status:", e.message);
     }
   };
   
   const handleAction = async (action: 'trash' | 'restore' | 'delete', id: string) => {
      try {
         if (action === 'trash') {
-            await updateDoc(doc(db, 'contactMessages', id), { deletedAt: serverTimestamp() });
+            const { error } = await supabase.from('contact_messages').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+            if (error) throw error;
             toast({ title: 'Message moved to trash' });
         } else if (action === 'restore') {
-            await updateDoc(doc(db, 'contactMessages', id), { deletedAt: null });
+            const { error } = await supabase.from('contact_messages').update({ deleted_at: null }).eq('id', id);
+            if (error) throw error;
             toast({ title: 'Message restored' });
         } else if (action === 'delete') {
-            await deleteDoc(doc(db, 'contactMessages', id));
+            const { error } = await supabase.from('contact_messages').delete().eq('id', id);
+            if (error) throw error;
             toast({ title: 'Message permanently deleted', variant: 'destructive' });
         }
         loadMessages();
-    } catch(e) {
-        toast({ title: 'Error', description: `Failed to ${action} message.`, variant: 'destructive' });
+    } catch(e: any) {
+        toast({ title: 'Error', description: `Failed to ${action} message: ${e.message}`, variant: 'destructive' });
     }
   }
 
@@ -281,7 +283,7 @@ export default function AdminMessagesPage() {
                         />
                       )) : (
                         <TableRow>
-                          <TableCell colSpan={5} className="h-24 text-center">
+                          <TableCell colSpan={5} className="text-center h-24">
                              The trash is empty.
                           </TableCell>
                         </TableRow>

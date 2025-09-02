@@ -53,17 +53,17 @@ export default function Footer() {
           {/* Column 1: Logo, Description, Socials */}
           <div className="md:col-span-1 space-y-4">
             <Link href="/" className="flex items-center gap-2">
-                {settings?.logoUrl ? (
-                    <Image src={settings.logoUrl} alt={settings.siteTitle} width={32} height={32} className="h-8 w-8" />
+                {settings?.logo_url ? (
+                    <Image src={settings.logo_url} alt={settings.site_title} width={32} height={32} className="h-8 w-8" />
                 ) : (
                     <Logo className="h-8 w-8 text-primary" />
                 )}
-                <span className="font-bold font-headline text-xl">{settings?.siteTitle || "TripMate"}</span>
+                <span className="font-bold font-headline text-xl">{settings?.site_title || "TripMate"}</span>
             </Link>
-            <p className="text-sm text-muted-foreground">{settings?.footerDescription}</p>
-             {settings?.socialLinks?.length > 0 && (
+            <p className="text-sm text-muted-foreground">{settings?.footer_description}</p>
+             {settings?.social_links?.length > 0 && (
                 <div className="flex space-x-2">
-                    {settings.socialLinks.map((link: SocialLink) => (
+                    {settings.social_links.map((link: SocialLink) => (
                         <Button key={link.id} variant="ghost" size="icon" asChild>
                             <Link href={link.url} target="_blank" rel="noopener noreferrer">
                                 <SocialIcon platform={link.platform} />
@@ -75,9 +75,9 @@ export default function Footer() {
           </div>
           {/* Column 2: Quick Links */}
           <div>
-            <h3 className="font-headline font-semibold mb-4">{settings?.quickLinks?.title}</h3>
+            <h3 className="font-headline font-semibold mb-4">{settings?.quick_links?.title}</h3>
             <ul className="space-y-2 text-sm">
-               {settings?.quickLinks?.links.map((link: FooterLink) => (
+               {settings?.quick_links?.links.map((link: FooterLink) => (
                  <li key={link.id}>
                     <Link href={link.url} className="text-muted-foreground hover:text-primary">
                         {link.label}
@@ -88,9 +88,9 @@ export default function Footer() {
           </div>
           {/* Column 3: Support Links */}
           <div>
-            <h3 className="font-headline font-semibold mb-4">{settings?.supportLinks?.title}</h3>
+            <h3 className="font-headline font-semibold mb-4">{settings?.support_links?.title}</h3>
             <ul className="space-y-2 text-sm">
-               {settings?.supportLinks?.links.map((link: FooterLink) => (
+               {settings?.support_links?.links.map((link: FooterLink) => (
                  <li key={link.id}>
                     <Link href={link.url} className="text-muted-foreground hover:text-primary">
                         {link.label}
@@ -102,9 +102,9 @@ export default function Footer() {
           {/* Column 4: Map */}
           <div>
             <h3 className="font-headline font-semibold mb-4">Our Location</h3>
-            {settings?.googleMapEmbedCode ? (
+            {settings?.google_map_embed_code ? (
                  <div className="aspect-video w-full overflow-hidden rounded-md border shadow-md"
-                    dangerouslySetInnerHTML={{ __html: settings.googleMapEmbedCode }}
+                    dangerouslySetInnerHTML={{ __html: settings.google_map_embed_code }}
                  />
             ) : (
                 <p className="text-sm text-muted-foreground">Location map will be shown here.</p>
@@ -112,7 +112,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-8 border-t border-border pt-4 text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} {settings?.siteTitle || "TripMate"}. All Rights Reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {settings?.site_title || "TripMate"}. All Rights Reserved.</p>
         </div>
       </div>
     </footer>

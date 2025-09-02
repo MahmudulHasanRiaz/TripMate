@@ -35,33 +35,29 @@ async function checkSetupStatus(request: NextRequest): Promise<boolean> {
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    // Skip middleware for static files, API routes (except the ones we need to check), and Next.js internals
+    // Allow access to static files, Next.js internals, and specific API routes
     if (
-        pathname.startsWith('/_next') || 
-        pathname.startsWith('/api/auth') || // Allow all auth routes
+        pathname.startsWith('/_next') ||
+        pathname.startsWith('/api/setup-check') ||
         pathname.match(/\.(svg|png|jpg|jpeg|gif|ico|css|js)$/)
     ) {
         return NextResponse.next();
     }
     
-    // Specifically allow the setup-check API routes themselves
-    if (pathname.startsWith('/api/setup-check') || pathname.startsWith('/api/admin/check-firestore-index')) {
-        return NextResponse.next();
-    }
-    
-    // For setup page itself, we don't need to run the check again
-    if (pathname === '/setup') {
-        const isSetupComplete = await checkSetupStatus(request);
-        if (isSetupComplete) {
+    const isSetupComplete = await checkSetupStatus(request);
+    const isOnSetupPage = pathname.startsWith('/setup');
+
+    if (!isSetupComplete) {
+        // If setup is not complete, ONLY allow access to the setup page.
+        // Redirect any other request to the setup page.
+        if (!isOnSetupPage) {
+            return NextResponse.redirect(new URL('/setup', request.url));
+        }
+    } else {
+        // If setup IS complete, redirect away from the setup page to the homepage.
+        if (isOnSetupPage) {
             return NextResponse.redirect(new URL('/', request.url));
         }
-        return NextResponse.next();
-    }
-
-    const isSetupComplete = await checkSetupStatus(request);
-    
-    if (!isSetupComplete) {
-        return NextResponse.redirect(new URL('/setup', request.url));
     }
 
     return NextResponse.next();

@@ -1,12 +1,7 @@
 
-"use client"
-
-import { useState, useEffect } from 'react';
-import { useParams, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Page } from "@/lib/data";
-import { Skeleton } from '@/components/ui/skeleton';
-import { getFirestore, collection, query, where, getDocs, DocumentData } from "firebase/firestore";
-import { getFirebaseApp } from '@/lib/firebase';
+import { getSupabaseClient_server } from "@/lib/supabase";
 import Head from 'next/head';
 
 // A simple Markdown to HTML converter
@@ -21,54 +16,32 @@ const Markdown = ({ content }: { content: string }) => {
     return <div dangerouslySetInnerHTML={{ __html: `<p class="mb-4 leading-relaxed">${htmlContent}</p>` }} />;
 };
 
+async function getPage(slug: string): Promise<Page | null> {
+    const supabase = getSupabaseClient_server();
+    const { data: page, error } = await supabase
+        .from('pages')
+        .select('*')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .maybeSingle();
 
-export default function CustomPage() {
-  const params = useParams();
-  const slug = params.slug as string;
-  const [page, setPage] = useState<Page | null | undefined>(undefined);
-  
-  useEffect(() => {
-    const fetchPage = async () => {
-      if (!slug) return;
-      const db = getFirestore(getFirebaseApp());
-      const pagesRef = collection(db, "pages");
-      const q = query(pagesRef, where("slug", "==", slug), where("status", "==", "published"));
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
-        setPage(null); // Not found
-      } else {
-        const pageDoc = querySnapshot.docs[0];
-        setPage({ id: pageDoc.id, ...pageDoc.data() } as Page);
-      }
-    };
-
-    if (slug) {
-      fetchPage();
+    if (error) {
+        console.error("Error fetching page:", error);
+        return null;
     }
-  }, [slug]);
+    return page as Page | null;
+}
 
-  if (page === undefined) {
-    return (
-        <div className="container mx-auto px-4 py-12 max-w-4xl">
-            <Skeleton className="h-12 w-3/4 mx-auto mb-8" />
-            <div className="space-y-4">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-5/6" />
-                <Skeleton className="h-5 w-full mt-4" />
-                <Skeleton className="h-5 w-2/3" />
-            </div>
-        </div>
-    )
-  }
 
-  if (page === null) {
+export default async function CustomPage({ params }: { params: { slug: string } }) {
+  const page = await getPage(params.slug);
+  
+  if (!page) {
     notFound();
   }
   
-  const pageTitle = page.seoTitle || page.title;
-  const pageDescription = page.seoDescription || page.content.substring(0, 160);
+  const pageTitle = page.seo_title || page.title;
+  const pageDescription = page.seo_description || page.content.substring(0, 160);
 
   return (
     <>

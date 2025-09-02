@@ -1,22 +1,30 @@
 
 import { NextResponse } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { getSupabaseClient_client } from '@/lib/supabase';
 
 export async function GET() {
   try {
-    const db = getAdminFirestore();
-    const statusRef = db.collection('settings').doc('siteStatus');
-    const doc = await statusRef.get();
+    const supabase = getSupabaseClient_client();
+    const { data, error } = await supabase
+      .from('site_status')
+      .select('is_setup_complete')
+      .limit(1)
+      .single();
 
-    if (doc.exists && doc.data()?.isSetupComplete === true) {
+    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine.
+        console.error("Error checking setup status from Supabase:", error);
+        // Default to not set up to be safe
+        return NextResponse.json({ isSetupComplete: false });
+    }
+
+    if (data && data.is_setup_complete) {
       return NextResponse.json({ isSetupComplete: true });
     } else {
       return NextResponse.json({ isSetupComplete: false });
     }
   } catch (error: any) {
-    console.error("Error checking setup status:", error);
+    console.error("Catastrophic error checking setup status:", error);
     // In case of DB error (e.g., permissions), assume not set up to be safe.
-    // This could happen on a fresh project before Firestore rules are set.
     return NextResponse.json({ isSetupComplete: false });
   }
 }

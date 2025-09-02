@@ -14,8 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Booking, Package } from "@/lib/data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getFirestore, collection, getDocs, doc, updateDoc, getDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,14 +22,14 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 const bookingSchema = z.object({
-  customerName: z.string().min(2, "Name is required."),
-  customerEmail: z.string().email("A valid email is required."),
-  customerPhone: z.string().min(1, "Phone number is required."),
+  customer_name: z.string().min(2, "Name is required."),
+  customer_email: z.string().email("A valid email is required."),
+  customer_phone: z.string().min(1, "Phone number is required."),
   travelers: z.coerce.number().min(1, "Must be at least one traveler."),
-  departureDate: z.date({ required_error: "Departure date is required."}),
+  departure_date: z.date({ required_error: "Departure date is required."}),
   status: z.enum(["Pending", "Confirmed", "Cancelled"]),
-  packageId: z.string().min(1, "A package must be selected."),
-  packageName: z.string().min(1, "Package name is required."),
+  package_id: z.string().min(1, "A package must be selected."),
+  package_name: z.string().min(1, "Package name is required."),
 });
 
 export default function EditBookingPage() {
@@ -40,8 +39,7 @@ export default function EditBookingPage() {
   const { toast } = useToast();
   const [booking, setBooking] = useState<Booking | null | undefined>(undefined);
   const [packages, setPackages] = useState<Package[]>([]);
-  
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
 
   const form = useForm<z.infer<typeof bookingSchema>>({
     resolver: zodResolver(bookingSchema),
@@ -50,50 +48,49 @@ export default function EditBookingPage() {
   useEffect(() => {
     const loadPackages = async () => {
         try {
-            const pkgSnapshot = await getDocs(collection(db, "packages"));
-            setPackages(pkgSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package)));
+            const { data, error } = await supabase.from("packages").select('*');
+            if (error) throw error;
+            setPackages(data as Package[]);
         } catch (e) {
             toast({ title: "Error", description: "Could not load packages." });
         }
     }
     loadPackages();
-  }, [db, toast]);
+  }, [supabase, toast]);
 
   useEffect(() => {
     const loadBooking = async () => {
       if (!bookingId) return;
-      const bookingRef = doc(db, "bookings", bookingId);
-      const docSnap = await getDoc(bookingRef);
+      const { data, error } = await supabase.from('bookings').select('*').eq('id', bookingId).single();
       
-      if (docSnap.exists()) {
-        const bookingData = { id: docSnap.id, ...docSnap.data() } as Booking;
+      if (error) {
+        setBooking(null);
+      } else {
+        const bookingData = data as Booking;
         setBooking(bookingData);
         form.reset({
           ...bookingData,
-          departureDate: new Date(bookingData.departureDate), // Convert string to Date
+          departure_date: new Date(bookingData.departure_date),
         });
-      } else {
-        setBooking(null);
       }
     };
     loadBooking();
-  }, [bookingId, db, form]);
+  }, [bookingId, supabase, form]);
 
   const onSubmit = async (data: z.infer<typeof bookingSchema>) => {
     if (!booking) return;
 
     try {
-      const bookingRef = doc(db, "bookings", booking.id);
-      
-      // Find the selected package to update the name, just in case
-      const selectedPackage = packages.find(p => p.id === data.packageId);
+      const selectedPackage = packages.find(p => p.id === data.package_id);
       const finalData = {
           ...data,
-          departureDate: data.departureDate.toISOString(),
-          packageName: selectedPackage?.title || data.packageName // Fallback to existing name
+          departure_date: data.departure_date.toISOString(),
+          package_name: selectedPackage?.title || data.package_name
       };
 
-      await updateDoc(bookingRef, finalData);
+      const { error } = await supabase.from('bookings').update(finalData).eq('id', booking.id);
+      if (error) throw error;
+
       toast({
         title: "Booking Updated!",
         description: "The booking details have been successfully updated.",
@@ -136,19 +133,19 @@ export default function EditBookingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="customerName">Customer Name</Label>
-              <Input id="customerName" {...form.register("customerName")} />
-              {form.formState.errors.customerName && <p className="text-sm text-destructive">{form.formState.errors.customerName.message}</p>}
+              <Label htmlFor="customer_name">Customer Name</Label>
+              <Input id="customer_name" {...form.register("customer_name")} />
+              {form.formState.errors.customer_name && <p className="text-sm text-destructive">{form.formState.errors.customer_name.message}</p>}
             </div>
              <div className="space-y-2">
-              <Label htmlFor="customerEmail">Customer Email</Label>
-              <Input id="customerEmail" type="email" {...form.register("customerEmail")} />
-              {form.formState.errors.customerEmail && <p className="text-sm text-destructive">{form.formState.errors.customerEmail.message}</p>}
+              <Label htmlFor="customer_email">Customer Email</Label>
+              <Input id="customer_email" type="email" {...form.register("customer_email")} />
+              {form.formState.errors.customer_email && <p className="text-sm text-destructive">{form.formState.errors.customer_email.message}</p>}
             </div>
              <div className="space-y-2">
-              <Label htmlFor="customerPhone">Customer Phone</Label>
-              <Input id="customerPhone" {...form.register("customerPhone")} />
-              {form.formState.errors.customerPhone && <p className="text-sm text-destructive">{form.formState.errors.customerPhone.message}</p>}
+              <Label htmlFor="customer_phone">Customer Phone</Label>
+              <Input id="customer_phone" {...form.register("customer_phone")} />
+              {form.formState.errors.customer_phone && <p className="text-sm text-destructive">{form.formState.errors.customer_phone.message}</p>}
             </div>
              <div className="space-y-2">
               <Label htmlFor="travelers">Number of Travelers</Label>
@@ -160,26 +157,26 @@ export default function EditBookingPage() {
            <div className="space-y-2">
             <Label>Package</Label>
               <Controller
-                name="packageId"
+                name="package_id"
                 control={form.control}
                 render={({ field }) => (
                   <Select 
                     onValueChange={(value) => {
                         const selectedPkg = packages.find(p => p.id === value);
                         field.onChange(value);
-                        form.setValue('packageName', selectedPkg?.title || '');
+                        form.setValue('package_name', selectedPkg?.title || '');
                     }} 
                     value={field.value}
                   >
                     <SelectTrigger><SelectValue placeholder="Select a package" /></SelectTrigger>
                     <SelectContent>
-                      {packages.map(p => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}
+                      {packages.map(p => <SelectItem key={p.id} value={p.id!}>{p.title}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 )}
               />
-              <Input type="hidden" {...form.register("packageName")} />
-               {form.formState.errors.packageId && <p className="text-sm text-destructive">{form.formState.errors.packageId.message}</p>}
+              <Input type="hidden" {...form.register("package_name")} />
+               {form.formState.errors.package_id && <p className="text-sm text-destructive">{form.formState.errors.package_id.message}</p>}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -187,7 +184,7 @@ export default function EditBookingPage() {
                 <Label>Departure Date</Label>
                 <Controller
                   control={form.control}
-                  name="departureDate"
+                  name="departure_date"
                   render={({ field }) => (
                     <Popover>
                       <PopoverTrigger asChild>
@@ -205,7 +202,7 @@ export default function EditBookingPage() {
                     </Popover>
                   )}
                 />
-                 {form.formState.errors.departureDate && <p className="text-sm text-destructive">{form.formState.errors.departureDate.message}</p>}
+                 {form.formState.errors.departure_date && <p className="text-sm text-destructive">{form.formState.errors.departure_date.message}</p>}
               </div>
 
             <div className="space-y-2">

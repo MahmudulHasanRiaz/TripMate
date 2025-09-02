@@ -17,17 +17,17 @@ export async function generateMetadata(): Promise<Metadata> {
   
   return {
     title: {
-      default: settings.siteTitle,
-      template: `%s | ${settings.siteTitle}`,
+      default: settings.site_title,
+      template: `%s | ${settings.site_title}`,
     },
     icons: {
       icon: [
-        { url: settings.faviconUrl, type: 'image/svg+xml' },
+        { url: settings.favicon_url, type: 'image/svg+xml' },
       ]
     },
     robots: {
-      index: settings.searchEngineVisibility,
-      follow: settings.searchEngineVisibility,
+      index: settings.search_engine_visibility,
+      follow: settings.search_engine_visibility,
     }
   };
 }
@@ -53,7 +53,7 @@ export default async function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body suppressHydrationWarning={true}>
+      <body>
         <AppProvider initialSettings={settings}>
             <AuthProvider>
                 <SiteLayoutClient>

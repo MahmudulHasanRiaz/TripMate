@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import type { MediaFile } from "@/app/admin/media/page";
+import type { MediaFile } from '@/lib/data';
 import { Copy, Crop, FileText, Video, ImageIcon, File as FileIcon } from "lucide-react";
 import { format } from 'date-fns';
 import ImageCropper from "./ImageCropper";
@@ -51,7 +51,7 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
 
   const handleSaveChanges = () => {
     if (editedFile) {
-      onSave(editedFile);
+      onSave({...editedFile, modified_at: new Date().toISOString() });
     }
   };
 
@@ -82,9 +82,9 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
               <div className="relative w-full h-full">
                 <Image
                   src={editedFile.url}
-                  alt={editedFile.altText || editedFile.name}
-                  layout="fill"
-                  objectFit="contain"
+                  alt={editedFile.alt_text || editedFile.name}
+                  fill
+                  className="object-contain"
                   key={editedFile.url} // Add key to force re-render on url change
                 />
               </div>
@@ -111,21 +111,21 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
             {editedFile.type === 'image' && (
               <>
                 <div>
-                  <Label htmlFor="altText">Alt Text</Label>
+                  <Label htmlFor="alt_text">Alt Text</Label>
                   <Textarea
-                    id="altText"
-                    name="altText"
-                    value={editedFile.altText || ""}
+                    id="alt_text"
+                    name="alt_text"
+                    value={editedFile.alt_text || ""}
                     onChange={handleInputChange}
                     placeholder="Descriptive text for accessibility"
                   />
                 </div>
                  <div>
-                    <Label htmlFor="dataAiHint">AI Hint</Label>
+                    <Label htmlFor="data_ai_hint">AI Hint</Label>
                     <Input
-                        id="dataAiHint"
-                        name="dataAiHint"
-                        value={editedFile.dataAiHint || ""}
+                        id="data_ai_hint"
+                        name="data_ai_hint"
+                        value={editedFile.data_ai_hint || ""}
                         onChange={handleInputChange}
                         placeholder="e.g. tokyo street night"
                     />
@@ -153,8 +153,8 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
             <div className="text-xs text-muted-foreground space-y-2 pt-4 border-t">
                <p><strong>File Type:</strong> {editedFile.type}</p>
                <p><strong>File Size:</strong> {editedFile.size}</p>
-               {editedFile.uploadedAt && <p><strong>Uploaded:</strong> {format(editedFile.uploadedAt.toDate(), "PPpp")}</p>}
-               {editedFile.modifiedAt && <p><strong>Last Modified:</strong> {format(editedFile.modifiedAt.toDate(), "PPpp")}</p>}
+               {editedFile.uploaded_at && <p><strong>Uploaded:</strong> {format(new Date(editedFile.uploaded_at), "PPpp")}</p>}
+               {editedFile.modified_at && <p><strong>Last Modified:</strong> {format(new Date(editedFile.modified_at), "PPpp")}</p>}
             </div>
           </div>
         </div>
@@ -176,4 +176,3 @@ export default function MediaDetailModal({ isOpen, onClose, file, onSave }: Medi
     </>
   );
 }
-

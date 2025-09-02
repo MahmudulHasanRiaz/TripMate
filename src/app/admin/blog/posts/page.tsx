@@ -14,8 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { getFirestore, collection, getDocs, doc, deleteDoc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,23 +29,24 @@ export default function AdminBlogPage() {
   const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
   const router = useRouter();
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const postsSnapshot = await getDocs(collection(db, "posts"));
-      const postsList = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
-      postsList.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      const { data: postsList, error: postsError } = await supabase.from('posts').select('*').order('published_at', { ascending: false });
+      if (postsError) throw postsError;
       
-      setAllPosts(postsList.filter(p => !p.deletedAt));
-      setTrashedPosts(postsList.filter(p => !!p.deletedAt));
+      setAllPosts(postsList.filter(p => !p.deleted_at));
+      setTrashedPosts(postsList.filter(p => !!p.deleted_at));
 
-      const categoriesSnapshot = await getDocs(collection(db, "categories"));
-      setCategories(categoriesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+      const { data: categoriesData, error: catError } = await supabase.from('categories').select('*');
+      if(catError) throw catError;
+      setCategories(categoriesData as Category[]);
 
-      const usersSnapshot = await getDocs(collection(db, "users"));
-      setUsers(usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as User)));
+      const { data: usersData, error: userError } = await supabase.from('users').select('*');
+      if(userError) throw userError;
+      setUsers(usersData as User[]);
 
     } catch(e) {
       console.error("Error loading blog data:", e);
@@ -63,18 +63,21 @@ export default function AdminBlogPage() {
   const handleAction = async (action: 'trash' | 'restore' | 'delete', postId: string) => {
     try {
       if (action === 'trash') {
-        await updateDoc(doc(db, 'posts', postId), { deletedAt: serverTimestamp() });
+        const { error } = await supabase.from('posts').update({ deleted_at: new Date().toISOString() }).eq('id', postId);
+        if (error) throw error;
         toast({ title: 'Post moved to trash' });
       } else if (action === 'restore') {
-        await updateDoc(doc(db, 'posts', postId), { deletedAt: null });
+        const { error } = await supabase.from('posts').update({ deleted_at: null }).eq('id', postId);
+        if (error) throw error;
         toast({ title: 'Post restored' });
       } else if (action === 'delete') {
-        await deleteDoc(doc(db, 'posts', postId));
+        const { error } = await supabase.from('posts').delete().eq('id', postId);
+        if (error) throw error;
         toast({ title: 'Post permanently deleted', variant: 'destructive' });
       }
       loadData();
-    } catch(e) {
-      toast({ title: 'Error', description: `Failed to ${action} post.`, variant: 'destructive' });
+    } catch(e: any) {
+      toast({ title: 'Error', description: `Failed to ${action} post: ${e.message}`, variant: 'destructive' });
     }
   };
 
@@ -154,7 +157,7 @@ const PostsTable = ({ loading, posts, isTrash, onAction, users, categories }: { 
         if (!authorId) return "Unknown Author";
         const user = users.find(u => u.uid === authorId);
         if (!user) return "Unknown Author";
-        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+        const fullName = user.name || '';
         return fullName || "Unknown Author";
     };
     
@@ -193,11 +196,11 @@ const PostsTable = ({ loading, posts, isTrash, onAction, users, categories }: { 
                 {posts.map((post) => (
                   <TableRow key={post.id}>
                     <TableCell className="font-medium">{post.title}</TableCell>
-                    <TableCell className="truncate max-w-xs">{getAuthorName(post.authorId)}</TableCell>
+                    <TableCell className="truncate max-w-xs">{getAuthorName(post.author_id)}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{getCategoryName(post.categoryId)}</Badge>
+                      <Badge variant="outline">{getCategoryName(post.category_id)}</Badge>
                     </TableCell>
-                    <TableCell>{format(new Date(post.publishedAt), 'PPP')}</TableCell>
+                    <TableCell>{format(new Date(post.published_at), 'PPP')}</TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -210,7 +213,7 @@ const PostsTable = ({ loading, posts, isTrash, onAction, users, categories }: { 
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           {isTrash ? (
                             <>
-                                <DropdownMenuItem onClick={() => onAction('restore', post.id)}>
+                                <DropdownMenuItem onClick={() => onAction('restore', post.id!)}>
                                     <RotateCw className="mr-2 h-4 w-4" /> Restore
                                 </DropdownMenuItem>
                                 <AlertDialog>
@@ -224,7 +227,7 @@ const PostsTable = ({ loading, posts, isTrash, onAction, users, categories }: { 
                                         <AlertDialogDescription>This will permanently delete this post. This action cannot be undone.</AlertDialogDescription>
                                         <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => onAction('delete', post.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                                        <AlertDialogAction onClick={() => onAction('delete', post.id!)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
@@ -237,7 +240,7 @@ const PostsTable = ({ loading, posts, isTrash, onAction, users, categories }: { 
                                     Edit
                                     </Link>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => onAction('trash', post.id)}>
+                                <DropdownMenuItem className="text-destructive" onClick={() => onAction('trash', post.id!)}>
                                     <Trash className="mr-2 h-4 w-4" /> Move to Trash
                                 </DropdownMenuItem>
                             </>

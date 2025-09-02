@@ -12,8 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import UserProfileModal from "@/components/admin/UserProfileModal";
 import AddUserModal from "@/components/admin/AddUserModal";
 import { getInitials } from "@/lib/utils";
-import { getFirestore, collection, getDocs, query, where, doc, updateDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { deleteUser } from "@/lib/actions";
 
@@ -25,21 +24,19 @@ export default function AdminStaffPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { toast } = useToast();
   const { signup } = useAuth();
+  const supabase = getSupabaseClient_client();
 
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const db = getFirestore(getFirebaseApp());
-      const usersCollection = collection(db, "users");
-      const staffQuery = query(usersCollection, where("role", "==", "staff"));
-      const usersSnapshot = await getDocs(staffQuery);
-      const staffUsers = usersSnapshot.docs.map(doc => ({ ...doc.data(), uid: doc.id } as User));
-      setUsers(staffUsers);
-    } catch (error) {
+      const { data, error } = await supabase.from('users').select('*').eq('role', 'staff');
+      if (error) throw error;
+      setUsers(data as User[]);
+    } catch (error: any) {
       console.error("Error fetching staff users:", error);
       toast({
         title: "Error loading staff",
-        description: "Could not fetch user data from the database.",
+        description: `Could not fetch user data: ${error.message}`,
         variant: "destructive"
       });
     } finally {
@@ -52,16 +49,16 @@ export default function AdminStaffPage() {
   }, []);
 
   const handleDeleteUser = async (userId: string) => {
-    const userToDelete = users.find(u => u.uid === userId);
+    const userToDelete = users.find(u => u.id === userId);
      if (!userToDelete) return;
 
     const result = await deleteUser(userId);
 
     if (result.success) {
-        setUsers(prevUsers => prevUsers.filter(u => u.uid !== userId));
+        setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
         toast({
             title: "User Deleted",
-            description: `User ${userToDelete.firstName} has been removed from Authentication and Firestore.`,
+            description: `User ${userToDelete.name} has been removed from Authentication and Firestore.`,
             variant: "destructive"
         });
     } else {
@@ -69,12 +66,12 @@ export default function AdminStaffPage() {
     }
   }
 
-  const handleAddUser = async (newUser: Omit<User, 'uid'>) => {
+  const handleAddUser = async (newUser: Omit<User, 'id'>) => {
     try {
       await signup(newUser);
       toast({
         title: "Staff Member Added",
-        description: `User ${newUser.firstName} has been created.`
+        description: `User ${newUser.name} has been created.`
       });
       setIsAddModalOpen(false);
       loadUsers(); // Refresh list
@@ -95,19 +92,18 @@ export default function AdminStaffPage() {
 
   const handleSaveUser = async (updatedUser: User) => {
      try {
-        const db = getFirestore(getFirebaseApp());
-        const userRef = doc(db, "users", updatedUser.uid);
-        const { uid, password, ...dataToSave } = updatedUser;
-        await updateDoc(userRef, dataToSave);
+        const { id, password, ...dataToSave } = updatedUser;
+        const { error } = await supabase.from('users').update(dataToSave).eq('id', id);
+        if (error) throw error;
         loadUsers();
         setIsProfileModalOpen(false);
         toast({
           title: "User Updated",
-          description: `${updatedUser.firstName}'s profile has been saved.`
+          description: `${updatedUser.name}'s profile has been saved.`
         });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error saving user:", error);
-        toast({ title: "Error", description: "Failed to save user details.", variant: "destructive" });
+        toast({ title: "Error", description: `Failed to save user details: ${error.message}`, variant: "destructive" });
     }
   }
 
@@ -146,14 +142,14 @@ export default function AdminStaffPage() {
                     ))
                 ) : (
                     users.map((user) => (
-                        <TableRow key={user.uid}>
+                        <TableRow key={user.id}>
                             <TableCell>
                                 <div className="flex items-center gap-3">
                                     <Avatar>
-                                        <AvatarImage src={user.photoURL || undefined} alt={`${user.firstName} ${user.lastName}`} />
-                                        <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
+                                        <AvatarImage src={user.photo_url || undefined} alt={user.name} />
+                                        <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                                     </Avatar>
-                                    <span className="font-medium">{user.firstName} {user.lastName}</span>
+                                    <span className="font-medium">{user.name}</span>
                                 </div>
                             </TableCell>
                             <TableCell>{user.username}</TableCell>
@@ -172,7 +168,7 @@ export default function AdminStaffPage() {
                                         <UserIcon className="mr-2 h-4 w-4"/>
                                         View Profile
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.uid)}>
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteUser(user.id)}>
                                         <Trash2 className="mr-2 h-4 w-4"/>
                                         Delete User
                                     </DropdownMenuItem>

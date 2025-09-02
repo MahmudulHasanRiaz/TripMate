@@ -12,8 +12,7 @@ import { PlusCircle, MoreHorizontal, Trash2, Pencil, Trash, RotateCw, AlertTrian
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import AddPackageForm from "@/components/admin/AddPackageForm";
-import { getFirestore, collection, getDocs, addDoc, doc, deleteDoc, updateDoc, writeBatch, serverTimestamp, query, where, orderBy } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -36,18 +35,18 @@ export default function AdminAllPackagesPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const { toast } = useToast();
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
   const router = useRouter();
 
   const loadPackages = async () => {
     setLoading(true);
     try {
-      const packagesCollection = collection(db, "packages");
-      const packagesSnapshot = await getDocs(query(packagesCollection, orderBy("title")));
-      const packagesList = packagesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Package));
+      const { data, error } = await supabase.from("packages").select('*').order("title");
+      if (error) throw error;
+      const packagesList = data as Package[];
       
-      setAllPackages(packagesList.filter(p => !p.deletedAt));
-      setTrashedPackages(packagesList.filter(p => !!p.deletedAt));
+      setAllPackages(packagesList.filter(p => !p.deleted_at));
+      setTrashedPackages(packagesList.filter(p => !!p.deleted_at));
     } catch (error) {
       console.error("Error fetching packages:", error);
       toast({ title: "Error", description: "Could not fetch packages.", variant: "destructive" });
@@ -62,32 +61,39 @@ export default function AdminAllPackagesPage() {
 
   const addPackage = async (newPackageData: Omit<Package, 'id'>) => {
     try {
-      const packagesCollection = collection(db, "packages");
-      await addDoc(packagesCollection, newPackageData);
+      const { error } = await supabase.from("packages").insert({ ...newPackageData, id: newPackageData.slug });
+      if (error) throw error;
       toast({
         title: "Package Added!",
         description: `The package "${newPackageData.title}" has been successfully created.`,
       });
       setIsAddDialogOpen(false);
       loadPackages(); // Refresh the list
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding package:", error);
-      toast({ title: "Error", description: "Failed to add the new package.", variant: "destructive" });
+      toast({ title: "Error", description: `Failed to add the new package: ${error.message}`, variant: "destructive" });
     }
   };
   
   const handleAction = async (action: "trash" | "restore" | "delete", pkg: Package) => {
-    if (action === "trash") {
-        await updateDoc(doc(db, "packages", pkg.id), { deletedAt: serverTimestamp() });
-        toast({ title: "Package moved to trash." });
-    } else if (action === "restore") {
-        await updateDoc(doc(db, "packages", pkg.id), { deletedAt: null });
-        toast({ title: "Package restored." });
-    } else if (action === "delete") {
-        await deleteDoc(doc(db, "packages", pkg.id));
-        toast({ title: "Package permanently deleted.", variant: "destructive" });
+    try {
+      if (action === "trash") {
+          const { error } = await supabase.from("packages").update({ deleted_at: new Date().toISOString() }).eq('id', pkg.id);
+          if (error) throw error;
+          toast({ title: "Package moved to trash." });
+      } else if (action === "restore") {
+          const { error } = await supabase.from("packages").update({ deleted_at: null }).eq('id', pkg.id);
+          if (error) throw error;
+          toast({ title: "Package restored." });
+      } else if (action === "delete") {
+          const { error } = await supabase.from("packages").delete().eq('id', pkg.id);
+          if (error) throw error;
+          toast({ title: "Package permanently deleted.", variant: "destructive" });
+      }
+      loadPackages();
+    } catch (e: any) {
+        toast({ title: "Error", description: `Action failed: ${e.message}`, variant: "destructive" });
     }
-    loadPackages();
   };
   
   const handleEdit = (pkg: Package) => {

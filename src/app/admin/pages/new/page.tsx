@@ -14,8 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Page } from "@/lib/data";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getFirestore, collection, addDoc } from "firebase/firestore";
-import { getFirebaseApp } from "@/lib/firebase";
+import { getSupabaseClient_client } from "@/lib/supabase";
 
 
 const pageSchema = z.object({
@@ -23,16 +22,16 @@ const pageSchema = z.object({
   slug: z.string().min(1, "Slug is required.").regex(/^[a-z0-9-]+$/, "Slug must be lowercase with no spaces."),
   content: z.string().min(10, "Content must be at least 10 characters long."),
   status: z.enum(["published", "draft"]),
-  showInMenu: z.boolean().default(false),
-  menuOrder: z.coerce.number().optional(),
-  seoTitle: z.string().optional(),
-  seoDescription: z.string().optional(),
+  show_in_menu: z.boolean().default(false),
+  menu_order: z.coerce.number().optional(),
+  seo_title: z.string().optional(),
+  seo_description: z.string().optional(),
 });
 
 export default function NewPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const db = getFirestore(getFirebaseApp());
+  const supabase = getSupabaseClient_client();
 
   const form = useForm<z.infer<typeof pageSchema>>({
     resolver: zodResolver(pageSchema),
@@ -41,10 +40,10 @@ export default function NewPage() {
       slug: "",
       content: "",
       status: "draft",
-      showInMenu: false,
-      menuOrder: 99,
-      seoTitle: "",
-      seoDescription: "",
+      show_in_menu: false,
+      menu_order: 99,
+      seo_title: "",
+      seo_description: "",
     },
   });
 
@@ -54,11 +53,8 @@ export default function NewPage() {
 
   const onSubmit = async (data: z.infer<typeof pageSchema>) => {
     try {
-      const newPage: Omit<Page, 'id'> = {
-        ...data,
-      };
-      
-      await addDoc(collection(db, "pages"), newPage);
+      const { error } = await supabase.from('pages').insert(data);
+      if (error) throw error;
 
       toast({
         title: "Page Created!",
@@ -66,8 +62,8 @@ export default function NewPage() {
       });
 
       router.push("/admin/pages/all");
-    } catch(e) {
-      toast({ title: "Error", description: "Failed to create page.", variant: "destructive"});
+    } catch(e: any) {
+      toast({ title: "Error", description: `Failed to create page: ${e.message}`, variant: "destructive"});
     }
   };
 
@@ -150,22 +146,22 @@ export default function NewPage() {
                         <CardContent className="space-y-4">
                              <div className="flex items-center space-x-2">
                                 <Controller
-                                    name="showInMenu"
+                                    name="show_in_menu"
                                     control={form.control}
                                     render={({ field }) => (
                                         <Switch
-                                            id="showInMenu"
+                                            id="show_in_menu"
                                             checked={field.value}
                                             onCheckedChange={field.onChange}
                                         />
                                     )}
                                 />
-                                <Label htmlFor="showInMenu">Show in Main Menu</Label>
+                                <Label htmlFor="show_in_menu">Show in Main Menu</Label>
                              </div>
-                             {form.watch('showInMenu') && (
+                             {form.watch('show_in_menu') && (
                                 <div className="space-y-2">
-                                    <Label htmlFor="menuOrder">Menu Position</Label>
-                                    <Input id="menuOrder" type="number" {...form.register("menuOrder")} />
+                                    <Label htmlFor="menu_order">Menu Position</Label>
+                                    <Input id="menu_order" type="number" {...form.register("menu_order")} />
                                     <p className="text-sm text-muted-foreground">Lower numbers appear first.</p>
                                 </div>
                              )}
@@ -179,13 +175,13 @@ export default function NewPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="seoTitle">SEO Title</Label>
-                                <Input id="seoTitle" {...form.register("seoTitle")} placeholder="Custom title for search results" />
+                                <Label htmlFor="seo_title">SEO Title</Label>
+                                <Input id="seo_title" {...form.register("seo_title")} placeholder="Custom title for search results" />
                                 <p className="text-sm text-muted-foreground">If empty, the page title will be used.</p>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="seoDescription">SEO Description</Label>
-                                <Textarea id="seoDescription" {...form.register("seoDescription")} placeholder="A short description for search results" />
+                                <Label htmlFor="seo_description">SEO Description</Label>
+                                <Textarea id="seo_description" {...form.register("seo_description")} placeholder="A short description for search results" />
                             </div>
                         </CardContent>
                     </Card>
