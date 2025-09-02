@@ -14,6 +14,7 @@ import { getSupabaseClient_server } from '@/lib/supabase';
 async function getHomePageData() {
     const supabase = getSupabaseClient_server();
 
+    // Define a safe default for home settings in case the DB call fails or returns nothing
     const defaultHomeSettings: HomePageSettings = {
         id: 'home',
         hero_image_url: "https://images.pexels.com/photos/33041/antelope-canyon-lower-canyon-arizona.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
@@ -24,10 +25,11 @@ async function getHomePageData() {
         status: 'published'
     };
     
+    // Fetch all data in parallel
     const settingsPromise = supabase.from('global_settings').select('*').single();
     const homeSettingsPromise = supabase.from('home_page_settings').select('*').eq('id', 'home').maybeSingle();
-    const packagesPromise = supabase.from('packages').select('*').limit(3);
-    const postsPromise = supabase.from('posts').select(`*, author:users(*)`).order('published_at', { ascending: false }).limit(3);
+    const packagesPromise = supabase.from('packages').select('*').is('deleted_at', null).limit(3);
+    const postsPromise = supabase.from('posts').select(`*, author:users(*)`).is('deleted_at', null).order('published_at', { ascending: false }).limit(3);
 
     const [
         { data: settings, error: settingsError },
@@ -36,6 +38,7 @@ async function getHomePageData() {
         { data: posts, error: postsError }
     ] = await Promise.all([settingsPromise, homeSettingsPromise, packagesPromise, postsPromise]);
 
+    // Log errors without crashing the page
     if(settingsError) console.error("Home page error fetching global settings:", settingsError.message);
     if(homeSettingsError) console.error("[ Server ] Home page error fetching home settings:", homeSettingsError.message);
     if(packagesError) console.error("Home page error fetching packages:", packagesError.message);
