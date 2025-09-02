@@ -64,8 +64,8 @@ export default function LoginPage() {
       
       const redirectPath = (user.role === "admin" || user.role === "superadmin") ? "/admin" : "/dashboard";
       
-      router.push(redirectPath);
-      router.refresh();
+      // Use window.location.href for a full page reload to ensure correct layout and state update
+      window.location.href = redirectPath;
 
     } catch (error: any) {
       console.error("Login Failed", error);
@@ -172,5 +172,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
