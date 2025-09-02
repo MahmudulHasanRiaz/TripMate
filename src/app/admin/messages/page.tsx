@@ -23,7 +23,9 @@ function MessageRow({ message, handleRowClick, markAsRead, onAction }: { message
     const isTrashed = !!message.deleted_at;
 
     useEffect(() => {
-        setReceivedAt(formatDistanceToNow(new Date(message.submitted_at), { addSuffix: true }));
+        if (message.submitted_at) {
+            setReceivedAt(formatDistanceToNow(new Date(message.submitted_at), { addSuffix: true }));
+        }
     }, [message.submitted_at]);
 
     return (
@@ -167,7 +169,7 @@ export default function AdminMessagesPage() {
 
   const handleEmptyTrash = async () => {
     if (trashedMessages.length === 0) return;
-    const result = await emptyTrash('contactMessages');
+    const result = await emptyTrash('contact_messages');
     if (result.success) {
       toast({ title: 'Trash Emptied', description: `${trashedMessages.length} messages permanently deleted.` });
       loadMessages();
