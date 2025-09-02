@@ -50,7 +50,7 @@ export default function AdminHomePageSettings() {
             }
         };
         fetchSettings();
-    }, [toast, supabase]);
+    }, []);
     
     const handleSettingsChange = (field: keyof HomePageSettings, value: any) => {
         setSettings(prev => prev ? ({...prev, [field]: value}) : null);
