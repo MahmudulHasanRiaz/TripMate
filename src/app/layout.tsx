@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     icons: {
       icon: [
-        { url: settings.favicon_url, type: 'image/svg+xml' },
+        { url: settings.favicon_url || '/favicon.ico', type: 'image/x-icon' },
       ]
     },
     robots: {
