@@ -235,14 +235,45 @@ export async function resetApplication() {
     const supabase = getSupabaseClient_server();
     
     try {
+        // Step 1: Get all users from Supabase Auth
+        const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+        if (listError) {
+            throw new Error(`Failed to list users: ${listError.message}`);
+        }
+
+        // Step 2: Delete each user from Supabase Auth
+        for (const user of users) {
+            const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+            if (deleteError) {
+                console.warn(`Could not delete auth user ${user.id}: ${deleteError.message}`);
+            }
+        }
+        console.log(`Successfully deleted ${users.length} users from Auth.`);
+        
+        // Step 3: Delete data from all public tables
+        const tables = [
+            'bookings', 'contact_messages', 'media', 'posts', 'categories', 
+            'packages', 'destinations', 'package_types', 'pages', 'site_pages', 
+            'global_settings', 'home_page_settings', 'users' 
+        ];
+
+        for (const table of tables) {
+            const { error } = await supabase.from(table).delete().gt('id', 0); // A hack to delete all rows
+             if (error && error.code !== '42P01') { // 42P01: undefined_table
+                console.warn(`Could not clear table ${table}: ${error.message}`);
+             }
+        }
+        console.log("Successfully cleared data from all application tables.");
+
+        // Step 4: Reset the setup status
         const { error } = await supabase
           .from('site_status')
           .update({ is_setup_complete: false })
           .eq('id', 1);
 
         if (error) {
-            // If the row doesn't exist, insert it.
-            if (error.code === 'PGRST204') {
+            // If the row doesn't exist, insert it. This is a safeguard.
+            if (error.code === 'PGRST204') { 
                  const { error: insertError } = await supabase
                     .from('site_status')
                     .insert({ id: 1, is_setup_complete: false });
