@@ -1,172 +1,60 @@
-
-"use client";
-
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { getSupabaseClient_server } from "@/lib/supabase";
+import SetupForm from "@/components/setup/SetupForm";
+import { AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Logo from "@/components/icons/Logo";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
-import { setupSuperAdminAndSeed } from "@/lib/actions";
 
-const setupSchema = z
-  .object({
-    name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-    email: z.string().email({ message: "Invalid email address." }),
-    password: z.string().min(8, { message: "Password must be at least 8 characters." }),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
-  });
 
-export default function SetupPage() {
-  const { toast } = useToast();
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const form = useForm<z.infer<typeof setupSchema>>({
-    resolver: zodResolver(setupSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof setupSchema>) {
-    setIsLoading(true);
+async function checkSchemaExists() {
     try {
-      const result = await setupSuperAdminAndSeed({
-        email: values.email,
-        password: values.password,
-        name: values.name,
-        role: "superadmin" // Role is fixed for setup
-      });
+        const supabase = getSupabaseClient_server();
+        // We try to query a table that should exist after migration.
+        // We don't care about the data, only if the query succeeds or fails.
+        const { error } = await supabase.from('site_status').select('id').limit(1);
 
-      if (result.success) {
-        toast({
-          title: "Setup Complete!",
-          description: "Your site is ready. Please log in with your new Super Admin account.",
-        });
-        router.push("/login");
-        router.refresh(); // Force a refresh to re-evaluate the middleware
-      } else {
-        throw new Error(result.message);
-      }
-    } catch (error: any) {
-      console.error("Setup Failed", error);
-      toast({
-        title: "Setup Failed",
-        description: error.message || "An unexpected error occurred. Please check server logs.",
-        variant: "destructive",
-      });
-    } finally {
-        setIsLoading(false);
+        // If we get a specific error code for 'relation does not exist', schema is not there.
+        if (error && error.code === '42P01') {
+            return false;
+        }
+        
+        // For any other error or success, we assume schema might exist or there's another issue.
+        // Let the form handle other potential issues.
+        return true;
+
+    } catch (e) {
+        // If the entire connection fails, we'll also consider schema as non-existent for simplicity.
+        return false;
     }
-  }
+}
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-secondary">
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <Logo className="h-12 w-12 text-primary" />
-          </div>
-          <CardTitle className="text-2xl font-headline">
-            Welcome! Let's Set Up Your Site.
-          </CardTitle>
-          <CardDescription>
-            Create your Super Admin account to get started.
-          </CardDescription>
-        </CardHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardContent className="grid gap-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Full Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="John Doe" {...field} disabled={isLoading} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="admin@example.com" {...field} disabled={isLoading} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} disabled={isLoading} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} disabled={isLoading} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Admin & Setup Site
-              </Button>
-            </CardFooter>
-          </form>
-        </Form>
-      </Card>
-    </div>
-  );
+export default async function SetupPage() {
+
+    const schemaExists = await checkSchemaExists();
+
+    if (!schemaExists) {
+        return (
+             <div className="flex items-center justify-center min-h-screen bg-secondary">
+                <Card className="w-full max-w-md shadow-2xl text-center">
+                    <CardHeader className="space-y-1">
+                        <div className="flex justify-center mb-4">
+                            <AlertTriangle className="h-12 w-12 text-destructive" />
+                        </div>
+                        <CardTitle className="text-2xl font-headline">
+                            Database Schema Missing
+                        </CardTitle>
+                        <CardDescription>
+                            A connection to the database was successful, but the required tables were not found.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            Please run the initial database migration script to create the necessary tables before proceeding with the setup.
+                        </p>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+    return <SetupForm />;
 }
