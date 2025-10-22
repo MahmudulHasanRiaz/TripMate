@@ -272,24 +272,26 @@ export async function resetApplication() {
             'categories', 'users', 'contact_messages', 'media', 
             'pages', 'site_pages', 'home_page_settings', 'global_settings', 'site_status'
         ];
-
-        // Using a raw SQL query to truncate all tables.
-        const { error: truncateError } = await supabase.rpc('execute_sql', {
-            sql_query: `TRUNCATE TABLE ${tables.join(', ')} RESTART IDENTITY CASCADE;`
-        });
         
-        if (truncateError) {
-            console.warn("TRUNCATE RPC failed, falling back to individual DELETE FROM statements. Error:", truncateError.message);
-             for (const table of tables.reverse()) { // Reverse order for DELETE to respect dependencies
-                const { error: deleteError } = await supabase.from(table).delete().neq('id', 'this-will-never-be-true'); // Delete all rows
-                if (deleteError) {
-                    console.error(`Error deleting from ${table}:`, deleteError);
-                    throw new Error(`Could not clear table: ${table}. Aborting reset.`);
-                }
+        for (const table of tables.reverse()) { // Reverse order for DELETE to respect dependencies
+            const { error: deleteError } = await supabase.from(table).delete().neq('id', 'this-will-never-be-true'); // Delete all rows
+            if (deleteError) {
+                // We'll log the error but attempt to continue, as some tables might not exist yet if setup failed midway.
+                console.warn(`Could not clear table: ${table}. Error: ${deleteError.message}`);
             }
         }
         
-        console.log("All application tables have been cleared.");
+        console.log("Attempted to clear all application tables.");
+
+        // Step 4: Re-insert the status row to allow setup again
+        const { error: setupStatusError } = await supabase.from('site_status').insert({ id: 1, is_setup_complete: false });
+        if (setupStatusError) {
+            console.error("Failed to reset site_status table:", setupStatusError);
+            // This is a critical failure, as the app won't know to re-run setup.
+            throw new Error(`Failed to reset application status: ${setupStatusError.message}`);
+        }
+        console.log("Application status has been reset. Ready for new setup.");
+        
         return { success: true, message: "Application has been reset to its initial state." };
 
     } catch (error: any) {
