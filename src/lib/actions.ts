@@ -38,6 +38,12 @@ async function createUserInSupabaseAuth(adminData: Omit<User, 'id'>) {
   });
 
   if (error) {
+    // Check for a specific error message indicating the user already exists.
+    if (error.message.includes('User already registered')) {
+        // We can choose to either throw a more specific error or try to find the existing user.
+        // For setup, throwing a clear error is better.
+        throw new Error("A user with this email address has already been registered in the authentication system.");
+    }
     throw error;
   }
   return data.user;
@@ -114,7 +120,12 @@ export async function signupUser(userData: Omit<User, 'id'>) {
             photo_url: restOfUserData.photo_url
           });
         
-        if (error) throw error;
+        if (error) {
+             if (error.code === '42P01') { // undefined_table
+                throw new Error("Database schema is not initialized. Please run the migration script first.");
+            }
+            throw error;
+        }
 
         return { success: true, user: { id: userRecord.id, ...restOfUserData } };
     } catch (error: any) {
@@ -131,18 +142,16 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'id'>) {
     const supabase = getSupabaseClient_server();
     
     try {
-        // PRE-FLIGHT CHECK: Verify if the database schema exists by checking a core table.
-        const { error: preflightError } = await supabase.from('site_status').select('id').limit(1);
-        if (preflightError && preflightError.code === '42P01') { // '42P01' is PostgreSQL's code for "undefined_table"
-            return { success: false, message: "Database tables not found. Please run the initial database migration script before starting the setup." };
-        }
-
-        // 1. Check if setup is already complete in Supabase
+        // 1. Check if setup is already complete in Supabase. This also acts as a pre-flight check.
         const { data: statusData, error: statusError } = await supabase
             .from('site_status')
             .select('is_setup_complete')
             .limit(1)
             .maybeSingle();
+
+        if (statusError && statusError.code === '42P01') {
+             return { success: false, message: "Database tables not found. Please run the initial database migration script before starting the setup." };
+        }
 
         if (statusData && statusData.is_setup_complete) {
             return { success: false, message: "Setup has already been completed." };
@@ -231,6 +240,9 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'id'>) {
 
     } catch (error: any) {
         console.error("Error during setup:", error);
+         if (error.code === '42P01') { // undefined_table for postgres
+            return { success: false, message: "Database schema is not initialized. Please run the migration script first." };
+        }
         return { success: false, message: `An unexpected error occurred during setup: ${error.message}` };
     }
 }
@@ -261,15 +273,20 @@ export async function resetApplication() {
             console.log("No users found in Auth to delete.");
         }
         
-        // Step 3: Delete data from all public tables using DELETE FROM, which is safer than TRUNCATE
+        // Step 3: Delete data from all public tables using DELETE FROM. This is safer than TRUNCATE.
+        // The order matters due to foreign key constraints. Start with tables that are referenced by others.
         const tables = [
-            'bookings', 'contact_messages', 'media', 'posts', 'categories', 
-            'packages', 'destinations', 'package_types', 'pages', 'site_pages', 
-            'global_settings', 'home_page_settings', 'users' 
+            'bookings', 'posts', 'packages', 
+            'contact_messages', 'media', 'categories', 
+            'destinations', 'package_types', 'pages', 'site_pages', 
+            'global_settings', 'home_page_settings', 'users' // 'users' should be among the last
         ];
 
         for (const table of tables) {
-            const { error } = await supabase.from(table).delete().gt('id', 0);
+            // The `gt('id', 0)` is a placeholder condition to satisfy the `delete` method's syntax for deleting all rows.
+            // Adjust if your primary keys are not numbers or named differently.
+            // For UUIDs, a different condition like `neq('id', '00000000-0000-0000-0000-000000000000')` might be needed.
+            const { error } = await supabase.from(table).delete().neq('id', 'a-non-existent-value');
              if (error && error.code !== '42P01') { // 42P01: undefined_table
                 console.warn(`Could not clear table ${table}: ${error.message}`);
              }
@@ -283,15 +300,12 @@ export async function resetApplication() {
           .eq('id', 1);
 
         if (error) {
-            // If the row doesn't exist, insert it. This is a safeguard for a completely empty DB.
-            if (error.code === 'PGRST204' || error.code === '42P01') { 
-                 const { error: insertError } = await supabase
-                    .from('site_status')
-                    .insert({ id: 1, is_setup_complete: false });
-                 if (insertError && insertError.code !== '42P01') throw insertError;
-            } else {
-                throw error;
-            }
+            // If the row doesn't exist or table is gone, this will fail. Let's try to re-insert it.
+            // This also handles the case where the table itself was missing.
+            const { error: insertError } = await supabase
+                .from('site_status')
+                .upsert({ id: 1, is_setup_complete: false }, { onConflict: 'id' });
+             if (insertError && insertError.code !== '42P01') throw insertError;
         }
         
         console.log("Application status has been reset. Ready for new setup.");
