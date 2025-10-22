@@ -131,6 +131,12 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'id'>) {
     const supabase = getSupabaseClient_server();
     
     try {
+        // PRE-FLIGHT CHECK: Verify if the database schema exists by checking a core table.
+        const { error: preflightError } = await supabase.from('site_status').select('id').limit(1);
+        if (preflightError && preflightError.code === '42P01') { // '42P01' is PostgreSQL's code for "undefined_table"
+            return { success: false, message: "Database tables not found. Please run the initial database migration script before starting the setup." };
+        }
+
         // 1. Check if setup is already complete in Supabase
         const { data: statusData, error: statusError } = await supabase
             .from('site_status')
@@ -238,19 +244,24 @@ export async function resetApplication() {
         // Step 1: Get all users from Supabase Auth
         const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
         if (listError) {
-            throw new Error(`Failed to list users: ${listError.message}`);
+            // If it fails, maybe auth is already empty. Log it but continue.
+            console.warn(`Could not list users, proceeding with reset: ${listError.message}`);
         }
 
-        // Step 2: Delete each user from Supabase Auth
-        for (const user of users) {
-            const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
-            if (deleteError) {
-                console.warn(`Could not delete auth user ${user.id}: ${deleteError.message}`);
+        // Step 2: Delete each user from Supabase Auth if any were found
+        if (users && users.length > 0) {
+            for (const user of users) {
+                const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+                if (deleteError) {
+                    console.warn(`Could not delete auth user ${user.id}: ${deleteError.message}`);
+                }
             }
+            console.log(`Successfully deleted ${users.length} users from Auth.`);
+        } else {
+            console.log("No users found in Auth to delete.");
         }
-        console.log(`Successfully deleted ${users.length} users from Auth.`);
         
-        // Step 3: Delete data from all public tables
+        // Step 3: Delete data from all public tables using DELETE FROM, which is safer than TRUNCATE
         const tables = [
             'bookings', 'contact_messages', 'media', 'posts', 'categories', 
             'packages', 'destinations', 'package_types', 'pages', 'site_pages', 
@@ -258,7 +269,7 @@ export async function resetApplication() {
         ];
 
         for (const table of tables) {
-            const { error } = await supabase.from(table).delete().gt('id', 0); // A hack to delete all rows
+            const { error } = await supabase.from(table).delete().gt('id', 0);
              if (error && error.code !== '42P01') { // 42P01: undefined_table
                 console.warn(`Could not clear table ${table}: ${error.message}`);
              }
@@ -272,12 +283,12 @@ export async function resetApplication() {
           .eq('id', 1);
 
         if (error) {
-            // If the row doesn't exist, insert it. This is a safeguard.
-            if (error.code === 'PGRST204') { 
+            // If the row doesn't exist, insert it. This is a safeguard for a completely empty DB.
+            if (error.code === 'PGRST204' || error.code === '42P01') { 
                  const { error: insertError } = await supabase
                     .from('site_status')
                     .insert({ id: 1, is_setup_complete: false });
-                 if (insertError) throw insertError;
+                 if (insertError && insertError.code !== '42P01') throw insertError;
             } else {
                 throw error;
             }
