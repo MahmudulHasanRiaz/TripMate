@@ -6,13 +6,38 @@ import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { AppProvider } from "@/context/AppContext";
 import type { Metadata } from 'next';
 import SiteLayoutClient from "@/components/layout/SiteLayoutClient";
-import { getGlobalSettings, type GlobalSettings } from "@/lib/data";
+import { getGlobalSettings, type GlobalSettings, defaultSettings } from "@/lib/data";
+import { getSupabaseClient_server } from "@/lib/supabase";
 
 // This forces the layout to be dynamically rendered, ensuring fresh data on each request.
 export const dynamic = 'force-dynamic';
 
+async function getLayoutData() {
+  const supabase = getSupabaseClient_server();
+  
+  const { data: statusData } = await supabase
+    .from('site_status')
+    .select('is_setup_complete')
+    .limit(1)
+    .maybeSingle();
+
+  const isSetupComplete = statusData?.is_setup_complete || false;
+
+  if (!isSetupComplete) {
+    // If setup is not complete, don't try to fetch settings from the DB.
+    // Return the hardcoded default settings.
+    return { settings: defaultSettings, isSetupComplete: false };
+  }
+  
+  // If setup is complete, fetch the live settings.
+  const settings = await getGlobalSettings();
+  return { settings, isSetupComplete: true };
+}
+
+
 // This function generates metadata dynamically on the server.
 export async function generateMetadata(): Promise<Metadata> {
+  // We can still call getGlobalSettings here. It has a fallback mechanism.
   const settings = await getGlobalSettings();
   
   return {
@@ -37,7 +62,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const settings = await getGlobalSettings();
+  const { settings } = await getLayoutData();
 
   return (
     <html lang="en" suppressHydrationWarning>

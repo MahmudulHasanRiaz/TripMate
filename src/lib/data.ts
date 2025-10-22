@@ -175,7 +175,7 @@ export type MediaFile = {
 };
 
 // Default settings as a fallback, used by getGlobalSettings
-const defaultSettings: GlobalSettings = {
+export const defaultSettings: GlobalSettings = {
     id: 1,
     site_title: "TripMate",
     logo_url: "/logo.svg",
