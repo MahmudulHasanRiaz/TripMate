@@ -2,8 +2,6 @@ import { getSupabaseClient_server } from "@/lib/supabase";
 import SetupForm from "@/components/setup/SetupForm";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import Logo from "@/components/icons/Logo";
-
 
 async function checkSchemaExists() {
     try {
@@ -18,7 +16,7 @@ async function checkSchemaExists() {
         }
         
         // For any other error or success, we assume schema might exist or there's another issue.
-        // Let the form handle other potential issues.
+        // The form submission will handle other potential issues.
         return true;
 
     } catch (e) {
