@@ -7,7 +7,7 @@ import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import type { User } from "@/hooks/use-auth";
 import { getSupabaseClient_server } from './supabase';
-import { packages, posts, categories as categoriesData, destinations, packageTypes, bookings, contactMessages } from './data';
+import { packages, posts, categories as categoriesData, destinations, packageTypes, bookings, contactMessages, defaultSettings } from './data';
 
 
 export async function handleTravelChat(history: Message[], query: string): Promise<string> {
@@ -266,18 +266,19 @@ export async function resetApplication() {
         }
         console.log("All users have been deleted from Supabase Auth.");
 
-        // Step 3: Truncate all public tables to reset all data
+        // Step 3: Clear all public tables by deleting all rows
         const tables = [
             'bookings', 'posts', 'packages', 'package_types', 'destinations',
             'categories', 'users', 'contact_messages', 'media', 
             'pages', 'site_pages', 'home_page_settings', 'global_settings', 'site_status'
         ];
         
-        for (const table of tables.reverse()) { // Reverse order for DELETE to respect dependencies
+        for (const table of tables) {
             const { error: deleteError } = await supabase.from(table).delete().neq('id', 'this-will-never-be-true'); // Delete all rows
             if (deleteError) {
-                // We'll log the error but attempt to continue, as some tables might not exist yet if setup failed midway.
                 console.warn(`Could not clear table: ${table}. Error: ${deleteError.message}`);
+            } else {
+                console.log(`Cleared table: ${table}`);
             }
         }
         
@@ -287,7 +288,6 @@ export async function resetApplication() {
         const { error: setupStatusError } = await supabase.from('site_status').insert({ id: 1, is_setup_complete: false });
         if (setupStatusError) {
             console.error("Failed to reset site_status table:", setupStatusError);
-            // This is a critical failure, as the app won't know to re-run setup.
             throw new Error(`Failed to reset application status: ${setupStatusError.message}`);
         }
         console.log("Application status has been reset. Ready for new setup.");
