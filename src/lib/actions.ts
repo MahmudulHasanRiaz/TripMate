@@ -1,5 +1,4 @@
 
-
 'use server';
 import 'dotenv/config';
 
@@ -7,7 +6,7 @@ import { travelChatbot } from "@/ai/flows/travel-chatbot";
 import { getCulturalAdvice } from "@/ai/flows/cultural-advice-chatbot";
 import type { User } from "@/hooks/use-auth";
 import { getSupabaseClient_server } from './supabase';
-import { packages, posts, categories as categoriesData, destinations, packageTypes, bookings, contactMessages, defaultSettings } from './data';
+import { packages, posts, categories as categoriesData, destinations, packageTypes, bookings, contactMessages, defaultSettings, pagesData, sitePages } from './data';
 
 
 export async function handleTravelChat(history: Message[], query: string): Promise<string> {
@@ -120,7 +119,7 @@ export async function signupUser(userData: Omit<User, 'id'>) {
         return { success: true, user: { id: userRecord.id, ...restOfUserData } };
     } catch (error: any) {
         console.error("Error during signup:", error);
-        if (error.message.includes('unique constraint')) {
+        if (error.message.includes('unique constraint') || error.message.includes('already been registered')) {
             return { success: false, message: "This email is already registered. Please login or use a different email." };
         }
         return { success: false, message: `An unexpected error occurred during signup: ${error.message}` };
@@ -150,10 +149,8 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'id'>) {
         // 3. Insert the new superadmin user and other demo users into the Supabase 'users' table
         const { password, ...restOfAdminData } = adminData;
         
-        // The new superadmin is created from the form.
         const superAdminForDb = { id: userRecord.id, role: 'superadmin', name: restOfAdminData.name, email: restOfAdminData.email, username: 'superadmin' };
 
-        // Demo users to seed, excluding any potential duplicates.
         const demoUsers = [
             { id: 'user-2-admin', email: 'admin@example.com', name: 'Admin User', role: 'admin', username: 'admin' },
             { id: 'user-3-staff', email: 'staff@example.com', name: 'Staff Member', role: 'staff', username: 'staff' },
@@ -161,31 +158,19 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'id'>) {
             { id: 'user-5-customer', email: 'customer2@example.com', name: 'Bob Williams', role: 'customer', username: 'bob' },
         ];
 
-        // Combine the new superadmin with the demo users for a single insert operation.
         const usersToSeed = [superAdminForDb, ...demoUsers];
 
         const { error: userInsertError } = await supabase
             .from('users')
-            .insert(usersToSeed);
+            .upsert(usersToSeed, { onConflict: 'id' });
         
         if (userInsertError) throw userInsertError;
 
-        // 4. Seed all other tables
-        const { error: settingsError } = await supabase.from('global_settings').insert({
-            id: 1,
-            site_title: "TripMate",
-            logo_url: "/logo.svg",
-            favicon_url: "/favicon.svg",
-            search_engine_visibility: true,
-            footer_description: "Your adventure starts here. Discover breathtaking destinations with us.",
-            quick_links: { title: "Quick Links", links: [ { id: "fl1-1", label: "About Us", url: "/about-us" }, { id: "fl1-2", label: "Packages", url: "/packages" }, { id: "fl1-3", label: "Blog", url: "/blog" } ] },
-            support_links: { title: "Support", links: [ { id: "fl2-1", label: "FAQ", url: "/faq" }, { id: "fl2-2", label: "Terms of Service", url: "/terms-of-service" }, { id: "fl2-3", label: "Privacy Policy", url: "/privacy-policy" } ] },
-            social_links: [ { id: "soc-1", platform: 'facebook', url: 'https://facebook.com' }, { id: "soc-2", platform: 'twitter', url: 'https://twitter.com' }, { id: "soc-3", platform: 'instagram', url: 'https://instagram.com' } ],
-            google_map_embed_code: `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v1622542023537!5m2!1sen!2sbd" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`
-        });
+        // 4. Seed all other tables using upsert
+        const { error: settingsError } = await supabase.from('global_settings').upsert({ id: 1, ...defaultSettings });
         if(settingsError) throw settingsError;
         
-        const { error: homeSettingsError } = await supabase.from('home_page_settings').insert({
+        const { error: homeSettingsError } = await supabase.from('home_page_settings').upsert({
             id: 'home',
             hero_image_url: "https://images.pexels.com/photos/33041/antelope-canyon-lower-canyon-arizona.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
             hero_title: "Your Ultimate Adventure Awaits",
@@ -193,42 +178,41 @@ export async function setupSuperAdminAndSeed(adminData: Omit<User, 'id'>) {
             hero_button_label: "Explore All Packages",
             hero_button_link: "/packages",
             status: 'published'
-        });
+        }, { onConflict: 'id' });
         if(homeSettingsError) throw homeSettingsError;
 
         const destToSeed = destinations.map(d => ({...d, id: d.slug}));
-        const { error: destError } = await supabase.from('destinations').insert(destToSeed);
+        const { error: destError } = await supabase.from('destinations').upsert(destToSeed, { onConflict: 'id' });
         if(destError) throw destError;
 
         const typesToSeed = packageTypes.map(t => ({...t, id: t.slug}));
-        const { error: typeError } = await supabase.from('package_types').insert(typesToSeed);
+        const { error: typeError } = await supabase.from('package_types').upsert(typesToSeed, { onConflict: 'id' });
         if(typeError) throw typeError;
 
         const packagesToSeed = packages.map(p => ({ ...p, id: p.slug }));
-        const { error: pkgError } = await supabase.from('packages').insert(packagesToSeed);
+        const { error: pkgError } = await supabase.from('packages').upsert(packagesToSeed, { onConflict: 'id' });
         if(pkgError) throw pkgError;
 
         const catToSeed = categoriesData.map(c => ({ ...c, id: c.slug }));
-        const { error: catError } = await supabase.from('categories').insert(catToSeed);
+        const { error: catError } = await supabase.from('categories').upsert(catToSeed, { onConflict: 'id' });
         if(catError) throw catError;
         
         const postsToSeed = posts.map(p => ({...p, id: p.slug}));
-        const { error: postError } = await supabase.from('posts').insert(postsToSeed);
+        const { error: postError } = await supabase.from('posts').upsert(postsToSeed, { onConflict: 'id' });
         if(postError) throw postError;
 
-        const { error: bookingError } = await supabase.from('bookings').insert(bookings);
+        const { error: bookingError } = await supabase.from('bookings').upsert(bookings, { onConflict: 'id' });
         if(bookingError) throw bookingError;
         
-        const { error: msgError } = await supabase.from('contact_messages').insert(contactMessages);
+        const { error: msgError } = await supabase.from('contact_messages').upsert(contactMessages, { onConflict: 'id' });
         if(msgError) throw msgError;
 
-        const { error: pagesError } = await supabase.from('site_pages').insert([
-          { id: 'about-us', title: 'About Us', content: 'This is the default about us page content.', status: 'published' },
-          { id: 'faq', title: 'Frequently Asked Questions', items: [{id: 'faq-1', question: 'What is included?', answer: 'Everything.'}], status: 'published' },
-          { id: 'terms-of-service', title: 'Terms of Service', content: 'These are the terms.', status: 'published' },
-          { id: 'privacy-policy', title: 'Privacy Policy', content: 'This is the privacy policy.', status: 'published' }
-        ]);
+        const pagesToSeed = pagesData.map(p => ({...p, id: p.slug}));
+        const { error: pagesError } = await supabase.from('pages').upsert(pagesToSeed, { onConflict: 'id' });
         if (pagesError) throw pagesError;
+        
+        const { error: sitePagesError } = await supabase.from('site_pages').upsert(sitePages, { onConflict: 'id' });
+        if (sitePagesError) throw sitePagesError;
 
         // 5. Mark setup as complete in Supabase
         const { error: setupCompleteError } = await supabase
@@ -251,47 +235,24 @@ export async function resetApplication() {
     const supabase = getSupabaseClient_server();
     
     try {
-        // Step 1: Get all users from Supabase Auth
-        const { data: { users }, error: listUsersError } = await supabase.auth.admin.listUsers();
-        if (listUsersError) throw listUsersError;
+        const { error } = await supabase
+          .from('site_status')
+          .update({ is_setup_complete: false })
+          .eq('id', 1);
 
-        // Step 2: Delete all users from Supabase Auth
-        for (const user of users) {
-            const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
-            if (deleteError) {
-                console.warn(`Could not delete user ${user.id}:`, deleteError.message);
+        if (error) {
+            // If the row doesn't exist, insert it.
+            if (error.code === 'PGRST204') {
+                 const { error: insertError } = await supabase
+                    .from('site_status')
+                    .insert({ id: 1, is_setup_complete: false });
+                 if (insertError) throw insertError;
             } else {
-                console.log(`Deleted user ${user.id} from Auth.`);
-            }
-        }
-        console.log("All users have been deleted from Supabase Auth.");
-
-        // Step 3: Clear all public tables by deleting all rows
-        const tables = [
-            'bookings', 'posts', 'packages', 'package_types', 'destinations',
-            'categories', 'users', 'contact_messages', 'media', 
-            'pages', 'site_pages', 'home_page_settings', 'global_settings', 'site_status'
-        ];
-        
-        for (const table of tables) {
-            const { error: deleteError } = await supabase.from(table).delete().neq('id', 'this-will-never-be-true'); // Delete all rows
-            if (deleteError) {
-                console.warn(`Could not clear table: ${table}. Error: ${deleteError.message}`);
-            } else {
-                console.log(`Cleared table: ${table}`);
+                throw error;
             }
         }
         
-        console.log("Attempted to clear all application tables.");
-
-        // Step 4: Re-insert the status row to allow setup again
-        const { error: setupStatusError } = await supabase.from('site_status').insert({ id: 1, is_setup_complete: false });
-        if (setupStatusError) {
-            console.error("Failed to reset site_status table:", setupStatusError);
-            throw new Error(`Failed to reset application status: ${setupStatusError.message}`);
-        }
         console.log("Application status has been reset. Ready for new setup.");
-        
         return { success: true, message: "Application has been reset to its initial state." };
 
     } catch (error: any) {

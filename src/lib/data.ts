@@ -1,5 +1,4 @@
 
-
 import { getSupabaseClient_server } from './supabase';
 import type { User as UserData } from '@/hooks/use-auth';
 
@@ -69,7 +68,7 @@ export type FaqItem = {
 export type SitePage = {
     id: string;
     title: string;
-    content: string;
+    content?: string | null;
     items?: FaqItem[];
     status: 'published' | 'draft';
 }
@@ -184,14 +183,14 @@ export const defaultSettings: GlobalSettings = {
     footer_description: "Your adventure starts here. Discover breathtaking destinations with us.",
     quick_links: {
         title: "Quick Links",
-        links: []
+        links: [ { id: "fl1-1", label: "About Us", url: "/about-us" }, { id: "fl1-2", label: "Packages", url: "/packages" }, { id: "fl1-3", label: "Blog", url: "/blog" } ]
     },
     support_links: {
         title: "Support",
-        links: []
+        links: [ { id: "fl2-1", label: "FAQ", url: "/faq" }, { id: "fl2-2", label: "Terms of Service", url: "/terms-of-service" }, { id: "fl2-3", label: "Privacy Policy", url: "/privacy-policy" } ]
     },
-    social_links: [],
-    google_map_embed_code: ''
+    social_links: [ { id: "soc-1", platform: 'facebook', url: 'https://facebook.com' }, { id: "soc-2", platform: 'twitter', url: 'https://twitter.com' }, { id: "soc-3", platform: 'instagram', url: 'https://instagram.com' } ],
+    google_map_embed_code: `<iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3651.889926830737!2d90.3881699154402!3d23.75124979467103!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755b8bcd681372b%3A0x5c2b8755e3624576!2sBashundhara%20City!5e0!3m2!1sen!2sbd!4v1622542023537!5m2!1sen!2sbd" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`
 };
 
 
@@ -220,6 +219,17 @@ export async function getGlobalSettings(): Promise<GlobalSettings> {
   }
 }
 
+export const pagesData: Omit<Page, 'id' | 'deleted_at'>[] = [
+    { slug: 'sample-page-1', title: 'Sample Page 1', content: 'This is the content for the first sample page.', status: 'published', show_in_menu: true, menu_order: 4, seo_title: 'First Sample Page', seo_description: 'An example page for demonstration.' },
+    { slug: 'sample-page-2', title: 'Sample Page 2 (Draft)', content: 'This is a draft page and should not be visible on the site.', status: 'draft', show_in_menu: false, menu_order: 5 }
+];
+
+export const sitePages: SitePage[] = [
+    { id: 'about-us', title: 'About Our Awesome Company', content: 'We have been providing the best travel services for over 20 years. Our mission is to make your dream vacation a reality.', status: 'published' },
+    { id: 'faq', title: 'Frequently Asked Questions', items: [ { id: 'faq-1', question: 'What is included in the tour package?', answer: 'All our packages include accommodation, guided tours, and transportation. Specific inclusions are listed on each package page.'}, { id: 'faq-2', question: 'Can I customize a tour?', answer: 'Yes, we offer custom tour planning. Please contact us with your requirements.'} ], status: 'published' },
+    { id: 'terms-of-service', title: 'Terms of Service', content: 'By using our service, you agree to our terms. All bookings are subject to availability. Cancellations must be made 30 days prior to departure for a full refund.', status: 'published' },
+    { id: 'privacy-policy', title: 'Privacy Policy', content: 'We respect your privacy. We do not share your personal information with third parties without your consent. All data is stored securely.', status: 'published' }
+]
 
 export const destinations: Omit<Destination, 'id'>[] = [
     { name: "Paris, France", slug: "paris-france", image_url: "https://images.pexels.com/photos/2363/mont-saint-michel-france-normandy-europe.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" },
@@ -620,5 +630,3 @@ export const contactMessages: Omit<ContactMessage, 'deleted_at'>[] = [
         is_read: false
     }
 ];
-
-    
