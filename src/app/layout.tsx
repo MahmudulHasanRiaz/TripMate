@@ -37,8 +37,14 @@ async function getLayoutData() {
 
 // This function generates metadata dynamically on the server.
 export async function generateMetadata(): Promise<Metadata> {
-  // We can still call getGlobalSettings here. It has a fallback mechanism.
-  const settings = await getGlobalSettings();
+  const supabase = getSupabaseClient_server();
+  const { data: statusData } = await supabase.from('site_status').select('is_setup_complete').limit(1).maybeSingle();
+  const isSetupComplete = statusData?.is_setup_complete || false;
+
+  let settings = defaultSettings;
+  if (isSetupComplete) {
+    settings = await getGlobalSettings();
+  }
   
   return {
     title: {
@@ -62,7 +68,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { settings } = await getLayoutData();
+  const { settings, isSetupComplete } = await getLayoutData();
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -79,7 +85,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
-        <AppProvider initialSettings={settings}>
+        <AppProvider initialSettings={settings} isSetupComplete={isSetupComplete}>
             <AuthProvider>
                 <SiteLayoutClient>
                     {children}

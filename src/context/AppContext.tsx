@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { createContext, useState, useContext, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
@@ -11,11 +12,12 @@ interface AppContextType {
   settings: GlobalSettings | null;
   setSettings: Dispatch<SetStateAction<GlobalSettings | null>>;
   loading: boolean;
+  isSetupComplete: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export function AppProvider({ children, initialSettings }: { children: ReactNode, initialSettings: GlobalSettings }) {
+export function AppProvider({ children, initialSettings, isSetupComplete }: { children: ReactNode, initialSettings: GlobalSettings, isSetupComplete: boolean }) {
   const [isContactFormOpen, setContactFormOpen] = useState(false);
   const [settings, setSettings] = useState<GlobalSettings | null>(initialSettings);
   const [loading, setLoading] = useState(false); // No longer loading from client, data is passed in
@@ -29,7 +31,7 @@ export function AppProvider({ children, initialSettings }: { children: ReactNode
 
 
   return (
-    <AppContext.Provider value={{ isContactFormOpen, setContactFormOpen, settings, setSettings, loading }}>
+    <AppContext.Provider value={{ isContactFormOpen, setContactFormOpen, settings, setSettings, loading, isSetupComplete }}>
       {children}
     </AppContext.Provider>
   );

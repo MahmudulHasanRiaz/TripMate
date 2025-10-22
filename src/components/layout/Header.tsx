@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -35,12 +36,17 @@ const defaultNavLinks = [
 export default function Header() {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
-  const { settings, setContactFormOpen } = useAppContext();
+  const { settings, setContactFormOpen, isSetupComplete } = useAppContext();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const [navLinks, setNavLinks] = useState(defaultNavLinks);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (!isSetupComplete) {
+        setNavLinks(defaultNavLinks);
+        return;
+    }
+
     const fetchPages = async () => {
       try {
         const supabase = getSupabaseClient_client();
@@ -83,7 +89,7 @@ export default function Header() {
     };
 
     fetchPages();
-  }, []);
+  }, [isSetupComplete]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
