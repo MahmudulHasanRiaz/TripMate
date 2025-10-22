@@ -251,8 +251,22 @@ export async function resetApplication() {
     const supabase = getSupabaseClient_server();
     
     try {
-        // List of tables to truncate, in an order that respects foreign key constraints if manually ordered.
-        // Using TRUNCATE ... CASCADE should handle dependencies, but ordering can prevent issues.
+        // Step 1: Get all users from Supabase Auth
+        const { data: { users }, error: listUsersError } = await supabase.auth.admin.listUsers();
+        if (listUsersError) throw listUsersError;
+
+        // Step 2: Delete all users from Supabase Auth
+        for (const user of users) {
+            const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id);
+            if (deleteError) {
+                console.warn(`Could not delete user ${user.id}:`, deleteError.message);
+            } else {
+                console.log(`Deleted user ${user.id} from Auth.`);
+            }
+        }
+        console.log("All users have been deleted from Supabase Auth.");
+
+        // Step 3: Truncate all public tables to reset all data
         const tables = [
             'bookings', 'posts', 'packages', 'package_types', 'destinations',
             'categories', 'users', 'contact_messages', 'media', 
@@ -260,17 +274,14 @@ export async function resetApplication() {
         ];
 
         // Using a raw SQL query to truncate all tables.
-        // TRUNCATE is faster than DELETE and resets identity columns.
-        // CASCADE will automatically truncate dependent tables.
         const { error: truncateError } = await supabase.rpc('execute_sql', {
             sql_query: `TRUNCATE TABLE ${tables.join(', ')} RESTART IDENTITY CASCADE;`
         });
         
         if (truncateError) {
-             // Fallback to DELETE if TRUNCATE fails (e.g. permissions)
-            console.warn("TRUNCATE failed, falling back to DELETE FROM. Error:", truncateError.message);
-            for (const table of tables.reverse()) { // Reverse order for DELETE
-                const { error: deleteError } = await supabase.from(table).delete().gt('id', 0); // Dummy condition to delete all
+            console.warn("TRUNCATE RPC failed, falling back to individual DELETE FROM statements. Error:", truncateError.message);
+             for (const table of tables.reverse()) { // Reverse order for DELETE to respect dependencies
+                const { error: deleteError } = await supabase.from(table).delete().neq('id', 'this-will-never-be-true'); // Delete all rows
                 if (deleteError) {
                     console.error(`Error deleting from ${table}:`, deleteError);
                     throw new Error(`Could not clear table: ${table}. Aborting reset.`);
@@ -278,12 +289,7 @@ export async function resetApplication() {
             }
         }
         
-        console.log("All tables have been cleared.");
-
-        // After clearing everything, you might want to re-seed essential settings
-        // or just leave it clean for a fresh setup. Here we leave it clean.
-        
-        console.log("Application reset successful.");
+        console.log("All application tables have been cleared.");
         return { success: true, message: "Application has been reset to its initial state." };
 
     } catch (error: any) {
