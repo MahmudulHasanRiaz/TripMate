@@ -1,30 +1,23 @@
+
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
 
-// This function now correctly handles server-side rendering and client-side hydration
-// to prevent causing re-renders of parent components.
-const getIsMobile = () => {
-    if (typeof window === "undefined") {
-        return false; // Default to false on the server
-    }
-    return window.innerWidth < MOBILE_BREAKPOINT;
-}
-
 export function useIsMobile() {
-  // Lazily initialize state to prevent unnecessary re-renders on the server
-  const [isMobile, setIsMobile] = React.useState(() => getIsMobile());
+  const [isMobile, setIsMobile] = React.useState(false);
 
   React.useEffect(() => {
     const checkDevice = () => {
-      setIsMobile(getIsMobile());
+      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     }
-
-    window.addEventListener("resize", checkDevice)
     
-    // Cleanup listener
+    // Check on initial client-side mount
+    checkDevice();
+
+    window.addEventListener("resize", checkDevice);
+    
     return () => {
-      window.removeEventListener("resize", checkDevice)
+      window.removeEventListener("resize", checkDevice);
     }
   }, [])
 
