@@ -1,17 +1,18 @@
+
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase URL and anon key are required.');
-}
 
 // Client for client-side operations (uses anon key)
-const supabase_client = createClient(supabaseUrl, supabaseAnonKey);
+let supabase_client: ReturnType<typeof createClient>;
 
 export function getSupabaseClient_client() {
+    if (!supabase_client) {
+        supabase_client = createClient(supabaseUrl, supabaseAnonKey);
+    }
     return supabase_client;
 }
 
@@ -21,9 +22,6 @@ export function getSupabaseClient_client() {
 let supabase_server: ReturnType<typeof createClient>;
 
 export function getSupabaseClient_server() {
-    if (!supabaseServiceRoleKey) {
-        throw new Error('Supabase service role key is required for server-side operations.');
-    }
     if (!supabase_server) {
          supabase_server = createClient(supabaseUrl, supabaseServiceRoleKey, {
             auth: {

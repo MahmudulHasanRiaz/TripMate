@@ -238,7 +238,7 @@ export default function AdminLayout({
         <SidebarHeader>
            <div className="flex items-center gap-2 p-2">
             {settings?.logo_url ? (
-                <Image src={settings.logo_url} alt={settings.site_title} width={32} height={32} className="h-8 w-8" />
+                <Image src={settings.logo_url} alt={settings.site_title || "TripMate"} width={32} height={32} className="h-8 w-8" />
             ) : (
                 <Logo className="size-8 text-sidebar-primary" />
             )}
