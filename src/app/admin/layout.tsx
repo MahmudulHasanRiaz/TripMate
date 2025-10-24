@@ -141,14 +141,14 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter();
-  const { user, setUser, loading } = useAuth();
+  const { user, setUser, loading, logout } = useAuth();
   const { settings } = useAppContext();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
-    packages: pathname.startsWith('/admin/packages'),
-    users: pathname.startsWith('/admin/users'),
-    blog: pathname.startsWith('/admin/blog'),
-    pages: pathname.startsWith('/admin/pages'),
+    packages: false,
+    users: false,
+    blog: false,
+    pages: false,
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
@@ -169,34 +169,29 @@ export default function AdminLayout({
   }
 
   const getOpenStatus = (label: string): boolean => {
-      if(label === 'Packages') return openState.packages;
-      if(label === 'Users') return openState.users;
-      if(label === 'Blog') return openState.blog;
-      if(label === 'Pages') return openState.pages;
-      return false;
+      const key = label.toLowerCase() as keyof typeof openState;
+      return openState[key];
   }
   
   const getOpenChangeHandler = (label: string) => {
-      if(label === 'Packages') return handleOpenChange('packages');
-      if(label === 'Users') return handleOpenChange('users');
-      if(label === 'Blog') return handleOpenChange('blog');
-      if(label === 'Pages') return handleOpenChange('pages');
+      const key = label.toLowerCase() as keyof typeof openState;
+      if(key in openState) {
+          return handleOpenChange(key);
+      }
       return () => {};
   }
   
   const getIsActive = (label: string) => {
-      if(label === 'Packages') return pathname.startsWith('/admin/packages');
-      if(label === 'Users') return pathname.startsWith('/admin/users');
-      if(label === 'Blog') return pathname.startsWith('/admin/blog');
-      if(label === 'Pages') return pathname.startsWith('/admin/pages');
-      return false;
+      const key = label.toLowerCase();
+      return pathname.startsWith(`/admin/${key}`);
   }
 
   const handleSaveProfile = async (updatedUser: User) => {
      try {
         const supabase = getSupabaseClient_client();
-        const { uid, password, ...dataToSave } = updatedUser;
-        const { error } = await supabase.from('users').update(dataToSave).eq('id', uid);
+        if (!supabase) return;
+        const { id, password, ...dataToSave } = updatedUser;
+        const { error } = await supabase.from('users').update(dataToSave).eq('id', id);
         
         if (error) throw error;
         
@@ -232,7 +227,7 @@ export default function AdminLayout({
                 <Logo className="size-8 text-sidebar-primary" />
             )}
             <span className="text-xl font-headline font-semibold text-sidebar-foreground">
-              {settings?.site_title || "TripMate"}
+              {settings ? settings.site_title : "TripMate"}
             </span>
           </div>
         </SidebarHeader>
@@ -242,7 +237,7 @@ export default function AdminLayout({
               <SidebarMenuItem key={item.label || item.href}>
                 {item.subItems ? (
                   <Collapsible 
-                      open={getOpenStatus(item.label)} 
+                      defaultOpen={getIsActive(item.label)}
                       onOpenChange={getOpenChangeHandler(item.label)}
                   >
                     <CollapsibleTrigger asChild>
@@ -373,4 +368,3 @@ export default function AdminLayout({
     </>
   )
 }
-
