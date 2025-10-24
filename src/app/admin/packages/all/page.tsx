@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react";
@@ -140,13 +139,11 @@ export default function AdminAllPackagesPage() {
                 <TabsTrigger value="all">All Packages ({allPackages.length})</TabsTrigger>
                 <TabsTrigger value="trash">Trash ({trashedPackages.length})</TabsTrigger>
             </TabsList>
-            <TabsContent value="all" className="mt-4">
-                <PackageTable packages={currentList} loading={loading} onAction={handleAction} onEdit={handleEdit} isTrash={false} />
-            </TabsContent>
-            <TabsContent value="trash" className="mt-4">
-                <PackageTable packages={currentList} loading={loading} onAction={handleAction} onEdit={handleEdit} isTrash={true} />
-            </TabsContent>
         </Tabs>
+         <div className="mt-4">
+             {activeTab === 'all' && <PackageTable packages={allPackages} loading={loading} onAction={handleAction} onEdit={handleEdit} isTrash={false} />}
+             {activeTab === 'trash' && <PackageTable packages={trashedPackages} loading={loading} onAction={handleAction} onEdit={handleEdit} isTrash={true} />}
+         </div>
       </CardContent>
     </Card>
   );
