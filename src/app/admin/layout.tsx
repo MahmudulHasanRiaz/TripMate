@@ -154,19 +154,12 @@ export default function AdminLayout({
   const [openMobile, setOpenMobile] = useState(false);
 
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-
   if (loading) {
     return <AdminLoadingScreen />;
   }
   
   if (!user) {
-    // This state is brief as the useEffect above will redirect.
+    // This state is brief as middleware should handle redirection.
     // Showing a loading screen is better than a flash of content.
     return <AdminLoadingScreen />;
   }
