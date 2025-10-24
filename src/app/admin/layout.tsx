@@ -1,5 +1,4 @@
 
-
 "use client"
 import {
   SidebarProvider,
@@ -100,32 +99,6 @@ const menuItems = [
   { href: "/admin/media", label: "Media", icon: ImageIconLucide },
 ]
 
-function AdminAccessDenied() {
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-background">
-        <Card className="w-full max-w-md text-center">
-            <CardHeader>
-                <div className="mx-auto bg-destructive text-destructive-foreground rounded-full p-3 w-fit">
-                    <ShieldAlert className="h-8 w-8" />
-                </div>
-                <CardTitle className="mt-4">Access Denied</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">
-                   You do not have the necessary permissions to view this page. This area is restricted to administrators.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                    If you believe this is an error, please contact a site super administrator to grant you access.
-                </p>
-                <Button asChild className="mt-6">
-                    <Link href="/">Return to Homepage</Link>
-                </Button>
-            </CardContent>
-        </Card>
-    </div>
-  )
-}
-
 export default function AdminLayout({
   children,
 }: {
@@ -133,7 +106,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter();
-  const { user, setUser, logout } = useAuth();
+  const { user, setUser, logout, loading } = useAuth();
   const { settings } = useAppContext();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
@@ -145,10 +118,6 @@ export default function AdminLayout({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
   
-  // Middleware handles the auth check. If we are here, user is authenticated and authorized.
-  // We can safely render the admin layout.
-  // Any brief flash of wrong content is handled by the overall page loading state.
-
   const handleOpenChange = (key: keyof typeof openState) => (isOpen: boolean) => {
     setOpenState(prev => ({...prev, [key]: isOpen }));
   }
@@ -200,22 +169,10 @@ export default function AdminLayout({
     logout();
   }
 
-  if (!user) {
-    // This case should ideally not be reached if middleware is working correctly.
-    // However, it's a safe fallback to prevent rendering a broken layout.
-    // It shows a simple loading state until the user object is confirmed or middleware redirects.
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
+  if (loading || !user) {
+    return null;
   }
   
-  const isAuthorized = user.role === "admin" || user.role === "superadmin" || user.role === "staff";
-  if (!isAuthorized) {
-    return <AdminAccessDenied />;
-  }
-
   return (
     <>
     <SidebarProvider openMobile={openMobile} onOpenMobileChange={setOpenMobile}>
