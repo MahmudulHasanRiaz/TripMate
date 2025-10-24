@@ -13,8 +13,6 @@ async function checkSchemaExists(): Promise<boolean> {
 
         // If there's an error, it means the table likely doesn't exist or there's a connection issue.
         if (error) {
-            // Log the specific error for debugging but return false to the user.
-            console.error("Schema check failed:", error.message);
             return false;
         }
 
@@ -23,7 +21,6 @@ async function checkSchemaExists(): Promise<boolean> {
 
     } catch (e) {
         // Catch any other catastrophic errors during client initialization or query.
-        console.error("Catastrophic error during schema check:", e);
         return false;
     }
 }
