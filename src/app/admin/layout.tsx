@@ -126,14 +126,6 @@ function AdminAccessDenied() {
   )
 }
 
-function AdminLoadingScreen() {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    )
-}
-
 export default function AdminLayout({
   children,
 }: {
@@ -141,7 +133,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const router = useRouter();
-  const { user, setUser, loading, logout } = useAuth();
+  const { user, setUser, logout } = useAuth();
   const { settings } = useAppContext();
   const { toast } = useToast();
   const [openState, setOpenState] = useState({
@@ -154,8 +146,12 @@ export default function AdminLayout({
   const [openMobile, setOpenMobile] = useState(false);
   
   if (!user) {
-    // Middleware should prevent this, but as a fallback.
-    return <AdminLoadingScreen />;
+    // This should ideally not be reached due to middleware, but serves as a fallback.
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
   }
 
   const isAuthorized = user.role === "admin" || user.role === "superadmin" || user.role === "staff";
