@@ -24,6 +24,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -41,7 +42,9 @@ export default function AdminAllPackagesPage() {
   const loadPackages = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("packages").select('*').order("title");
+      const supabaseClient = getSupabaseClient_client();
+      if (!supabaseClient) return;
+      const { data, error } = await supabaseClient.from("packages").select('*').order("title");
       if (error) throw error;
       const packagesList = data as Package[];
       
@@ -61,7 +64,9 @@ export default function AdminAllPackagesPage() {
 
   const addPackage = async (newPackageData: Omit<Package, 'id'>) => {
     try {
-      const { error } = await supabase.from("packages").insert({ ...newPackageData, id: newPackageData.slug });
+      const supabaseClient = getSupabaseClient_client();
+      if (!supabaseClient) return;
+      const { error } = await supabaseClient.from("packages").insert({ ...newPackageData, id: newPackageData.slug });
       if (error) throw error;
       toast({
         title: "Package Added!",
@@ -77,16 +82,18 @@ export default function AdminAllPackagesPage() {
   
   const handleAction = async (action: "trash" | "restore" | "delete", pkg: Package) => {
     try {
+      const supabaseClient = getSupabaseClient_client();
+      if (!supabaseClient) return;
       if (action === "trash") {
-          const { error } = await supabase.from("packages").update({ deleted_at: new Date().toISOString() }).eq('id', pkg.id);
+          const { error } = await supabaseClient.from("packages").update({ deleted_at: new Date().toISOString() }).eq('id', pkg.id);
           if (error) throw error;
           toast({ title: "Package moved to trash." });
       } else if (action === "restore") {
-          const { error } = await supabase.from("packages").update({ deleted_at: null }).eq('id', pkg.id);
+          const { error } = await supabaseClient.from("packages").update({ deleted_at: null }).eq('id', pkg.id);
           if (error) throw error;
           toast({ title: "Package restored." });
       } else if (action === "delete") {
-          const { error } = await supabase.from("packages").delete().eq('id', pkg.id);
+          const { error } = await supabaseClient.from("packages").delete().eq('id', pkg.id);
           if (error) throw error;
           toast({ title: "Package permanently deleted.", variant: "destructive" });
       }
