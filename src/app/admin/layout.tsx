@@ -150,19 +150,14 @@ export default function AdminLayout({
     pages: pathname.startsWith('/admin/pages'),
   });
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const isAuthorized = user?.role === "admin" || user?.role === "superadmin" || user?.role === "staff";
   const [openMobile, setOpenMobile] = useState(false);
-
-
-  if (loading) {
-    return <AdminLoadingScreen />;
-  }
   
   if (!user) {
-    // This state is brief as middleware should handle redirection.
-    // Showing a loading screen is better than a flash of content.
+    // Middleware should prevent this, but as a fallback.
     return <AdminLoadingScreen />;
   }
+
+  const isAuthorized = user.role === "admin" || user.role === "superadmin" || user.role === "staff";
 
   if (!isAuthorized) {
     return <AdminAccessDenied />;
