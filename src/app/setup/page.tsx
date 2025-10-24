@@ -3,27 +3,31 @@ import SetupForm from "@/components/setup/SetupForm";
 import { AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-async function checkSchemaExists() {
+async function checkSchemaExists(): Promise<boolean> {
     try {
         const supabase = getSupabaseClient_server();
-        // We try to query a table that should exist after migration.
-        // We don't care about the data, only if the query succeeds or fails.
-        const { error } = await supabase.from('site_status').select('id').limit(1);
+        // We try to query a table that must exist for the setup to be considered possible.
+        // If this query fails for any reason (table not found, connection error),
+        // we can assume the schema is not ready.
+        const { data, error } = await supabase.from('site_status').select('id').limit(1);
 
-        // If we get a specific error code for 'relation does not exist', schema is not there.
-        if (error && error.code === '42P01') {
+        // If there's an error, it means the table likely doesn't exist or there's a connection issue.
+        if (error) {
+            // Log the specific error for debugging but return false to the user.
+            console.error("Schema check failed:", error.message);
             return false;
         }
-        
-        // For any other error or success, we assume schema might exist or there's another issue.
-        // The form submission will handle other potential issues.
+
+        // If there's no error, the query was successful, meaning the table exists.
         return true;
 
     } catch (e) {
-        // If the entire connection fails, we'll also consider schema as non-existent for simplicity.
+        // Catch any other catastrophic errors during client initialization or query.
+        console.error("Catastrophic error during schema check:", e);
         return false;
     }
 }
+
 
 export default async function SetupPage() {
 
