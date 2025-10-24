@@ -168,10 +168,6 @@ export default function AdminLayout({
     setOpenMobile(false);
     logout();
   }
-
-  if (loading || !user) {
-    return null;
-  }
   
   return (
     <>
