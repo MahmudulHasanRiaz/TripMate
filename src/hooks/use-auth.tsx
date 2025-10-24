@@ -42,6 +42,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = getSupabaseClient_client();
 
   useEffect(() => {
+    if (!supabase) {
+        setLoading(false);
+        setUser(null);
+        return;
+    }
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       setLoading(true);
       if (session?.user) {
@@ -77,6 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase, router]);
 
   const login = useCallback(async (identifier: string, password: string, rememberMe: boolean = true): Promise<User> => {
+    if (!supabase) {
+        throw new Error("Supabase is not configured. Please complete the setup.");
+    }
+    
     let loginEmail = identifier;
 
     if (!identifier.includes('@')) {
@@ -139,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (!supabase) return;
     await supabase.auth.signOut();
     setUser(null);
     router.push('/');
