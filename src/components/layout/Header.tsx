@@ -97,7 +97,7 @@ export default function Header() {
         <div className="mr-4 flex items-center">
           <Link href="/" className="flex items-center gap-2">
             {settings?.logo_url ? (
-                <Image src={settings.logo_url} alt={settings.site_title} width={32} height={32} className="h-8 w-8" />
+                <Image src={settings.logo_url} alt={settings?.site_title || "TripMate"} width={32} height={32} className="h-8 w-8" />
             ) : (
                 <Logo className="h-8 w-8 text-primary" />
             )}
@@ -167,7 +167,7 @@ export default function Header() {
                    <SheetTitle>
                      <Link href="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
                         {settings?.logo_url ? (
-                            <Image src={settings.logo_url} alt={settings.site_title} width={32} height={32} className="h-8 w-8" />
+                            <Image src={settings.logo_url} alt={settings.site_title || "TripMate"} width={32} height={32} className="h-8 w-8" />
                         ) : (
                             <Logo className="h-8 w-8 text-primary" />
                         )}

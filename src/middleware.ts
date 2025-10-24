@@ -1,41 +1,47 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { getSupabaseClient_server } from './lib/supabase';
 
-async function checkSetupStatus(request: NextRequest): Promise<boolean> {
+async function checkSetupStatus(): Promise<boolean> {
     try {
-        const url = new URL('/api/setup-check', request.url);
-        const response = await fetch(url.toString(), {
-            // Prevent caching of this critical check
-            cache: 'no-store', 
-        });
+        const supabase = getSupabaseClient_server();
+        const { data, error } = await supabase
+            .from('site_status')
+            .select('is_setup_complete')
+            .limit(1)
+            .single();
 
-        if (!response.ok) {
-            console.error(`Middleware setup check failed with status: ${response.status}`);
-            return true;
+        // If there's an error (e.g., table not found), it means setup is not complete.
+        if (error) {
+            return false;
         }
 
-        const data = await response.json();
-        
-        // Ensure we check for the specific property
-        if (typeof data.isSetupComplete === 'boolean') {
-            return data.isSetupComplete;
-        }
+        return data?.is_setup_complete || false;
 
-        // Default to true if the property is missing to avoid lockout
-        console.warn("Middleware warning: 'isSetupComplete' property missing from /api/setup-check response. Defaulting to true.");
-        return true;
-
-    } catch (error: any) {
-        console.error("Middleware error fetching setup status:", error);
-        return true; 
+    } catch (error) {
+        // If any catastrophic error happens (e.g., DB connection),
+        // assume setup is not complete to be safe.
+        return false;
     }
 }
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
-    const isSetupComplete = await checkSetupStatus(request);
+    // These paths should always be accessible, regardless of setup status.
+    const unrestrictedPaths = [
+        '/_next/',
+        '/api/',
+        '/favicon.ico',
+        // Add other static file paths if necessary
+    ];
+
+    if (unrestrictedPaths.some(p => pathname.startsWith(p))) {
+        return NextResponse.next();
+    }
+
+    const isSetupComplete = await checkSetupStatus();
     const isOnSetupPage = pathname.startsWith('/setup');
 
     if (!isSetupComplete) {
@@ -55,10 +61,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    // Skip all internal paths (_next)
-    // Skip all API routes
-    // Skip all static files
-    '/((?!_next/static|_next/image|api|favicon.ico|.*\\..*).*)'
-  ],
+  /*
+   * Match all request paths except for the ones starting with:
+   * - _next/static (static files)
+   * - _next/image (image optimization files)
+   * - favicon.ico (favicon file)
+   * - api (API routes)
+   * This is a more robust way to exclude static assets.
+   */
+  matcher: '/((?!_next/static|_next/image|api|favicon.ico).*)',
 }
