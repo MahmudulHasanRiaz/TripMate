@@ -6,6 +6,12 @@ import { getSupabaseClient_server } from './lib/supabase';
 async function checkSetupStatus(): Promise<boolean> {
     try {
         const supabase = getSupabaseClient_server();
+        if (!supabase) {
+            // If the client couldn't be created (e.g., missing env vars),
+            // assume setup is not complete.
+            return false;
+        }
+
         const { data, error } = await supabase
             .from('site_status')
             .select('is_setup_complete')
@@ -20,8 +26,9 @@ async function checkSetupStatus(): Promise<boolean> {
         return data?.is_setup_complete || false;
 
     } catch (error) {
-        // If any catastrophic error happens (e.g., DB connection),
+        // If any catastrophic error happens,
         // assume setup is not complete to be safe.
+        console.error("Middleware setup check failed:", error);
         return false;
     }
 }

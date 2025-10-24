@@ -15,6 +15,10 @@ export const dynamic = 'force-dynamic';
 async function getLayoutData() {
   const supabase = getSupabaseClient_server();
   
+  if (!supabase) {
+    return { settings: defaultSettings, isSetupComplete: false };
+  }
+
   const { data: statusData } = await supabase
     .from('site_status')
     .select('is_setup_complete')
@@ -38,6 +42,14 @@ async function getLayoutData() {
 // This function generates metadata dynamically on the server.
 export async function generateMetadata(): Promise<Metadata> {
   const supabase = getSupabaseClient_server();
+
+  if (!supabase) {
+    return {
+      title: defaultSettings.site_title,
+      robots: { index: false, follow: false }
+    };
+  }
+
   const { data: statusData } = await supabase.from('site_status').select('is_setup_complete').limit(1).maybeSingle();
   const isSetupComplete = statusData?.is_setup_complete || false;
 
