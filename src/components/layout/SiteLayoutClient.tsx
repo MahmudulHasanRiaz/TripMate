@@ -1,4 +1,5 @@
 
+      
 "use client";
 
 import { cn } from "@/lib/utils";
@@ -15,7 +16,7 @@ export default function SiteLayoutClient({ children }: { children: React.ReactNo
   const isAdminRoute = pathname.startsWith('/admin');
   const isSetupPage = pathname.startsWith('/setup');
 
-  const showFooterAndChatbot = !isAdminRoute && !isSetupPage;
+  const showHeaderAndFooter = !isAdminRoute && !isSetupPage;
 
   return (
     <div
@@ -24,12 +25,14 @@ export default function SiteLayoutClient({ children }: { children: React.ReactNo
         )}
       >
         <div className="relative flex min-h-screen flex-col">
-          {!isSetupPage && <Header />}
+          {showHeaderAndFooter && <Header />}
           <main className="flex-1">{children}</main>
-          {showFooterAndChatbot && <Footer />}
+          {showHeaderAndFooter && <Footer />}
         </div>
-        {showFooterAndChatbot && <Chatbot />}
+        {showHeaderAndFooter && <Chatbot />}
         <ContactForm />
     </div>
   );
 }
+
+    
