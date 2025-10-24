@@ -145,20 +145,9 @@ export default function AdminLayout({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [openMobile, setOpenMobile] = useState(false);
   
-  if (!user) {
-    // This should ideally not be reached due to middleware, but serves as a fallback.
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-    );
-  }
-
-  const isAuthorized = user.role === "admin" || user.role === "superadmin" || user.role === "staff";
-
-  if (!isAuthorized) {
-    return <AdminAccessDenied />;
-  }
+  // Middleware handles the auth check. If we are here, user is authenticated and authorized.
+  // We can safely render the admin layout.
+  // Any brief flash of wrong content is handled by the overall page loading state.
 
   const handleOpenChange = (key: keyof typeof openState) => (isOpen: boolean) => {
     setOpenState(prev => ({...prev, [key]: isOpen }));
@@ -209,6 +198,22 @@ export default function AdminLayout({
   const handleLogout = () => {
     setOpenMobile(false);
     logout();
+  }
+
+  if (!user) {
+    // This case should ideally not be reached if middleware is working correctly.
+    // However, it's a safe fallback to prevent rendering a broken layout.
+    // It shows a simple loading state until the user object is confirmed or middleware redirects.
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  const isAuthorized = user.role === "admin" || user.role === "superadmin" || user.role === "staff";
+  if (!isAuthorized) {
+    return <AdminAccessDenied />;
   }
 
   return (
