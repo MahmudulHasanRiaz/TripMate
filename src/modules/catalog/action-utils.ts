@@ -1,5 +1,6 @@
 import { GuardError, withGuard } from "@/lib/guard";
 import { CatalogError } from "@/modules/catalog/service";
+import { uuidSchema } from "@/modules/catalog/validation";
 import type { Session } from "@/lib/auth-helpers";
 
 /**
@@ -22,6 +23,15 @@ import type { Session } from "@/lib/auth-helpers";
 export type ActionResult<Data = undefined> =
   | (Data extends undefined ? { ok: true } : { ok: true; data: Data })
   | { ok: false; code?: string; error: string };
+
+/** Trust-boundary check for id params that flow straight into DB calls — a raw
+ *  malformed value (empty string, non-uuid, wrong type) would otherwise surface
+ *  as a raw PG "invalid input syntax for type uuid" 500. Returns null when the
+ *  value is not a uuid; the action then relays { ok:false, code:"VALIDATION",
+ *  error:"Invalid id" }. */
+export function parseActionId(id: string): string | null {
+  return uuidSchema.safeParse(id).success ? id : null;
+}
 
 export function adminAction<TInput, TOutput extends ActionResult>(
   run: (input: TInput, session: Session | null) => Promise<TOutput>,

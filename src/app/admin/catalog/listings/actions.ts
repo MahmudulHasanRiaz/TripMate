@@ -15,7 +15,7 @@
  */
 
 import { updateTag } from "next/cache";
-import { listingInput } from "@/modules/catalog/validation";
+import { listingInput, listingStatusSchema } from "@/modules/catalog/validation";
 import type { ListingInput, ListingStatus } from "@/modules/catalog/validation";
 import {
   getListingById,
@@ -24,7 +24,7 @@ import {
   upsertListing,
 } from "@/modules/catalog/service";
 import { CACHE_TAGS } from "@/lib/cache-tags";
-import { adminAction, type ActionResult } from "@/modules/catalog/action-utils";
+import { adminAction, parseActionId, type ActionResult } from "@/modules/catalog/action-utils";
 
 type ListingRef = { id: string; slug: string };
 type SaveResult = ActionResult<ListingRef>;
@@ -58,16 +58,23 @@ export const setListingStatus = adminAction<
   { id: string; status: ListingStatus },
   ActionResult
 >(async (input) => {
-  const saved = await updateListingStatus(input.id, input.status);
+  // Trust boundary: id/status reach DB columns raw, so parse them before use.
+  const id = parseActionId(input.id);
+  if (!id) return { ok: false, code: "VALIDATION", error: "Invalid id" };
+  const parsedStatus = listingStatusSchema.safeParse(input.status);
+  if (!parsedStatus.success) return { ok: false, code: "VALIDATION", error: "Invalid status" };
+  const saved = await updateListingStatus(id, parsedStatus.data);
   revalidateListing({ id: saved.id, slug: saved.slug });
   return { ok: true };
 });
 
 /** Soft-delete (trash) a listing — its slug is released for a suffixed re-create. */
 export const trashListing = adminAction<{ id: string }, ActionResult>(async (input) => {
-  const before = await getListingById(input.id);
+  const id = parseActionId(input.id);
+  if (!id) return { ok: false, code: "VALIDATION", error: "Invalid id" };
+  const before = await getListingById(id);
   if (!before) return { ok: false, code: "NOT_FOUND", error: "Listing not found or already deleted." };
-  const ok = await softDeleteListing(input.id);
+  const ok = await softDeleteListing(id);
   if (!ok) return { ok: false, code: "NOT_FOUND", error: "Listing not found or already deleted." };
   revalidateListing({ id: before.id, slug: before.slug });
   return { ok: true };

@@ -46,7 +46,9 @@ export const slugSchema = z
     "Slug must be lowercase letters/numbers separated by single dashes (no leading/trailing dash, e.g. premium-hajj-2026)",
   );
 
-const uuidSchema = z.string().uuid("Must be a valid UUID");
+/** Ids travel as route params / form keys and reach DB uuid columns — parsed
+ *  (never trusted raw) at every trust boundary. */
+export const uuidSchema = z.string().uuid("Must be a valid UUID");
 const urlTextSchema = z.string().trim().min(1, "URL is required").max(2048);
 
 // ---- JSON blob shapes stored in jsonb columns --------------------------------

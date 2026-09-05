@@ -599,6 +599,27 @@ function toCategoryWrite(input: CategoryInput): CategoryWrite {
 
 export async function upsertCategory(input: CategoryInput): Promise<Category> {
   const write = toCategoryWrite(input);
+  // Full-replace edits must not bypass the trash path's IN_USE guard: refuse an
+  // active→inactive transition while non-deleted listings still reference the
+  // row. active→active, inactive→active and new rows are unaffected. The row
+  // existing is checked here so an absent id still surfaces as NOT_FOUND below,
+  // not as IN_USE.
+  if (input.id && !input.isActive) {
+    const [existing] = await db
+      .select({ isActive: serviceCategories.isActive })
+      .from(serviceCategories)
+      .where(eq(serviceCategories.id, input.id))
+      .limit(1);
+    if (existing?.isActive) {
+      const referencing = await countNonDeletedListingsFor(eq(listings.categoryId, input.id));
+      if (referencing > 0) {
+        throw new CatalogError(
+          "IN_USE",
+          `Category cannot be deactivated — ${referencing} listing(s) still reference it. Trash them first or keep the category active.`,
+        );
+      }
+    }
+  }
   try {
     let rows: ServiceCategoriesRow[];
     if (input.id) {
@@ -665,6 +686,24 @@ function toDestinationWrite(input: DestinationInput): DestinationWrite {
 
 export async function upsertDestination(input: DestinationInput): Promise<Destination> {
   const write = toDestinationWrite(input);
+  // Mirror of the category guard above: refuse an edit that would deactivate a
+  // still-referenced destination (same IN_USE semantics as the trash path).
+  if (input.id && !input.isActive) {
+    const [existing] = await db
+      .select({ isActive: destinations.isActive })
+      .from(destinations)
+      .where(eq(destinations.id, input.id))
+      .limit(1);
+    if (existing?.isActive) {
+      const referencing = await countNonDeletedListingsFor(eq(listings.destinationId, input.id));
+      if (referencing > 0) {
+        throw new CatalogError(
+          "IN_USE",
+          `Destination cannot be deactivated — ${referencing} listing(s) still reference it. Trash them first or keep the destination active.`,
+        );
+      }
+    }
+  }
   try {
     let rows: DestinationsRow[];
     if (input.id) {

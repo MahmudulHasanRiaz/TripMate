@@ -16,7 +16,7 @@ import { categoryInput } from "@/modules/catalog/validation";
 import type { CategoryInput } from "@/modules/catalog/validation";
 import { softDeleteCategory, upsertCategory } from "@/modules/catalog/service";
 import { CACHE_TAGS } from "@/lib/cache-tags";
-import { adminAction, type ActionResult } from "@/modules/catalog/action-utils";
+import { adminAction, parseActionId, type ActionResult } from "@/modules/catalog/action-utils";
 
 /** Category name/slug/kind render inside listing cards, so a taxonomy change
  *  must also expire the listings tags the public side caches on. */
@@ -46,7 +46,9 @@ export const saveCategory = adminAction<CategoryInput, ActionResult<{ id: string
 
 /** Deactivate a category. Refuses (IN_USE) while live listings reference it. */
 export const trashCategory = adminAction<{ id: string }, ActionResult>(async (input) => {
-  const ok = await softDeleteCategory(input.id);
+  const id = parseActionId(input.id);
+  if (!id) return { ok: false, code: "VALIDATION", error: "Invalid id" };
+  const ok = await softDeleteCategory(id);
   if (!ok) {
     return { ok: false, code: "NOT_FOUND", error: "Category not found." };
   }

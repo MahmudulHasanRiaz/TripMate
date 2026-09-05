@@ -19,7 +19,7 @@ import {
   upsertDestination,
 } from "@/modules/catalog/service";
 import { CACHE_TAGS } from "@/lib/cache-tags";
-import { adminAction, type ActionResult } from "@/modules/catalog/action-utils";
+import { adminAction, parseActionId, type ActionResult } from "@/modules/catalog/action-utils";
 
 function revalidatePublic(): void {
   updateTag(CACHE_TAGS.listings);
@@ -46,7 +46,9 @@ export const saveDestination = adminAction<DestinationInput, ActionResult<{ id: 
 
 /** Deactivate a destination. Refuses (IN_USE) while live listings reference it. */
 export const trashDestination = adminAction<{ id: string }, ActionResult>(async (input) => {
-  const ok = await softDeleteDestination(input.id);
+  const id = parseActionId(input.id);
+  if (!id) return { ok: false, code: "VALIDATION", error: "Invalid id" };
+  const ok = await softDeleteDestination(id);
   if (!ok) {
     return { ok: false, code: "NOT_FOUND", error: "Destination not found." };
   }

@@ -123,6 +123,84 @@ describe.skipIf(!integration)("catalog service (integration — Postgres)", () =
     await db.delete(destinations).where(eq(destinations.slug, "integration-land"));
   });
 
+  it("refuses a full-replace upsert that would deactivate a referenced category/destination", async () => {
+    const service = await import("@/modules/catalog/service");
+    const { eq } = await import("drizzle-orm");
+    const { listings, serviceCategories, destinations } = await import("@/modules/catalog/schema");
+    const { db } = await import("@/db/client");
+    const { categoryInput, destinationInput, listingInput } = await import("@/modules/catalog/validation");
+    // Pre-run purge for idempotency.
+    await db.delete(listings).where(eq(listings.slug, "edit-inuse-listing"));
+    await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-edit-inuse"));
+    await db.delete(destinations).where(eq(destinations.slug, "integration-edit-inuse-land"));
+
+    const cat = await service.upsertCategory(
+      categoryInput.parse({ name: "Edit IN_USE", slug: "integration-edit-inuse", kind: "package" }),
+    );
+    const dest = await service.upsertDestination(
+      destinationInput.parse({ name: "Edit IN_USE Land", slug: "integration-edit-inuse-land" }),
+    );
+    const saved = await service.upsertListing(
+      listingInput.parse({
+        categoryId: cat.id,
+        destinationId: dest.id,
+        title: "Edit IN_USE Listing",
+        slug: "edit-inuse-listing",
+        price: "1",
+      }),
+    );
+
+    // Deactivating via the EDIT path (not the trash path) is refused the same way.
+    await expect(
+      service.upsertCategory(
+        categoryInput.parse({
+          id: cat.id,
+          name: "Edit IN_USE",
+          slug: "integration-edit-inuse",
+          kind: "package",
+          isActive: false,
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "IN_USE" });
+    await expect(
+      service.upsertDestination(
+        destinationInput.parse({
+          id: dest.id,
+          name: "Edit IN_USE Land",
+          slug: "integration-edit-inuse-land",
+          isActive: false,
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "IN_USE" });
+
+    // Unreferenced rows may still be deactivated through the edit path.
+    await service.softDeleteListing(saved.id);
+    const deactivatedCat = await service.upsertCategory(
+      categoryInput.parse({
+        id: cat.id,
+        name: "Edit IN_USE",
+        slug: "integration-edit-inuse",
+        kind: "package",
+        isActive: false,
+      }),
+    );
+    expect(deactivatedCat.isActive).toBe(false);
+    const deactivatedDest = await service.upsertDestination(
+      destinationInput.parse({
+        id: dest.id,
+        name: "Edit IN_USE Land",
+        slug: "integration-edit-inuse-land",
+        isActive: false,
+      }),
+    );
+    expect(deactivatedDest.isActive).toBe(false);
+
+    // Hard-cleanup so the shared dev DB stays tidy across runs.
+    await db.delete(listings).where(eq(listings.slug, saved.slug));
+    await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-edit-inuse"));
+    await db.delete(destinations).where(eq(destinations.slug, "integration-edit-inuse-land"));
+  });
+
   it("refuses a listing save whose category/destination is missing or inactive (INVALID_REFERENCE)", async () => {
     const service = await import("@/modules/catalog/service");
     const { eq } = await import("drizzle-orm");
