@@ -240,6 +240,7 @@ permission keys (module-based):
 | Env leak | Secrets in `server-only` modules; NEXT_PUBLIC_ only safe values (site URL, pixel ID) |
 | PII exposure | Public pages never receive users.email/phone; server components select explicit columns, never `table.*` |
 | Setup wizard abuse | Route disabled after `settings.setup_complete`; no per-request middleware fetch |
+| Wizard env-write abuse | Fixed-path atomic writer, key whitelist, active only while setup unlocked; private values never echoed (boolean configured-state only) |
 | CAPI token / payment secrets | env-only; DB stores public display data only |
 | Rate limiter storage | In-memory (VPS single instance) / Upstash Redis (Vercel) — env-driven switch |
 
@@ -320,15 +321,40 @@ Menu items permission-filtered. Server-gated layout. shadcn UI reused.
 
 ---
 
-## 12. Setup Wizard
+## 12. Setup Wizard (first-run browser initialization)
 
-1. Superadmin account
-2. Site identity (name, logo, favicon)
-3. Storage driver: local OR R2 — configured in form, changeable later in settings
-4. SMTP config + test-email button
-5. Meta Pixel + CAPI (skippable)
-6. Seed data: demo categories/listings/landing page (optional)
-7. Complete → `settings` key `setup` set to `{ setupComplete: true }` → route permanently locked per install.
+**Core principle: private values = env file, public settings = DB, NEVER echoed back to the browser.**
+
+### Config classification
+- **env-only (private):** `AUTH_SECRET`, R2 credentials (`R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_URL`), SMTP credentials (`SMTP_HOST/PORT/USER/PASS/FROM`), `META_CAPI_ACCESS_TOKEN`. These are NEVER stored in the database.
+- **DB settings (public/safe):** site name, logo, favicon, phone/address, storage driver CHOICE (`local` | `r2`), Meta Pixel ID, social links.
+- **Hybrid:** the "use R2" decision lives in DB settings; R2 secrets live in env.
+
+### Three deployment scenarios
+| Scenario | Behavior |
+|---|---|
+| Local / VPS (writable filesystem) | Wizard writes private values directly to `.env` (atomic write, only touched keys modified), inputs are `type=password`, values never echoed after submit |
+| Vercel | Env immutable — wizard detects per-key: present in `process.env` → "✓ configured"; missing → copy-paste-ready KEY=VALUE block + platform-dashboard instructions + "Re-check" button (app re-detects) |
+| Portainer/Docker | Same detection; instructions: add keys to stack env → restart container → Re-check |
+
+### Env-write mechanics (writable scenarios)
+- `lib/env-file.ts` (server-only): fixed-path atomic `.env` writer (temp file + rename), whitelist of allowed keys only, no path traversal possible.
+- After write: env cache invalidated so storage/email modules hot-read new values immediately. Boot-time values (AUTH_SECRET) show a final notice: "restart once for full effect".
+- `AUTH_SECRET`: auto-generated securely by the wizard when env is writable (user types nothing); on immutable platforms a copy-block with a generation command.
+- Storage step: `local` (zero-config, volume-backed) selected by default; R2 optional — selecting it opens credential fields + connection-test button.
+- SMTP step: credential fields + test-email button (works in both scenarios — sends through provided values directly).
+- Wizard route public UNTIL superadmin exists, then permanently locked (`settings` key `setup` = `{ setupComplete: true }`).
+
+### Steps
+1. Environment check (per-key detect: DB ✓/needed, AUTH_SECRET, storage, SMTP, Meta) — shows what's already configured vs needed
+2. Superadmin account (email + strong password; email normalized lowercase)
+3. Site identity (name, logo, favicon → DB)
+4. Storage driver (local default | R2 + credentials + test)
+5. SMTP (credentials + test-email)
+6. Meta Pixel + CAPI (skippable)
+7. Seed data (optional) → Complete → lock
+
+**Guarantee:** a saved private value NEVER appears in any JSON/HTML response — only boolean `configured` state. Env-write actions active only while setup is unlocked.
 
 ---
 
