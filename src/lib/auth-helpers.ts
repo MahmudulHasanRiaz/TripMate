@@ -1,5 +1,5 @@
 import "server-only";
-import type { Route } from "next";
+import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
@@ -10,7 +10,13 @@ export type Session = {
   session: { id: string; userId: string; expiresAt: Date };
 };
 
-export async function getSession(): Promise<Session | null> {
+/**
+ * Reads the current session, memoized per request with React.cache so every
+ * consumer in one render pass (layout + page + server action) shares a single
+ * Better Auth read and headers() call instead of one per consumer. Server-only
+ * by import; the cache is scoped to the request's server runtime.
+ */
+export const getSession = cache(async (): Promise<Session | null> => {
   const result = await auth.api.getSession({ headers: await headers() });
   if (!result?.user) return null;
   return {
@@ -23,13 +29,11 @@ export async function getSession(): Promise<Session | null> {
     },
     session: result.session,
   } as Session;
-}
+});
 
 export async function requireSession(): Promise<Session> {
   const session = await getSession();
-  // typedRoutes (next.config.ts) only knows routes that exist in the app today;
-  // /login is created by the auth-pages task, so cast it to Route until then.
-  if (!session) redirect("/login" as Route);
+  if (!session) redirect("/login");
   return session;
 }
 

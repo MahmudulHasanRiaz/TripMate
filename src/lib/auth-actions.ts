@@ -1,6 +1,5 @@
 "use server";
 
-import type { Route } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
@@ -14,5 +13,5 @@ import { auth } from "@/lib/auth";
  */
 export async function signOutAction() {
   await auth.api.signOut({ headers: await headers() });
-  redirect("/login" as Route);
+  redirect("/login");
 }

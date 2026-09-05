@@ -21,7 +21,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Route } from "next";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -1321,7 +1320,7 @@ function SuccessScreen() {
         TripMate is ready. Sign in with the admin account you just created to open the admin panel.
       </p>
       <Button asChild size="lg" className="mt-6">
-        <Link href={"/login" as Route}>
+        <Link href="/login">
           Continue to login <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </Button>
