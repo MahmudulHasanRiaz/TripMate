@@ -576,23 +576,15 @@ function StoragePanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
     setNotice(null);
   };
 
-  const pickDriver = async (next: "local" | "r2") => {
+  // Radio selection only flips the local UI state — the driver is NEVER
+  // persisted on selection. Under envWritable it lands on "Save & continue"
+  // after a successful probe; under !envWritable it lands only once the
+  // operator's externally-added keys pass the copy-block Re-check gate (so R2
+  // is validated before it can read as configured). Local is zero-config, so
+  // picking it just falls back to the local summary / save.
+  const pickDriver = (next: "local" | "r2") => {
     setDriver(next);
     setNotice(null);
-    if (next === "r2" && !envWritable) {
-      // Record the R2 intent in the DB now; creds arrive from the platform env.
-      setBusy(true);
-      try {
-        const res = await wizardSetSetting({ key: "storage", value: { driver: "r2" } });
-        const err = resultError(res);
-        if (err) setNotice({ kind: "error", text: err });
-        await refresh();
-      } catch (e) {
-        setNotice({ kind: "error", text: friendlyError(e) });
-      } finally {
-        setBusy(false);
-      }
-    }
   };
 
   if (storage.configured && storage.driver !== "r2" && driver === "local") {
@@ -625,7 +617,10 @@ function StoragePanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
 
   const r2Configured = storage.configured && (storage.driver === "r2" || driver === "r2") && storage.r2Ready;
 
-  const testAndFinish = async () => {
+  // Probe ONLY: writes the submitted creds to env (the probe needs them in
+  // process.env) and tests reachability. Never persists the driver and never
+  // advances — the user reads the inline result before committing.
+  const testConnection = async () => {
     setTesting(true);
     setNotice(null);
     try {
@@ -637,6 +632,26 @@ function StoragePanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
         return;
       }
       setNotice({ kind: "success", text: "Connection OK — bucket is reachable." });
+    } catch (e) {
+      setNotice({ kind: "error", text: friendlyError(e) });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  // Write creds → probe → persist driver → advance. A failed probe (ok:false)
+  // stays on the step with the error shown and persists nothing.
+  const saveAndContinue = async () => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      await wizardWriteEnv(buildR2Env(creds));
+      const res = await wizardTestR2();
+      const err = resultError(res);
+      if (err) {
+        setNotice({ kind: "error", text: err });
+        return;
+      }
       const save = await wizardSetSetting({ key: "storage", value: { driver: "r2" } });
       const saveErr = resultError(save);
       if (saveErr) {
@@ -648,7 +663,29 @@ function StoragePanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
     } catch (e) {
       setNotice({ kind: "error", text: friendlyError(e) });
     } finally {
-      setTesting(false);
+      setBusy(false);
+    }
+  };
+
+  // !envWritable: the driver choice is only persisted once the operator's
+  // externally-added keys have made r2Ready true (the Continue gate below) —
+  // R2 is validated before it can ever read as configured.
+  const saveR2External = async () => {
+    setBusy(true);
+    setNotice(null);
+    try {
+      const res = await wizardSetSetting({ key: "storage", value: { driver: "r2" } });
+      const err = resultError(res);
+      if (err) {
+        setNotice({ kind: "error", text: err });
+        return;
+      }
+      await refresh();
+      onAdvance();
+    } catch (e) {
+      setNotice({ kind: "error", text: friendlyError(e) });
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -738,13 +775,13 @@ function StoragePanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
             <ActionError message={notice?.kind === "error" ? notice.text : null} />
             <ActionSuccess message={notice?.kind === "success" ? notice.text : null} />
             <div className="flex flex-wrap items-center justify-end gap-3">
-              <Button type="button" variant="outline" onClick={testAndFinish} disabled={testing || busy}>
+              <Button type="button" variant="outline" onClick={testConnection} disabled={testing || busy}>
                 {testing && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                 {testing ? "Testing…" : "Test connection"}
               </Button>
-              <Button type="button" size="lg" onClick={testAndFinish} disabled={testing || busy}>
+              <Button type="button" size="lg" onClick={saveAndContinue} disabled={busy || testing}>
                 {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                Save & continue
+                {busy ? "Saving…" : "Save & continue"}
               </Button>
             </div>
           </>
@@ -767,8 +804,10 @@ function StoragePanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
             ) : (
               <ActionSuccess message="R2 credentials detected." />
             )}
+            <ActionError message={notice?.kind === "error" ? notice.text : null} />
             <div className="flex justify-end pt-2">
-              <Button type="button" size="lg" onClick={onAdvance} disabled={!r2Configured || busy}>
+              <Button type="button" size="lg" onClick={saveR2External} disabled={!r2Configured || busy}>
+                {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                 Continue <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
