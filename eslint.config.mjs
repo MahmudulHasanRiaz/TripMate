@@ -10,6 +10,16 @@ const eslintConfig = [
     },
   },
   {
+    files: ["**/*.{ts,tsx}"],
+    ignores: ["src/db/**", "scripts/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [{ group: ["@/db/connection"], message: "Import @/db/client instead — connection.ts is for scripts only and must never enter app (especially client) code." }] },
+      ],
+    },
+  },
+  {
     ignores: [
       // Default ignores of eslint-config-next:
       ".next/**",
