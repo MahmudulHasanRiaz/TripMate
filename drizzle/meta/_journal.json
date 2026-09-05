@@ -15,6 +15,13 @@
       "when": 1788613027962,
       "tag": "0001_first_scream",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788613269496,
+      "tag": "0002_old_lily_hollister",
+      "breakpoints": true
     }
   ]
 }

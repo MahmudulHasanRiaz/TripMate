@@ -4,3 +4,7 @@ export * from "@/modules/media/schema";
 export * from "@/modules/tracking/schema";
 export * from "@/modules/catalog/schema";
 export * from "@/modules/content/schema";
+export * from "@/modules/leads/schema";
+export * from "@/modules/bookings/schema";
+export * from "@/modules/payments/schema";
+export * from "@/modules/expenses/schema";
