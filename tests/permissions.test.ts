@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ROLE_PERMISSIONS, hasPermission, PERMISSIONS } from "@/modules/users/permissions";
+import { hasPermission, PERMISSIONS } from "@/modules/users/permissions";
 
 describe("permissions", () => {
   it("superadmin has every permission", () => {
