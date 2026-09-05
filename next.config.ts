@@ -9,11 +9,13 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
       // Media uploads ride server actions as multipart FormData. Next's default
-      // 1MB body cap would reject the library's 25MB ceiling before the action
-      // runs; this lifts the REQUEST cap to match (the media action still
-      // enforces the real per-file limit — see media/validation.ts). The extra
-      // headroom absorbs multipart boundary overhead.
-      bodySizeLimit: "25mb",
+      // 1MB body cap would reject the library's 25MiB ceiling before the action
+      // runs. The cap is set a MiB ABOVE the per-file limit on purpose: the raw
+      // HTTP body includes multipart boundaries/part headers, so a file exactly
+      // at the 25MiB validation cap would otherwise be rejected at transport
+      // (the installed serverActions docs warn to leave headroom). The media
+      // action still enforces the real 25 MiB limit — see media/validation.ts.
+      bodySizeLimit: "26mb",
     },
   },
   images: {
