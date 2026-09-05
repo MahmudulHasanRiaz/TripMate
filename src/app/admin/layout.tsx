@@ -3,6 +3,15 @@ import { menuForRole } from "@/lib/admin-menu";
 import AdminShell from "./AdminShell";
 
 /**
+ * Session-gated admin shell: the whole subtree depends on the request's
+ * session cookie, so there is no meaningful static shell to prerender. Opt
+ * the subtree out of Cache Components' static-shell prerendering (PPR) — under
+ * `cacheComponents` this is the documented replacement for the old
+ * `dynamic = "force-dynamic"`.
+ */
+export const instant = false;
+
+/**
  * Server-gated admin shell. No customer ever sees this tree rendered:
  *   - anonymous   -> /login  (requireSession)
  *   - customer    -> /       (requireRole)

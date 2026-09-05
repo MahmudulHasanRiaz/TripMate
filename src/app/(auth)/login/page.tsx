@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   title: "Sign in",
 };
 
+/**
+ * The sign-in page reads the request session cookie to bounce signed-in users
+ * away, so it renders at request time (no static shell). Cache Components
+ * static-shell prerendering (PPR) opt-out.
+ */
+export const instant = false;
+
 export default async function LoginPage() {
   const session = await getSession();
   // Already signed in? Don't show the form — send them onward. Role-aware

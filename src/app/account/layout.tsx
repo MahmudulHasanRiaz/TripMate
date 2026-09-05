@@ -2,6 +2,14 @@ import { requireSession } from "@/lib/auth-helpers";
 import { signOutAction } from "@/lib/auth-actions";
 
 /**
+ * Session-gated account shell: renders only after a request-time session
+ * lookup, so it has no static shell to prerender. Opt out of Cache
+ * Components' static-shell prerendering (`cacheComponents` replacement for
+ * `dynamic = "force-dynamic"`).
+ */
+export const instant = false;
+
+/**
  * Server-gated account shell — any authenticated user passes (customers
  * included; role checks happen per-feature, not here). Anonymous visitors
  * are redirected to /login by requireSession before this tree renders.
