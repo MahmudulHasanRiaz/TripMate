@@ -28,8 +28,10 @@ test.describe("public chrome", () => {
     }
 
     await expect(page.getByRole("main")).toBeVisible();
+    // The marketing hero owns the page's single h1 (settings.home headline —
+    // asserted by name in home.spec.ts; here we only pin the landmark shape).
     await expect(
-      page.getByRole("heading", { level: 1, name: /TripMate/ }),
+      page.getByRole("heading", { level: 1 }),
     ).toBeVisible();
 
     const footer = page.getByRole("contentinfo");
