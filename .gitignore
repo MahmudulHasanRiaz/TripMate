@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# media library — local driver default root (dev/test uploads are not source)
+/public/uploads/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
