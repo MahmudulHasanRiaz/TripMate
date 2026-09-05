@@ -14,6 +14,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export type ServiceGridItem = {
+  /** Stable catalog identity — React list key. Never the href: two redirect
+      categories can share a URL, which would duplicate keys. */
+  slug: string;
   /** Destination for the card: /services/{slug} or, for redirect kinds, the external URL. */
   href: string;
   /** True for redirect kinds -> opens externally in a new tab with the external marker. */
@@ -87,7 +90,7 @@ export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
         );
 
         return (
-          <li key={item.href} className="h-full">
+          <li key={item.slug} className="h-full">
             {item.external ? (
               <a
                 href={item.href}

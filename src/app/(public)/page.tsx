@@ -232,9 +232,15 @@ function toServiceItem(category: {
   redirectUrl: string | null;
   icon: string | null;
 }): ServiceGridItem {
-  const external = category.kind === "redirect";
+  // Only a redirect-kind category WITH a destination URL is an external link.
+  // A redirect row whose URL is missing/unset renders as a plain internal link
+  // to /services/{slug} instead (no external marker, no blank-target escape).
+  const external = category.kind === "redirect" && Boolean(category.redirectUrl);
   return {
-    href: external && category.redirectUrl ? category.redirectUrl : `/services/${category.slug}`,
+    href: external
+      ? (category.redirectUrl as string)
+      : `/services/${category.slug}`,
+    slug: category.slug,
     external,
     icon: category.icon,
     name: category.name,

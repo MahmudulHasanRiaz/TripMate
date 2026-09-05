@@ -75,7 +75,14 @@ export function HeroSection({
       />
 
       <div className="relative mx-auto flex min-h-[60vh] w-full max-w-[1400px] flex-col justify-center px-4 py-24 md:min-h-[80vh] lg:px-8">
-        <div className="max-w-3xl">
+        {/* Uniform >=40% dark floor behind the copy column, BELOW lg: on narrow
+            and tablet widths the headline wraps across (most of) the column
+            width, so the left-to-right scrim above decays to ~10-20% under its
+            right-hand lines over a bright photo (measured: at 768px the 48px
+            h1 spans ~96% of the viewport). The floor guarantees AA for the
+            wrapped text regardless of the image. At lg+ the copy sits short and
+            inside the scrim's dark left zone, so the lighter gradient returns. */}
+        <div className="max-w-3xl max-lg:rounded-xl max-lg:bg-black/40 max-lg:px-4 max-lg:py-5">
           <p className="mb-5 text-xs font-semibold uppercase tracking-[0.24em] text-white/70">
             Hajj &amp; Umrah · Tours · Flights · Visa
           </p>
