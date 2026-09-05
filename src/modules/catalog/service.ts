@@ -98,7 +98,7 @@ export type Paginated<T> = { items: T[]; total: number };
 
 export class CatalogError extends Error {
   constructor(
-    public code: "SLUG_CONFLICT" | "IN_USE" | "NOT_FOUND",
+    public code: "SLUG_CONFLICT" | "IN_USE" | "NOT_FOUND" | "INVALID_REFERENCE",
     message: string,
   ) {
     super(message);
@@ -390,12 +390,121 @@ function toListingWrite(input: ListingInput): ListingWrite {
   return w;
 }
 
+/**
+ * Referential guard (admin surface carry-in): a listing may only point at a
+ * category/destination that still exists AND is active. This keeps a
+ * deactivated taxonomy item from silently absorbing new content — the UI
+ * surfaces the typed INVALID_REFERENCE error so the operator reactivates the
+ * item (or picks another) instead of saving into a hidden branch.
+ */
+async function assertListingReferences(input: ListingInput): Promise<void> {
+  const [category] = await db
+    .select({ isActive: serviceCategories.isActive })
+    .from(serviceCategories)
+    .where(eq(serviceCategories.id, input.categoryId))
+    .limit(1);
+  if (!category) {
+    throw new CatalogError("INVALID_REFERENCE", "The selected category no longer exists.");
+  }
+  if (!category.isActive) {
+    throw new CatalogError(
+      "INVALID_REFERENCE",
+      "The selected category is inactive — activate it before saving a listing under it.",
+    );
+  }
+
+  if (input.destinationId) {
+    const [destination] = await db
+      .select({ isActive: destinations.isActive })
+      .from(destinations)
+      .where(eq(destinations.id, input.destinationId))
+      .limit(1);
+    if (!destination) {
+      throw new CatalogError("INVALID_REFERENCE", "The selected destination no longer exists.");
+    }
+    if (!destination.isActive) {
+      throw new CatalogError(
+        "INVALID_REFERENCE",
+        "The selected destination is inactive — activate it before saving a listing under it.",
+      );
+    }
+  }
+}
+
+async function listingSlugExists(slug: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: listings.id })
+    .from(listings)
+    .where(eq(listings.slug, slug))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/** First free `base-2`, `base-3`, … slug not already used (live OR trashed). */
+async function nextFreeListingSlug(base: string): Promise<string> {
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${base}-${n}`;
+    if (!(await listingSlugExists(candidate))) return candidate;
+  }
+  throw new CatalogError("SLUG_CONFLICT", `No free slug available for "${base}".`);
+}
+
+/**
+ * Insert with admin-friendly slug recovery. When the insert collides with a
+ * row that was soft-deleted (the classic "recreate after trash" flow), we
+ * re-try under the next free `-2`/`-3`/… suffixed slug instead of failing. A
+ * collision with a LIVE row is a genuine conflict and stays a typed
+ * SLUG_CONFLICT error.
+ */
+async function insertListingWithSlugRecovery(
+  write: ListingWrite,
+  slug: string,
+): Promise<string> {
+  try {
+    const [created] = await db
+      .insert(listings)
+      .values(write)
+      .returning({ id: listings.id });
+    return created.id;
+  } catch (err) {
+    if (!isUniqueViolation(err)) throw err;
+    const [blocker] = await db
+      .select({ deletedAt: listings.deletedAt })
+      .from(listings)
+      .where(eq(listings.slug, slug))
+      .limit(1);
+    if (!blocker || blocker.deletedAt === null) {
+      throw new CatalogError(
+        "SLUG_CONFLICT",
+        `A listing with slug "${slug}" already exists.`,
+      );
+    }
+    const free = await nextFreeListingSlug(slug);
+    try {
+      const [created] = await db
+        .insert(listings)
+        .values({ ...write, slug: free })
+        .returning({ id: listings.id });
+      return created.id;
+    } catch (retryErr) {
+      if (isUniqueViolation(retryErr)) {
+        throw new CatalogError(
+          "SLUG_CONFLICT",
+          `A listing with slug "${free}" already exists.`,
+        );
+      }
+      throw retryErr;
+    }
+  }
+}
+
 export async function upsertListing(input: ListingInput): Promise<ListingWithRefs> {
+  await assertListingReferences(input);
   const write = toListingWrite(input);
   let id: string | undefined = input.id;
 
-  try {
-    if (id) {
+  if (id) {
+    try {
       const updated = await db
         .update(listings)
         .set({ ...write, updatedAt: new Date() })
@@ -404,15 +513,17 @@ export async function upsertListing(input: ListingInput): Promise<ListingWithRef
       if (updated.length === 0) {
         throw new CatalogError("NOT_FOUND", `Listing ${id} not found or already deleted.`);
       }
-    } else {
-      const created = await db.insert(listings).values(write).returning({ id: listings.id });
-      id = created[0].id;
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        throw new CatalogError(
+          "SLUG_CONFLICT",
+          `A listing with slug "${input.slug}" already exists.`,
+        );
+      }
+      throw err;
     }
-  } catch (err) {
-    if (isUniqueViolation(err)) {
-      throw new CatalogError("SLUG_CONFLICT", `A listing with slug "${input.slug}" already exists.`);
-    }
-    throw err;
+  } else {
+    id = await insertListingWithSlugRecovery(write, input.slug);
   }
 
   const saved = await getListingById(id as string);
@@ -427,6 +538,24 @@ export async function softDeleteListing(id: string): Promise<boolean> {
     .where(and(eq(listings.id, id), isNull(listings.deletedAt)))
     .returning({ id: listings.id });
   return Boolean(row);
+}
+
+/** Publish/unpublish/archive without touching any other listing column. */
+export async function updateListingStatus(
+  id: string,
+  status: ListingStatus,
+): Promise<ListingWithRefs> {
+  const [row] = await db
+    .update(listings)
+    .set({ status, updatedAt: new Date() })
+    .where(and(eq(listings.id, id), isNull(listings.deletedAt)))
+    .returning({ id: listings.id });
+  if (!row) {
+    throw new CatalogError("NOT_FOUND", `Listing ${id} not found or already deleted.`);
+  }
+  const saved = await getListingById(id);
+  if (!saved) throw new CatalogError("NOT_FOUND", "Listing could not be loaded after status change.");
+  return saved;
 }
 
 async function countNonDeletedListingsFor(condition: SQL): Promise<number> {

@@ -122,4 +122,118 @@ describe.skipIf(!integration)("catalog service (integration — Postgres)", () =
     await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-cats"));
     await db.delete(destinations).where(eq(destinations.slug, "integration-land"));
   });
+
+  it("refuses a listing save whose category/destination is missing or inactive (INVALID_REFERENCE)", async () => {
+    const service = await import("@/modules/catalog/service");
+    const { eq } = await import("drizzle-orm");
+    const { listings, serviceCategories, destinations } = await import("@/modules/catalog/schema");
+    const { db } = await import("@/db/client");
+    const { categoryInput, destinationInput, listingInput } = await import("@/modules/catalog/validation");
+    // Pre-run purge for idempotency (see sibling tests).
+    await db.delete(listings).where(eq(listings.slug, "inactive-ref-listing"));
+    await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-inactive-cat"));
+    await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-active-cat"));
+    await db.delete(destinations).where(eq(destinations.slug, "integration-inactive-land"));
+
+    const inactiveCat = await service.upsertCategory(
+      categoryInput.parse({
+        name: "Inactive Cat",
+        slug: "integration-inactive-cat",
+        kind: "package",
+        isActive: false,
+      }),
+    );
+    const activeCat = await service.upsertCategory(
+      categoryInput.parse({ name: "Active Cat", slug: "integration-active-cat", kind: "package" }),
+    );
+    const inactiveDest = await service.upsertDestination(
+      destinationInput.parse({ name: "Inactive Land", slug: "integration-inactive-land", isActive: false }),
+    );
+
+    await expect(
+      service.upsertListing(
+        listingInput.parse({
+          categoryId: inactiveCat.id,
+          title: "Inactive-ref Listing",
+          slug: "inactive-ref-listing",
+          price: "1",
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_REFERENCE" });
+
+    await expect(
+      service.upsertListing(
+        listingInput.parse({
+          categoryId: activeCat.id,
+          destinationId: inactiveDest.id,
+          title: "Inactive-ref Listing",
+          slug: "inactive-ref-listing",
+          price: "1",
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_REFERENCE" });
+
+    // An unknown category id is refused the same way.
+    await expect(
+      service.upsertListing(
+        listingInput.parse({
+          categoryId: "00000000-0000-4000-8000-000000000000",
+          title: "Inactive-ref Listing",
+          slug: "inactive-ref-listing",
+          price: "1",
+        }),
+      ),
+    ).rejects.toMatchObject({ code: "INVALID_REFERENCE" });
+
+    await db.delete(listings).where(eq(listings.slug, "inactive-ref-listing"));
+    await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-inactive-cat"));
+    await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-active-cat"));
+    await db.delete(destinations).where(eq(destinations.slug, "integration-inactive-land"));
+  });
+
+  it("auto-suffixes a new listing slug when the base is only soft-deleted", async () => {
+    const service = await import("@/modules/catalog/service");
+    const { eq } = await import("drizzle-orm");
+    const { listings, serviceCategories } = await import("@/modules/catalog/schema");
+    const { db } = await import("@/db/client");
+    const { categoryInput, listingInput } = await import("@/modules/catalog/validation");
+    // Pre-run purge for idempotency.
+    for (const slug of ["recycle-package", "recycle-package-2", "recycle-package-3"]) {
+      await db.delete(listings).where(eq(listings.slug, slug));
+    }
+    await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-recycle"));
+
+    const cat = await service.upsertCategory(
+      categoryInput.parse({ name: "Recycle", slug: "integration-recycle", kind: "package" }),
+    );
+    const base = listingInput.parse({
+      categoryId: cat.id,
+      title: "Recycle Package",
+      slug: "recycle-package",
+      price: "1",
+    });
+
+    const first = await service.upsertListing(base);
+    expect(first.slug).toBe("recycle-package");
+
+    // Base is held by a LIVE row → a second identical insert is still a typed conflict.
+    await expect(service.upsertListing({ ...base, id: undefined })).rejects.toMatchObject({
+      code: "SLUG_CONFLICT",
+    });
+
+    await service.softDeleteListing(first.id);
+    // Now the base slug belongs to a soft-deleted row → insert auto-suffixes.
+    const recreated = await service.upsertListing({ ...base, id: undefined });
+    expect(recreated.slug).toBe("recycle-package-2");
+
+    // Recreate again after trashing that one: climbs to the next free suffix.
+    await service.softDeleteListing(recreated.id);
+    const third = await service.upsertListing({ ...base, id: undefined });
+    expect(third.slug).toBe("recycle-package-3");
+
+    for (const slug of ["recycle-package", "recycle-package-2", "recycle-package-3"]) {
+      await db.delete(listings).where(eq(listings.slug, slug));
+    }
+    await db.delete(serviceCategories).where(eq(serviceCategories.slug, "integration-recycle"));
+  });
 });
