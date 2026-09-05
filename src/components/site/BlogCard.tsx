@@ -17,14 +17,25 @@ type BlogCardProps = {
 
 const IMAGE_SIZES = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
 
-function formatDate(date: Date | string): string {
+function parseDate(date: Date | string): Date | null {
   const d = date instanceof Date ? date : new Date(date);
-  if (Number.isNaN(d.getTime())) return String(date);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function formatDate(date: Date | string): string {
+  const d = parseDate(date);
+  if (!d) return String(date);
   return new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
   }).format(d);
+}
+
+/** Machine-readable ISO date (yyyy-mm-dd) for the time element — never the localized label. */
+function isoDate(date: Date | string): string {
+  const d = parseDate(date);
+  return d ? d.toISOString().slice(0, 10) : String(date);
 }
 
 /**
@@ -64,7 +75,7 @@ export function BlogCard({
         <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
           <li className="inline-flex items-center gap-1.5">
             <CalendarDays className="size-4 text-primary" aria-hidden="true" />
-            <time dateTime={formatDate(date)}>{formatDate(date)}</time>
+            <time dateTime={isoDate(date)}>{formatDate(date)}</time>
           </li>
           <li className="inline-flex items-center gap-1.5">
             <PenLine className="size-4 text-primary" aria-hidden="true" />

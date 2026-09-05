@@ -104,7 +104,7 @@ export function SiteFooter({ title, logoUrl, phone, email, address }: SiteFooter
               <li>
                 <a
                   href={`tel:${phone.replace(/[^+\d]/g, "")}`}
-                  className="flex min-h-9 items-start gap-2 text-foreground/85 transition-colors hover:text-foreground"
+                  className="flex min-h-11 items-start gap-2 text-foreground/85 transition-colors hover:text-foreground"
                 >
                   <Phone className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                   <span dir="ltr">{phone}</span>
@@ -115,7 +115,7 @@ export function SiteFooter({ title, logoUrl, phone, email, address }: SiteFooter
               <li>
                 <a
                   href={`mailto:${email}`}
-                  className="flex min-h-9 items-start gap-2 text-foreground/85 transition-colors hover:text-foreground"
+                  className="flex min-h-11 items-start gap-2 text-foreground/85 transition-colors hover:text-foreground"
                 >
                   <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                   {email}
