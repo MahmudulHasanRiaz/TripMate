@@ -156,8 +156,8 @@ function ExternalEnvBanner() {
     <Alert className="border-info/40 bg-info/5 text-foreground [&>svg]:text-info">
       <Info className="h-4 w-4" aria-hidden="true" />
       <AlertDescription>
-        This platform&apos;s env is managed externally (Vercel / Docker). Add the keys
-        below to your environment, then click <span className="font-medium">Re-check</span>.
+        This platform&apos;s env is managed externally (Vercel/Portainer). Add the keys
+        below, then click <span className="font-medium">Re-check</span>.
       </AlertDescription>
     </Alert>
   );
