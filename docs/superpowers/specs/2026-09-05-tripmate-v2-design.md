@@ -394,6 +394,12 @@ This repo is modernized in place:
 8. Phase 7: email templates + notification flows + dashboard reports (builds on the Phase-3 email foundation).
 9. Phase 8: CI + Docker + docs + starter polish + `npm run setup` one-command onboarding + Upstash rate-limit switch docs.
 
+**Plan 2 final-review carry-overs (binding for the named plans):**
+- Plan 3: every `/admin/<module>` route gets its own `requirePermission` in a nested layout (menu hiding is UX, module layout is the gate — do not inherit the role-only root check); wrap `getSession` in `React.cache()` for per-request dedup; drop the now-unneeded `/login as Route` casts; decide Pixel ID placement — spec §12 says DB/public settings but code writes `META_PIXEL_ID` to env; public pages need it client-side, so either `NEXT_PUBLIC_META_PIXEL_ID` or the settings row — decide before the pixel ships (Plan 4).
+- Plan 5: when customer self-registration is deliberately enabled, add the §6 guard stack (rate limit + honeypot) to `sign-up/email`; revisit cookieCache role-staleness for admin demotions.
+- Plan 7: define sendEmail's failure contract (return vs throw) before lead/order flows consume it; template authors must use react-email components (escaped) — never concatenate user data into `bodyHtml`; flip `RUN_DB_INTEGRATION` on in the isolated-Postgres CI job.
+- Plan 8 (launch gate): wizard claim hardening — SETUP_TOKEN claim secret and/or auto-lock; non-root Docker user must own `.env` and uploads dir (isEnvWritable probe + public/uploads writability).
+
 Existing admin UI pages and shadcn components are adapted during their phase; the old Firebase-era data layer and client-fetch pages are replaced, not preserved.
 
 ---
