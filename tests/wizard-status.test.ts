@@ -39,8 +39,19 @@ describe("detectStepStatus", () => {
     expect(s.meta.skipped).toBe(true);
   });
 
-  it("superadmin configured iff userCount > 0", () => {
+  it("superadmin configured iff superadminCount > 0", () => {
     expect(detectStepStatus({}, {}, 1).superadmin.configured).toBe(true);
+    expect(detectStepStatus({}, {}, 0).superadmin.configured).toBe(false);
+  });
+
+  it("customer rows without a superadmin do not configure the step", () => {
+    // Regression for the pre-fix lockout wedge: public signup can create
+    // customer rows before setup completes, so the DB can hold users while no
+    // superadmin exists. A predicate keyed off TOTAL users would (wrongly) mark
+    // the step done — with no superadmin able to sign in, that locks every admin
+    // out. Detection keys off the SUPERADMIN count only: 3 customers + 0
+    // superadmins (getWizardStatus passes the role-filtered count) stays
+    // unconfigured.
     expect(detectStepStatus({}, {}, 0).superadmin.configured).toBe(false);
   });
 });

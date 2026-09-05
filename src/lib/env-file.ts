@@ -3,13 +3,17 @@ import { existsSync, readFileSync, renameSync, rmSync, writeFileSync } from "nod
 import { resolve } from "node:path";
 
 /**
- * Keys the app is allowed to write into .env. Everything else — DATABASE_URL,
- * APP_URL, NODE_ENV — is boot-frozen and never writable from application code.
- * Keeping DATABASE_URL/APP_URL out is what stops the setup wizard (or a
- * compromised session) from redirecting the app's own connection string.
+ * Keys the app is allowed to write into .env. Everything else is boot-frozen
+ * and never writable from application code. The boot-frozen set includes
+ * DATABASE_URL, APP_URL, NODE_ENV and AUTH_SECRET:
+ *  - Keeping DATABASE_URL/APP_URL unwritable is what stops the setup wizard (or
+ *    a compromised session) from redirecting the app's own connection string.
+ *  - AUTH_SECRET is read once by better-auth at boot (src/lib/auth.ts). A
+ *    mid-run rewrite would only take effect after a restart and would
+ *    invalidate every live session in between, so it is unwritable too — the
+ *    operator sets it in .env before the first boot.
  */
 export const ENV_WRITABLE_KEYS = [
-  "AUTH_SECRET",
   "SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASS", "SMTP_FROM",
   "STORAGE_DRIVER",
   "R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY",
@@ -63,8 +67,9 @@ function quote(value: string): string {
 /**
  * Atomically apply `values` to the .env file (whitelist-only), then hot-reload
  * process.env so call-time readers (SMTP, R2 — built in later tasks) pick the
- * new values up immediately. `getEnv()`'s boot-frozen cache is unaffected —
- * DATABASE_URL/APP_URL/AUTH_SECRET are intentionally not in the whitelist.
+ * new values up immediately. Boot-frozen keys (DATABASE_URL/APP_URL/AUTH_SECRET)
+ * are not in ENV_WRITABLE_KEYS, so `getEnv()`'s cache can never be moved by a
+ * call here — a write attempt throws before touching the file.
  */
 export function writeEnvValues(
   values: Record<string, string>,

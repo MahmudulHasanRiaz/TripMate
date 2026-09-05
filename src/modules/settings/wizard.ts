@@ -1,23 +1,24 @@
 import "server-only";
 import { isEnvWritable } from "@/lib/env-file";
-import { count } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { users } from "@/modules/users/schema";
 
 /**
  * Setup wizard — server side.
  *
- * `detectStepStatus` is a PURE function (env + settings + userCount in, step
- * booleans out) so the unit suite can exercise every detection branch without a
- * database. `getWizardStatus` wires it to the live store: the settings rows
- * (`site`/`storage`/`setup`/`meta`), the user count, and `isEnvWritable()`.
+ * `detectStepStatus` is a PURE function (env + settings + superadminCount in,
+ * step booleans out) so the unit suite can exercise every detection branch
+ * without a database. `getWizardStatus` wires it to the live store: the settings
+ * rows (`site`/`storage`/`setup`/`meta`), the superadmin count, and
+ * `isEnvWritable()`.
  *
  * NOTE on import discipline: `src/db/connection.ts` evaluates
  * `postgres(getEnv().DATABASE_URL)` at MODULE LOAD (boot env is validated
  * before the app runs), so any module that statically reaches the db client
  * cannot be imported by a vitest unit test. `detectStepStatus` must stay
  * importable, therefore the db-bound dependencies (`service`, `db/client`) are
- * loaded lazily inside `getWizardStatus` only. `isEnvWritable`/`count`/`users`
- * touch no connection and are imported eagerly.
+ * loaded lazily inside `getWizardStatus` only. `isEnvWritable`/`eq`/`count`/
+ * `users` touch no connection and are imported eagerly.
  *
  * The Meta CAPI token (`META_CAPI_ACCESS_TOKEN`) is intentionally NOT a
  * detection input: its presence/absence is irrelevant to whether the meta step
@@ -65,7 +66,12 @@ export type WizardSettings = {
  * saved private value (SMTP_PASS, R2 secret, etc.).
  *
  * Rules (from the architecture spec):
- * - superadmin configured  ⇔  userCount > 0
+ * - superadmin configured  ⇔  at least one row carries the `superadmin` role
+ *                           (superadminCount > 0). The count is ROLE-FILTERED:
+ *                           public signup can create customer rows pre-setup, and
+ *                           those must never mark this step done — a total-user
+ *                           predicate would flip it with no superadmin present
+ *                           and lock every admin out.
  * - site configured        ⇔  a `site` settings row exists
  * - storage configured     ⇔  local driver, OR r2 driver with all 5 R2 env keys
  * - smtp configured        ⇔  SMTP_HOST present in env
@@ -75,7 +81,7 @@ export type WizardSettings = {
 export function detectStepStatus(
   env: Record<string, string | undefined>,
   settings: WizardSettings,
-  userCount: number,
+  superadminCount: number,
 ): WizardSteps {
   const driver =
     settings.storage?.driver ??
@@ -86,7 +92,7 @@ export function detectStepStatus(
   const r2Ready = R2_REQUIRED_ENV_KEYS.every((key) => Boolean(env[key]?.trim()));
 
   return {
-    superadmin: { configured: userCount > 0 },
+    superadmin: { configured: superadminCount > 0 },
     site: { configured: Boolean(settings.site) },
     storage: {
       configured: driver === "local" ? true : driver === "r2" ? r2Ready : false,
@@ -115,8 +121,13 @@ export async function getWizardStatus(): Promise<WizardStatus> {
     getSetting("meta"),
   ]);
 
-  const rows = await db.select({ value: count() }).from(users);
-  const userCount = rows[0]?.value ?? 0;
+  // Superadmin count, NOT total users: pre-setup public signup can create
+  // customer rows, and those must not make the superadmin step read as done.
+  const rows = await db
+    .select({ value: count() })
+    .from(users)
+    .where(eq(users.role, "superadmin"));
+  const superadminCount = rows[0]?.value ?? 0;
 
   return {
     setupComplete: setup?.setupComplete === true,
@@ -124,7 +135,7 @@ export async function getWizardStatus(): Promise<WizardStatus> {
     steps: detectStepStatus(
       process.env as Record<string, string | undefined>,
       { setup, site, storage, meta },
-      userCount,
+      superadminCount,
     ),
   };
 }

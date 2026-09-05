@@ -49,5 +49,13 @@ describe("writeEnvValues (tmp dir)", () => {
   it("rejects keys outside the whitelist", () => {
     expect(() => writeEnvValues({ EVIL: "1" }, join(dir, ".env"))).toThrowError(/not writable/);
     expect(ENV_WRITABLE_KEYS).not.toContain("DATABASE_URL");
+    expect(ENV_WRITABLE_KEYS).not.toContain("AUTH_SECRET");
+  });
+
+  it("rejects a write to boot-frozen AUTH_SECRET", () => {
+    // AUTH_SECRET is read once by better-auth at boot; a mid-run rewrite would
+    // only apply after a restart and would invalidate every live session in
+    // between — it must never be writable through the app.
+    expect(() => writeEnvValues({ AUTH_SECRET: "x".repeat(32) }, join(dir, ".env"))).toThrowError(/not writable/);
   });
 });

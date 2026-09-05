@@ -4,10 +4,23 @@
  * Setup wizard — guarded server actions.
  *
  * All actions are `withGuard({ public: true })` — the wizard is reached before
- * any account exists, so nothing can require a session. The REAL lock is
- * `assertUnlocked()`, which runs FIRST in every mutating action: once
- * `setup.setupComplete` is true the entire surface is inert, so a wizard that
- * finished can never be re-entered through these endpoints.
+ * any account exists, so nothing can require a session. Two locks close over
+ * the surface:
+ *  1. `assertUnlocked()` runs FIRST in every mutating action: once
+ *     `setup.setupComplete` is true the whole surface is inert, so a finished
+ *     wizard can never be re-entered through these endpoints.
+ *  2. `wizardCreateSuperadmin` additionally refuses once ANY superadmin row
+ *     exists — spec §12 keeps the create-superadmin endpoint legitimate only
+ *     while no superadmin does, so a second operator can't mint an extra
+ *     superadmin during the window before setup completes.
+ *
+ * Residual window (documented; owned by Plan 8's SETUP_TOKEN hardening): the
+ * flow actions (`wizardWriteEnv` / `wizardSetSetting` / `wizardComplete`) stay
+ * available between superadmin creation and `wizardComplete` — the operator
+ * needs them to finish steps 2–6 — so env writes remain open until setup is
+ * completed, not merely until a superadmin exists. The /setup route already
+ * redirects away on setupComplete, and these are the only pre-complete write
+ * paths.
  *
  * No action ever returns a stored secret — responses carry `{ ok }` /
  * `{ ok, error }` (or the step booleans from getWizardStatus) only.
@@ -164,6 +177,13 @@ export const wizardTestR2 = async () => r2Probe(undefined);
  * Create the superadmin + a password credential that can sign in through
  * /login later.
  *
+ * Spec §12 gate: this endpoint is legitimate only while NO superadmin exists.
+ * Before touching anything it queries for an existing `superadmin` row and
+ * refuses (`{ ok:false, error:"A superadmin already exists." }`) if one is
+ * found — closing the race where a second operator (or attacker) could mint an
+ * extra superadmin while steps 2–6 are still open. As a consequence the
+ * stray-customer promote path below only ever runs when no superadmin exists.
+ *
  * Path (verified against installed better-auth 1.7.2): `createUser` is only
  * exposed by the OPTIONAL admin plugin, which this app does not install — and
  * `role` is an `input: false` additionalField anyway, so it could not be set
@@ -195,6 +215,18 @@ export const wizardCreateSuperadmin = relay(
       const email = input.email.trim().toLowerCase();
       const name = input.name.trim();
       try {
+        // Spec §12: refuse as soon as a superadmin exists ANYWHERE — the create
+        // endpoint is legitimate only while none does. (assertUnlocked keeps the
+        // setup-complete lock separate; this guards the pre-complete window.)
+        const superadminExists = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.role, "superadmin"))
+          .limit(1);
+        if (superadminExists[0]) {
+          return { ok: false, error: "A superadmin already exists." };
+        }
+
         const existing = await db
           .select({ id: users.id, role: users.role })
           .from(users)
