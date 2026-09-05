@@ -463,6 +463,11 @@ export async function upsertPost(input: PostInput): Promise<PostWithRefs> {
     if (!existing) {
       throw new ContentError("NOT_FOUND", `Post ${id} not found or already deleted.`);
     }
+    // AUTHOR IMMUTABLE ON EDIT: an update never rewrites the byline — CREATE
+    // sets it once and every later save keeps it. toPostWrite may carry an
+    // authorId through from the input, so drop it here: no caller (however
+    // careless or crafted) can reassign authorship through the update path.
+    delete write.authorId;
     // First publish stamps publishedAt; an unpublish→republish keeps the date.
     const nextStatus = input.status ?? existing.status;
     const publishedAt =

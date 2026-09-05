@@ -32,7 +32,11 @@ function dateCell(value: Date): string {
 }
 
 export default async function PagesPage() {
-  const { items } = await listAllPages({ perPage: 100 });
+  const { items, total } = await listAllPages({ perPage: 100 });
+
+  // The list renders at most `perPage` rows with no pager; the header count is
+  // clamped to what is actually shown (never a DB total the table can't reach).
+  const shown = Math.min(total, items.length);
 
   return (
     <div className="space-y-4">
@@ -40,7 +44,7 @@ export default async function PagesPage() {
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Pages</h2>
           <p className="text-sm text-muted-foreground">
-            {items.length} {items.length === 1 ? "page" : "pages"}
+            {shown} of {total} {total === 1 ? "page" : "pages"} shown
           </p>
         </div>
         <Button asChild>

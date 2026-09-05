@@ -147,6 +147,55 @@ describe.skipIf(!integration)("content service (integration — Postgres)", () =
     await db.delete(users).where(eq(users.email, EMAIL));
   });
 
+  it("keeps authorship immutable across edits (authorId cannot reassign on update)", async () => {
+    const service = await import("@/modules/content/service");
+    const { eq } = await import("drizzle-orm");
+    const { posts } = await import("@/modules/content/schema");
+    const { users } = await import("@/modules/users/schema");
+    const { db } = await import("@/db/client");
+    const SLUG = "content-author-immutable";
+    const EMAIL_A = "author-a@example.com";
+    const EMAIL_B = "author-b@example.com";
+    // Pre-run purge for idempotency (a failed/aborted run leaves rows behind).
+    await db.delete(posts).where(eq(posts.slug, SLUG));
+    await db.delete(users).where(eq(users.email, EMAIL_A));
+    await db.delete(users).where(eq(users.email, EMAIL_B));
+
+    const usersRow = await db
+      .insert(users)
+      .values([
+        { name: "Author A", email: EMAIL_A },
+        { name: "Author B", email: EMAIL_B },
+      ])
+      .returning({ id: users.id });
+    const [authorA, authorB] = usersRow;
+
+    const created = await service.upsertPost(
+      postInput.parse({ authorId: authorA.id, title: "Author Immutable Post", slug: SLUG }),
+    );
+    expect(created.author?.name).toBe("Author A");
+
+    // An edit that smuggles a DIFFERENT authorId (a crafted server-action call,
+    // or a future caller forgetting the rule) must not reassign the byline —
+    // content changes still land.
+    const edited = await service.upsertPost(
+      postInput.parse({
+        id: created.id,
+        authorId: authorB.id,
+        title: "Author Immutable Post",
+        slug: SLUG,
+        content: "Edited body.",
+      }),
+    );
+    expect(edited.author?.name).toBe("Author A");
+    expect(edited.content).toBe("Edited body.");
+
+    // Hard-cleanup so the shared dev DB stays tidy across runs.
+    await db.delete(posts).where(eq(posts.slug, SLUG));
+    await db.delete(users).where(eq(users.email, EMAIL_A));
+    await db.delete(users).where(eq(users.email, EMAIL_B));
+  });
+
   it("round-trips a page: typed slug conflict while live, trash + slug recovery, admin reads", async () => {
     const service = await import("@/modules/content/service");
     const { eq } = await import("drizzle-orm");

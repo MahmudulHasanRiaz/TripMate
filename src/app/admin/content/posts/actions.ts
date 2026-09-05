@@ -55,11 +55,22 @@ function firstIssueMessage(input: unknown): string {
  * a NEW post gets the current session user as its author (never a client
  * field), while edits keep whatever author the post already has.
  */
+/** A copy of `input` with any client-supplied authorId removed. */
+function withoutAuthorId(input: PostInput): PostInput {
+  const { authorId: _ignored, ...rest } = input;
+  void _ignored;
+  return rest;
+}
+
 export const savePost = contentAction<PostInput, SaveResult>(async (input, session) => {
   const message = firstIssueMessage(input);
   if (message) return { ok: false, code: "VALIDATION", error: message };
+  // AUTHOR IS SERVER-SET AND IMMUTABLE. A new post is stamped with the current
+  // session user (never a client field); an edit keeps the byline the post was
+  // created with. The edit payload is stripped of any supplied authorId so a
+  // crafted server-action call cannot reassign or null the author.
   const payload = input.id
-    ? input
+    ? withoutAuthorId(input)
     : { ...input, authorId: session?.user.id ?? null };
   const saved = await upsertPost(payload);
   revalidatePosts();

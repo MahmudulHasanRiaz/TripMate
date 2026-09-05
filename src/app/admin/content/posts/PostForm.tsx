@@ -106,7 +106,9 @@ const formSchema = z.object({
     .string()
     .max(MAX_MARKDOWN_CHARS, `Content exceeds ${MAX_MARKDOWN_CHARS.toLocaleString()} characters`),
   featuredImageUrl: z.string().max(2048),
-  gallery: z.array(z.object({ url: z.string().max(2048), alt: z.string().max(200) })),
+  gallery: z
+    .array(z.object({ url: z.string().max(2048), alt: z.string().max(200) }))
+    .max(60, "Gallery is limited to 60 images"),
   categoryId: z.string(),
   status: z.enum(CONTENT_STATUSES),
   seoTitle: z.string().max(70, "SEO title must be 70 characters or fewer"),
