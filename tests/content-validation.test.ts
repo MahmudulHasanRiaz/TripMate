@@ -184,6 +184,43 @@ describe("postInput — featuredImage {url, alt?}", () => {
   });
 });
 
+describe("postInput — gallery (blank/empty → null carry-in)", () => {
+  it("accepts a populated gallery and preserves its entries", () => {
+    const gallery = [
+      { url: "https://cdn.example/1.jpg", alt: "Sundarbans mangroves" },
+      { url: "https://cdn.example/2.jpg" },
+    ];
+    const res = postInput.safeParse(basePost({ gallery }));
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.gallery).toEqual(gallery);
+  });
+
+  it("coerces an empty array to null (no gallery stored)", () => {
+    const res = postInput.safeParse(basePost({ gallery: [] }));
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.gallery).toBeNull();
+  });
+
+  it("coerces a blank string to null", () => {
+    const res = postInput.safeParse(basePost({ gallery: "" }));
+    expect(res.success).toBe(true);
+    if (res.success) expect(res.data.gallery).toBeNull();
+  });
+
+  it("accepts null and absent gallery", () => {
+    expect(postInput.safeParse(basePost({ gallery: null })).success).toBe(true);
+    expect(postInput.safeParse(basePost({})).success).toBe(true);
+  });
+
+  it("rejects entries missing a url and enforces the 60-row cap", () => {
+    expect(postInput.safeParse(basePost({ gallery: [{ alt: "no url" }] })).success).toBe(false);
+    const tooMany = Array.from({ length: 61 }, (_, i) => ({
+      url: `https://cdn.example/${i}.jpg`,
+    }));
+    expect(postInput.safeParse(basePost({ gallery: tooMany })).success).toBe(false);
+  });
+});
+
 describe("postInput — category/author ids", () => {
   it("accepts a valid uuid, null and absent categoryId", () => {
     expect(postInput.safeParse(basePost({ categoryId: UUID })).success).toBe(true);

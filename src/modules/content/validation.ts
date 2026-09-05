@@ -72,6 +72,15 @@ const featuredImageSchema = z.preprocess(
 
 export const gallerySchema = z.array(contentImageSchema).max(60);
 
+/** Blank text input or an empty row array → NULL (no gallery). The post form
+ *  drops blank rows before submit, so an untouched gallery submits as `[]`;
+ *  that must CLEAR the jsonb column (NULL) rather than persist an empty array
+ *  — the same blank→null preprocess featuredImageSchema applies. */
+const galleryFieldSchema = z.preprocess(
+  (v) => (v === "" || (Array.isArray(v) && v.length === 0) ? null : v),
+  gallerySchema.nullable().optional(),
+);
+
 export const seoSchema = z
   .object({
     title: z.string().trim().max(70).optional(),
@@ -123,7 +132,7 @@ export const postInput = z.object({
     .optional(),
   content: markdownTextSchema.nullable().optional(), // markdown body
   featuredImage: featuredImageSchema,
-  gallery: gallerySchema.nullable().optional(),
+  gallery: galleryFieldSchema,
   videoUrl: z.string().trim().max(2048).nullable().optional(),
   categoryId: nullableOptionalUuid("post category id"),
   authorId: nullableOptionalUuid("author user id"),

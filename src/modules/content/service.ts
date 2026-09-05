@@ -492,6 +492,29 @@ export async function upsertPost(input: PostInput): Promise<PostWithRefs> {
   return saved;
 }
 
+/** Flip a post's status from the list UI without resubmitting the whole form.
+ *  Mirrors upsertPost's publish-stamping rule: the FIRST time a post becomes
+ *  published, publishedAt is stamped; an unpublish→republish keeps the date. */
+export async function updatePostStatus(id: string, status: ContentStatus): Promise<PostWithRefs> {
+  const [existing] = await db
+    .select({ publishedAt: posts.publishedAt, status: posts.status })
+    .from(posts)
+    .where(and(eq(posts.id, id), isNull(posts.deletedAt)))
+    .limit(1);
+  if (!existing) {
+    throw new ContentError("NOT_FOUND", `Post ${id} not found or already deleted.`);
+  }
+  const publishedAt =
+    status === "published" && existing.publishedAt === null ? new Date() : existing.publishedAt;
+  await db
+    .update(posts)
+    .set({ status, publishedAt, updatedAt: new Date() })
+    .where(and(eq(posts.id, id), isNull(posts.deletedAt)));
+  const saved = await getPostById(id);
+  if (!saved) throw new ContentError("NOT_FOUND", "Post could not be loaded after status change.");
+  return saved;
+}
+
 export async function softDeletePost(id: string): Promise<boolean> {
   const [row] = await db
     .update(posts)
