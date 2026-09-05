@@ -361,7 +361,7 @@ This repo is modernized in place:
 1. Phase 0: strip dead code (`src/api/`, `src/next.config.ts`, genkit, `.modified`, stale blueprint), fix configs.
 2. Phase 1: stack upgrade (Next 16, React 19.2, TS strict, Tailwind v4) + folder restructure + env/lint gates.
 3. Phase 2: DB layer (Drizzle + schema + migrations + seed).
-4. Phase 3: auth + guards + admin shell + setup wizard + email foundation (SMTP transport + send util — Plans 4-5 consume it; no-op fallback when SMTP unset).
+4. Phase 3: auth + guards + admin shell + setup wizard + email foundation (SMTP transport + send util — Plans 4-5 consume it; no-op fallback when SMTP unset). Must also close two Plan-1 final-review findings: (a) ESLint `no-restricted-imports` rule banning `@/db/connection` outside `src/db/**` + `scripts/**` (makes the server-only fence toolchain-enforced, not convention-only); (b) `src/instrumentation.ts` calling `getEnv()` in `register()` so env truly validates at server boot, not first DB touch.
 5. Phase 4: catalog/content/media modules + public site RSC.
 6. Phase 5: leads + LP builder + tracking (CAPI).
 7. Phase 6: orders + payments + expenses + portal.
