@@ -7,14 +7,22 @@ import {
   serviceCategories,
   settings,
 } from "./schema";
+import { seedStaticContent } from "@/modules/content/seed-static-pages";
 import { sql } from "drizzle-orm";
 
-async function seed() {
-  const existing = await db
+// TripMate DB seed. Each block is independently idempotent (guarded by its own
+// presence check / unique slug), so `npm run db:seed` is safe to re-run against
+// a live database: the catalog/taxonomy/settings/payment seed ran once during
+// Plan 1 setup, and later plans add NEW seed blocks (content static pages +
+// post categories) that insert only when absent — they never touch admin edits
+// to the same rows.
+
+async function seedCatalog() {
+  const [existing] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(serviceCategories);
-  if (existing[0].count > 0) {
-    console.log("Seed skipped: data already present.");
+  if (existing.count > 0) {
+    console.log("Catalog seed skipped: service categories already present.");
     return;
   }
 
@@ -87,6 +95,18 @@ async function seed() {
       status: "published",
     },
   ]);
+  console.log("Catalog seed complete.");
+}
+
+async function seedSettings() {
+  const existing = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(settings)
+    .where(sql`key = 'site'`);
+  if (existing[0].count > 0) {
+    console.log("Settings seed skipped: already present.");
+    return;
+  }
 
   await db.insert(settings).values([
     {
@@ -105,6 +125,17 @@ async function seed() {
     { key: "storage", value: { driver: "local" } },
     { key: "setup", value: { setupComplete: false } },
   ]);
+  console.log("Settings seed complete.");
+}
+
+async function seedPaymentGateways() {
+  const existing = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(paymentGateways);
+  if (existing[0].count > 0) {
+    console.log("Payment gateway seed skipped: already present.");
+    return;
+  }
 
   await db.insert(paymentGateways).values([
     {
@@ -129,7 +160,19 @@ async function seed() {
       instructions: "Transfer to the bank account, then submit the deposit slip.",
     },
   ]);
+  console.log("Payment gateway seed complete.");
+}
 
+async function seed() {
+  await seedCatalog();
+  await seedSettings();
+  await seedPaymentGateways();
+  const { categoriesInserted, pagesInserted } = await seedStaticContent(db);
+  console.log(
+    pagesInserted === 0 && categoriesInserted === 0
+      ? "Content seed skipped: post categories + static pages already present."
+      : `Content seed complete (${categoriesInserted} category/categories, ${pagesInserted} page(s) inserted).`,
+  );
   console.log("Seed complete.");
 }
 
