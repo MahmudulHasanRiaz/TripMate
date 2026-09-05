@@ -41,6 +41,7 @@ export const destinations = pgTable("destinations", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   image: text("image"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
