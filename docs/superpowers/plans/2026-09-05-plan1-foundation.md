@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-09-05-tripmate-v2-design.md` (architecture) + `docs/superpowers/specs/2026-09-05-ui-design-system.md` (tokens §2). Read both before starting.
 
-**Plan series:** This is plan 1 of 7. Later plans (written when reached): 2-Auth & Admin Shell, 3-Content/Catalog/Public Site, 4-Leads/LP Builder/Meta CAPI, 5-Orders/Payments/Expenses/Portal, 6-Email/Notifications/Dashboard, 7-CI/Docker/Polish.
+**Plan series:** This is plan 1 of 7. Later plans (written when reached): 2-Auth & Admin Shell **+ Setup Wizard + email foundation (SMTP transport + send util; Plans 4-5 consume it, no-op fallback when SMTP unset)**, 3-Content/Catalog/Public Site **+ sitemap.ts/robots.ts + skip-link + View Transitions + seeded static pages (about/faq/terms/privacy as `pages` rows via `p/[slug]`)**, 4-Leads/LP Builder/Meta CAPI **+ CAPI event status log view**, 5-Orders/Payments/Expenses/Portal, 6-Email templates/Notification flows/Dashboard, 7-CI/Docker/Polish **+ `npm run setup` + Upstash rate-limit switch + password policy docs**. Plan 2 also owns `withGuard` (permission + rate-limit wrapper, with lint rule) and Better Auth password min-length config.
 
 ## Global Constraints
 
@@ -32,7 +32,7 @@
 - Delete: `src/app/admin/`, `src/app/setup/`, `src/app/login/`, `src/app/signup/`, `src/app/dashboard/`, `src/app/blog/`, `src/app/about-us/`, `src/app/faq/`, `src/app/privacy-policy/`, `src/app/terms-of-service/`, `src/app/packages/`, `src/app/[slug]/`, `src/app/api/`
 - Delete: `src/components/admin/`, `src/components/chatbot/`, `src/components/layout/`, `src/components/BookingForm.tsx`, `src/components/ContactForm.tsx`, `src/components/PackageCard.tsx`
 - Delete: `src/context/`, `src/hooks/use-auth.tsx`, `src/lib/actions.ts`, `src/lib/data.ts`, `src/lib/firebase.ts`, `src/lib/firebase-admin.ts`
-- Delete: `src/components/ui/chart.tsx`, `src/components/ui/carousel.tsx`, `src/components/ui/sidebar.tsx`, `src/components/ui/menubar.tsx` (unused after layout deletion; re-add from shadcn when admin plan needs them)
+- Delete: `src/components/ui/chart.tsx`, `src/components/ui/carousel.tsx`, `src/components/ui/sidebar.tsx`, `src/components/ui/menubar.tsx`, `src/components/ui/calendar.tsx` (recharts/embla/react-day-picker v8 are removed; v8's peer range caps React at 18 and would abort the React 19 install in Task 2 — re-add all from shadcn when later plans need them)
 - Rewrite: `src/app/page.tsx` (placeholder), `src/app/layout.tsx` (minimal)
 - Modify: `package.json` (remove deps)
 
@@ -81,15 +81,33 @@ export default function Home() {
 - [ ] **Step 4: Remove dead deps from `package.json`**
 
 ```bash
-npm uninstall firebase firebase-admin genkit @genkit-ai/googleai @genkit-ai/next genkit-cli dotenv @aws-sdk/client-s3 @aws-sdk/s3-request-presigner recharts react-image-crop embla-carousel-react embla-carousel-autoplay tailwindcss-animate
+npm uninstall firebase firebase-admin genkit @genkit-ai/googleai @genkit-ai/next genkit-cli dotenv @aws-sdk/client-s3 @aws-sdk/s3-request-presigner recharts react-image-crop embla-carousel-react embla-carousel-autoplay tailwindcss-animate react-day-picker date-fns
 ```
 
-- [ ] **Step 5: Verify build + commit**
+- [ ] **Step 5: Rewrite root `next.config.ts` clean (kill the ignore flags NOW)**
+
+```ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "images.pexels.com", pathname: "/**" },
+      { protocol: "https", hostname: "placehold.co", pathname: "/**" },
+    ],
+  },
+};
+
+export default nextConfig;
+```
+The old config had `typescript.ignoreBuildErrors` and `eslint.ignoreDuringBuilds` — removing them here makes the Task 1 build an honest gate. (Task 2 adds `typedRoutes`.)
+
+- [ ] **Step 6: Verify build + commit**
 
 ```bash
 npm run build
 ```
-Expected: build succeeds (Turbopack or webpack — Next 15 still here). If TS errors from leftover imports, grep for `@/lib/data`, `@/lib/firebase`, `@/hooks/use-auth`, `next/head` and delete remaining importers, then rebuild.
+Expected: build succeeds (Next 15 still here). If TS errors from leftover imports, grep for `@/lib/data`, `@/lib/firebase`, `@/hooks/use-auth`, `next/head` and delete remaining importers, then rebuild.
 
 ```bash
 git add -A && git commit -m "chore: remove Firebase-era code, deps and dead files"
@@ -171,7 +189,7 @@ export default [
 ```
 
 ```bash
-npm install -D eslint @eslint/eslintrc eslint-config-next
+npm install -D eslint@^9 @eslint/eslintrc eslint-config-next
 ```
 
 - [ ] **Step 5: Create `.env.example` (initial; grows in later tasks/plans)**
@@ -249,13 +267,20 @@ export default config;
   --secondary: 40 44% 91%;
   --secondary-foreground: 225 15% 12%;
   --muted: 40 25% 93%;
-  --muted-foreground: 220 6% 45%;
+  --muted-foreground: 220 6% 40%;
   --accent: 41 55% 54%;
-  --accent-foreground: 0 0% 100%;
+  --accent-foreground: 40 33% 8%;
+  --accent-text: 40 45% 27%;
+  --success: 142 72% 29%;
+  --success-foreground: 0 0% 100%;
+  --warning: 32 95% 38%;
+  --warning-foreground: 0 0% 100%;
+  --info: 217 91% 55%;
+  --info-foreground: 0 0% 100%;
   --destructive: 2 70% 41%;
   --destructive-foreground: 0 0% 100%;
   --border: 40 22% 88%;
-  --input: 40 22% 88%;
+  --input: 40 12% 55%;
   --ring: 178 74% 21%;
   --radius: 0.75rem;
 }
@@ -275,10 +300,17 @@ export default config;
   --muted-foreground: 220 9% 64%;
   --accent: 42 68% 65%;
   --accent-foreground: 40 33% 8%;
+  --accent-text: 42 68% 65%;
+  --success: 142 65% 50%;
+  --success-foreground: 160 84% 8%;
+  --warning: 38 92% 55%;
+  --warning-foreground: 40 33% 8%;
+  --info: 213 94% 67%;
+  --info-foreground: 220 25% 10%;
   --destructive: 4 74% 83%;
   --destructive-foreground: 2 70% 20%;
   --border: 219 20% 17%;
-  --input: 219 20% 17%;
+  --input: 219 14% 45%;
   --ring: 176 59% 41%;
 }
 
@@ -297,6 +329,13 @@ export default config;
   --color-muted-foreground: hsl(var(--muted-foreground));
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-text: hsl(var(--accent-text));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
   --color-border: hsl(var(--border));
@@ -311,7 +350,10 @@ export default config;
   --shadow-lg: 0 10px 30px -10px rgb(0 0 0 / 0.15);
 
   --font-display: var(--font-fraunces), Georgia, serif;
-  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-body: var(--font-inter), system-ui, "Noto Sans Bengali", "Hind Siliguri", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @layer base {
@@ -320,6 +362,10 @@ export default config;
   }
   body {
     @apply bg-background text-foreground font-body antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
   }
 }
 
@@ -336,7 +382,34 @@ export default config;
 ```
 (`--font-fraunces`/`--font-inter` CSS vars are produced by `next/font` in Task 10; until then the fallbacks render.)
 
-- [ ] **Step 4: Delete `tailwind.config.ts` and verify**
+- [ ] **Step 4: Rewrite `components.json` for Tailwind v4 (shadcn CLI compatibility)**
+
+```json
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/app/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@/components",
+    "utils": "@/lib/utils",
+    "ui": "@/components/ui",
+    "lib": "@/lib",
+    "hooks": "@/hooks"
+  },
+  "iconLibrary": "lucide"
+}
+```
+(Empty `config` = v4 style; prevents the CLI regenerating v3 output later.)
+
+- [ ] **Step 5: Delete `tailwind.config.ts` and verify**
 
 ```bash
 git rm tailwind.config.ts
@@ -344,7 +417,7 @@ npm run build
 ```
 Expected: green. Grep `src/` for `tailwind.config` references — none should exist.
 
-- [ ] **Step 5: Visual smoke + commit**
+- [ ] **Step 6: Visual smoke + commit**
 
 ```bash
 npm run dev
@@ -364,7 +437,7 @@ git add -A && git commit -m "feat: Tailwind v4 with design token system from UI 
 - Modify: `.env.example` (add comments)
 
 **Interfaces:**
-- Produces: `parseEnv(source: Record<string, string | undefined>): Env` — throws ZodError with ALL missing vars listed. `Env = { DATABASE_URL: string; APP_URL: string; NODE_ENV: 'development'|'production'|'test' }`. Exported `env` (lazy, memoized) used by server modules.
+- Produces: `parseEnv(source: Record<string, string | undefined>): Env` — throws ZodError with ALL missing vars listed. `Env = { DATABASE_URL: string; APP_URL: string; NODE_ENV: 'development'|'production'|'test' }`. Exported `getEnv(): Env` (lazy, memoized) used by server modules.
 
 - [ ] **Step 1: Create `vitest.config.ts`**
 
@@ -468,8 +541,9 @@ export function getEnv(): Env {
 ```
 
 ```bash
-npm install zod
+npm install zod@^3
 ```
+(zod v4 exists; v3 is pinned to match surviving `@hookform/resolvers` + `form.tsx` — upgrade deliberately later.)
 
 - [ ] **Step 5: Run test, verify pass; add `test` script**
 
@@ -491,11 +565,11 @@ git add -A && git commit -m "feat: zod-validated env system + vitest harness"
 ### Task 5: Database foundation (Drizzle + Postgres + docker-compose)
 
 **Files:**
-- Create: `docker-compose.yml`, `drizzle.config.ts`, `src/db/client.ts`, `src/db/schema.ts` (empty barrel for now), `scripts/db-check.ts`
+- Create: `docker-compose.yml`, `drizzle.config.ts`, `src/db/connection.ts`, `src/db/client.ts`, `src/db/schema.ts` (empty barrel for now), `scripts/db-check.ts`
 - Modify: `package.json` (scripts)
 
 **Interfaces:**
-- Produces: `db` — Drizzle instance (`PostgresJsDatabase`), server-only. Scripts: `db:generate` (drizzle-kit), `db:migrate` (migrate), `db:studio`, `db:check`. `drizzle.config.ts` points at `src/db/schema.ts`.
+- Produces: `db` — Drizzle instance from `src/db/connection.ts` (plain module, importable by tsx scripts). `src/db/client.ts` re-exports it behind `server-only` for app code. Scripts: `db:generate` (drizzle-kit), `db:migrate` (migrate), `db:studio`, `db:check`.
 
 - [ ] **Step 1: Install deps**
 
@@ -549,10 +623,11 @@ export default defineConfig({
 npm install dotenv
 ```
 
-- [ ] **Step 4: Create `src/db/client.ts` (server-only)**
+- [ ] **Step 4: Create `src/db/connection.ts` + `src/db/client.ts`**
+
+`src/db/connection.ts` — plain module, NO `server-only` (scripts like seed run it via tsx, where `server-only` would throw at import time):
 
 ```ts
-import "server-only";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
@@ -565,9 +640,18 @@ export const db = drizzle(client, { schema });
 export type Database = typeof db;
 ```
 
+`src/db/client.ts` — the app-facing import, fenced:
+
+```ts
+import "server-only";
+
+export { db, type Database } from "./connection";
+```
+
 ```bash
 npm install server-only
 ```
+Rule: app code imports `@/db/client`; tsx scripts (seed, db-check) import `@/db/connection`. The npm `server-only` package throws outside the `react-server` condition — that's exactly the fence we want for app code, and exactly why scripts bypass it.
 
 - [ ] **Step 5: Create empty barrel `src/db/schema.ts` (fills up in Tasks 6–8)**
 
@@ -578,19 +662,25 @@ export {};
 - [ ] **Step 6: Create `scripts/db-check.ts` (connection smoke)**
 
 ```ts
+import "dotenv/config";
 import postgres from "postgres";
 
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error("DATABASE_URL not set");
-  process.exit(1);
+async function main() {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    console.error("DATABASE_URL not set");
+    process.exit(1);
+  }
+
+  const sql = postgres(url, { max: 1 });
+  const result = await sql`select version()`;
+  console.log(result[0].version);
+  await sql.end();
 }
 
-const sql = postgres(url, { max: 1 });
-const result = await sql`select version()`;
-console.log(result[0].version);
-await sql.end();
+main();
 ```
+(Top-level await fails under tsx's CJS output — wrap in `main()`. dotenv must be imported explicitly; tsx does not auto-load `.env`.)
 
 - [ ] **Step 7: Add scripts to `package.json`**
 
@@ -741,7 +831,7 @@ git add -A && git commit -m "feat(db): core schema — users, settings, media, t
 - Modify: `src/db/schema.ts`
 
 **Interfaces:**
-- Produces: `serviceCategories`, `listings`, `destinations`, `posts`, `postCategories`, `pages`; enums `serviceKindEnum`, `listingStatusEnum`, `postStatusEnum` (draft/published for posts+pages uses same values).
+- Produces: `serviceCategories`, `listings`, `destinations`, `posts`, `postCategories`, `pages`; enums `serviceKindEnum`, `listingStatusEnum`, `contentStatusEnum` (draft/published, shared by posts and pages).
 
 - [ ] **Step 1: Write `src/modules/catalog/schema.ts`**
 
@@ -789,6 +879,7 @@ export const destinations = pgTable("destinations", {
   slug: text("slug").notNull().unique(),
   image: text("image"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const listings = pgTable("listings", {
@@ -842,6 +933,7 @@ export const postCategories = pgTable("post_categories", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const posts = pgTable("posts", {
@@ -1015,7 +1107,6 @@ export const orders = pgTable("orders", {
   quotedPrice: numeric("quoted_price", { precision: 14, scale: 2 }),
   finalPrice: numeric("final_price", { precision: 14, scale: 2 }),
   currency: text("currency").notNull().default("BDT"),
-  travelerDetails: jsonb("traveler_details"),
   specialRequests: text("special_requests"),
   source: orderSourceEnum("source").notNull().default("website"),
   leadId: uuid("lead_id"),
@@ -1046,6 +1137,7 @@ export const travelers = pgTable("travelers", {
   dob: text("dob"),
   relation: text("relation"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 ```
 
@@ -1117,6 +1209,7 @@ export const payments = pgTable("payments", {
 
 ```ts
 import {
+  boolean,
   date,
   numeric,
   pgEnum,
@@ -1143,8 +1236,9 @@ export const expenseCategories = pgTable("expense_categories", {
   name: text("name").notNull(),
   kind: expenseKindEnum("kind").notNull().default("operational"),
   description: text("description"),
-  isActive: text("is_active").notNull().default("true"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const expenses = pgTable("expenses", {
@@ -1197,7 +1291,7 @@ git add -A && git commit -m "feat(db): leads, orders, payments, expenses schema 
 ### Task 9: Seed script (demo catalog + default settings)
 
 **Files:**
-- Create: `src/db/seed.ts`, `src/modules/catalog/validation.ts` (slug helper shared by seed)
+- Create: `src/db/seed.ts`
 - Modify: `package.json` (script `db:seed`)
 
 **Interfaces:**
@@ -1207,7 +1301,7 @@ git add -A && git commit -m "feat(db): leads, orders, payments, expenses schema 
 
 ```ts
 import "dotenv/config";
-import { db } from "./client";
+import { db } from "./connection";
 import {
   destinations,
   listings,
@@ -1229,9 +1323,9 @@ async function seed() {
   const cats = await db
     .insert(serviceCategories)
     .values([
-      { name: "Tour Packages", slug: "tour-packages", kind: "package", sortOrder: 1, icon: "plane" },
-      { name: "Hajj", slug: "hajj", kind: "package", sortOrder: 2, icon: "kaaba" },
-      { name: "Umrah", slug: "umrah", kind: "package", sortOrder: 3, icon: "mosque" },
+      { name: "Tour Packages", slug: "tour-packages", kind: "package", sortOrder: 1, icon: "compass" },
+      { name: "Hajj", slug: "hajj", kind: "package", sortOrder: 2, icon: "moon-star" },
+      { name: "Umrah", slug: "umrah", kind: "package", sortOrder: 3, icon: "moon" },
       { name: "Medical Travel", slug: "medical-travel", kind: "package", sortOrder: 4, icon: "heart-pulse" },
       { name: "Flight Tickets", slug: "flight-tickets", kind: "inquiry_based", sortOrder: 5, icon: "plane-takeoff" },
       { name: "Visa & Passport", slug: "visa-passport", kind: "inquiry_based", sortOrder: 6, icon: "file-check" },
@@ -1349,17 +1443,7 @@ seed()
   });
 ```
 
-Note: `expenseCategories.isActive` is `text` typed in Task 8 schema to match this seed style — if you changed it to `boolean` during Task 8, keep types consistent (prefer `boolean` and seed `"is_active": true` omitted since default).
-
-- [ ] **Step 2: Fix inconsistency flag — make `expense_categories.is_active` boolean**
-
-In `src/modules/expenses/schema.ts` change to:
-```ts
-isActive: boolean("is_active").notNull().default(true),
-```
-and ensure `boolean` is imported. (This corrects the Task 8 listing — the boolean form is canonical per spec.)
-
-- [ ] **Step 3: Add script + run**
+- [ ] **Step 2: Add script + run**
 
 `package.json` scripts add:
 ```json
@@ -1371,7 +1455,7 @@ npm run db:seed
 ```
 Expected: `Seed complete.` Run again → `Seed skipped: data already present.`
 
-- [ ] **Step 4: Verify data, commit**
+- [ ] **Step 3: Verify data, commit**
 
 ```bash
 npx drizzle-kit studio
@@ -1391,28 +1475,38 @@ git add -A && git commit -m "feat(db): idempotent seed — demo catalog, setting
 - Create: `src/app/not-found.tsx`, `src/app/error.tsx`, `playwright.config.ts`, `tests/e2e/smoke.spec.ts`
 
 **Interfaces:**
-- Produces: fonts wired (`--font-fraunces`, `--font-inter` CSS vars on `<html>`), error boundaries, Playwright `npm run test:e2e` green against dev server.
+- Produces: fonts wired (`--font-fraunces`, `--font-inter` CSS vars on `<html>`, weights pinned to the UI-spec budget), favicon + viewport/themeColor, error boundary with digest (no raw error text), Playwright `npm run test:e2e` green. Skip-link + full a11y §7 items are explicitly owned by Plan 3's public shell task; the global `:focus-visible` ring already shipped in Task 3.
 
 - [ ] **Step 1: Rewrite `src/app/layout.tsx` with next/font**
 
 ```tsx
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 
 const display = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
+  weight: ["600", "700"],
 });
 
 const body = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  weight: ["400", "600"],
 });
 
 export const metadata: Metadata = {
   title: { default: "TripMate", template: "%s | TripMate" },
   description: "Hajj & Umrah packages, tours, flights and visa services.",
+  icons: { icon: "/favicon.svg" },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FAF9F7" },
+    { media: "(prefers-color-scheme: dark)", color: "#0C0F14" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -1459,7 +1553,10 @@ export default function ErrorPage({
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4">
       <h1 className="font-display text-4xl font-bold">Something went wrong</h1>
-      <p className="text-muted-foreground">{error.message}</p>
+      <p className="text-muted-foreground">
+        Something unexpected happened. Please try again.
+        {error.digest && <span className="block text-xs">Ref: {error.digest}</span>}
+      </p>
       <button onClick={reset} className="rounded-md bg-primary px-4 py-2 text-primary-foreground">
         Try again
       </button>
@@ -1757,5 +1854,5 @@ git add -A && git commit -m "docs: starter README + final env template — found
 - [ ] No `tailwind.config.*` file; tokens live in `globals.css` `@theme`
 - [ ] `drizzle/` migrations committed; `npm run db:migrate` clean on fresh DB
 - [ ] `npm run db:seed` twice → second run skips
-- [ ] All 24 spec tables exist (verify via drizzle-kit studio)
+- [ ] All 20 domain tables exist (users, settings, media_files, tracking_events, service_categories, destinations, listings, post_categories, posts, pages, landing_pages, leads, lead_events, orders, order_status_events, travelers, payment_gateways, payments, expense_categories, expenses — Better Auth's session/account/verification tables arrive in Plan 2)
 - [ ] Full gate green (lint + typecheck + build + test + e2e)

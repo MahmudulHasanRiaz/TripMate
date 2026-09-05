@@ -36,15 +36,18 @@ Semantic scale (light / dark), baseline palette — a designer may restyle VALUE
 | `--primary` | deep teal `#0E5E5A` | `#2AA79F` | brand, CTAs, links |
 | `--primary-foreground` | white | `#06231F` | text on primary |
 | `--secondary` | sand `#F0EBE2` | `#1B2028` | section alternates, chips |
-| `--accent` | gold `#C9A24B` | `#E3BE6A` | ratings, highlights, spiritual accent — SPARINGLY |
+| `--accent` | gold `#C9A24B` | `#E3BE6A` | ratings, highlights, spiritual accent — SPARINGLY, DECORATIVE-ONLY |
+| `--accent-text` | deep gold `hsl(40 45% 27%)` | `#E3BE6A` | any accent-colored TEXT — gold itself fails AA as text (2.3:1), so text always uses this token |
+| `--success` / `--warning` / `--info` (+foregrounds) | green `hsl(142 72% 29%)` / amber `hsl(32 95% 38%)` / blue `hsl(217 91% 55%)` | lighter variants | status badges: confirmed/verified/approved, submitted/negotiating, in_review/quoted |
 | `--muted` / `--muted-foreground` | `#EEECE8` / `#6B6F78` | `#171B22` / `#9BA1AC` | meta text, placeholders |
 | `--destructive` | `#B3261E` | `#F2B8B5` | errors, destructive actions |
 | `--card` / `--border` | `#FFFFFF` / `#E5E2DC` | `#12161D` / `#232935` | surfaces |
 
 Rules:
 - Primary CTA = only primary color. One primary CTA per viewport (public + landing).
-- Accent gold reserved: ratings, award badges, Hajj/Umrah spiritual moments. Never for buttons.
-- Contrast: all text ≥ WCAG AA (4.5:1 body, 3:1 large). Buttons AA on both themes.
+- Accent gold reserved: ratings, award badges, Hajj/Umrah spiritual moments. Never for buttons. Gold is decorative-only (fills, icons, stars) — accent-colored TEXT always uses `--accent-text`.
+- Contrast: all text ≥ WCAG AA (4.5:1 body, 3:1 large). Buttons AA on both themes. Input boundaries (`--input`) ≥ 3:1 against background (WCAG 1.4.11) — `--input` is darker than `--border` for this reason.
+- Status colors (`success`/`warning`/`info`) exist ONLY as badges/chips with their paired foreground — never introduced ad hoc.
 - Dark mode = full support, `prefers-color-scheme` + manual toggle in footer.
 
 ### 2.2 Typography
@@ -53,12 +56,12 @@ Rules:
 |---|---|---|
 | `--font-display` | Fraunces (or Playfair Display) — serif, optical sizing | H1–H3, hero, section titles |
 | `--font-body` | Inter (or PT Sans upgrade) — sans | body, UI, forms |
-| `--font-mono` | JetBrains Mono | code, order numbers, txn ids |
+| `--font-mono` | system stack (ui-monospace/SFMono/Menlo/Consolas) — NO webfont download | code, order numbers, txn ids |
 
 - Load via `next/font` (self-hosted, swap). NEVER Google Fonts `<link>`.
 - Scale (fluid, clamp-based): `text-xs 12` / `sm 14` / `base 16` / `lg 18` / `xl 20` / `2xl 24` / `3xl 30` / `4xl 36` / hero `clamp(2.5rem, 6vw, 4.5rem)`.
 - Line-height: body 1.6, headings 1.15. Display letter-spacing slightly tight (-0.02em).
-- Bengali (future i18n): fallback stack must render Bangla gracefully — include `Noto Sans Bengali`/`Hind Siliguri` in body stack for future phases.
+- Bengali (future i18n): body stack already includes `Noto Sans Bengali`/`Hind Siliguri` fallbacks (shipped with Plan 1) — Bangla glyphs render correctly the moment content needs them.
 
 ### 2.3 Space, Radius, Elevation
 
@@ -69,8 +72,8 @@ Rules:
 
 ### 2.4 Motion
 
-- Durations: micro 150ms / standard 250ms / emphasis 400ms. Easing: `cubic-bezier(0.22, 1, 0.36, 1)` (ease-out-quint feel).
-- Use React 19.2 View Transitions for route-level page changes (public site).
+- Durations: micro 150ms / standard 250ms / emphasis 400ms (literal ms values in classes). Easing: `--ease-out-quint` token (`cubic-bezier(0.22, 1, 0.36, 1)`) defined in `@theme` — always use the `ease-out-quint` utility, never hand-rolled beziers.
+- Use React 19.2 View Transitions for route-level page changes (public site) — wired in Plan 3's route shell.
 - Hover states: image scale 1.02 (300ms), card lift 2px + shadow-sm→lg, underline reveal on links. Nothing else moves on hover.
 - Scroll reveals: fade+8px rise once, 400ms, stagger 60ms between siblings. Respect `prefers-reduced-motion` — ALL animation off.
 - Landing countdown: number change = flip or fade 200ms. No bouncing.
@@ -79,7 +82,7 @@ Rules:
 
 - Aspect standards: hero `21:9` desktop / `4:3` mobile; package card `4:3`; gallery `1:1` grid; blog card `3:2`.
 - Treatment: authentic photography, light film-grade. Always `next/image` with explicit sizes. LCP image = priority, no blur placeholder on hero (blur = placeholder for below-fold only).
-- Hajj/Umrah imagery: reverent — Kaaba/Masjid an-Nabawi shots allowed, no people's faces cropped weirdly, no text overlays on sacred imagery.
+- Hajj/Umrah imagery: reverent — Kaaba/Masjid an-Nabawi shots allowed, no people's faces cropped weirdly. Text over sacred imagery ONLY behind a ≥40% dark scrim keeping AA contrast; hero templates default to non-sacred imagery when a headline sits directly on the image.
 
 ---
 
@@ -123,7 +126,8 @@ Each template = one render component, admin-configurable content, SAME component
 | `faq` | q/a list | as FaqAccordion |
 | `countdown` | target date, label | big mono numerals, gold accent, urgency |
 | `sticky-cta` | text, phone, button | mobile bottom bar + desktop bottom-right pill; appears after 40% scroll |
-| `form` | form_config, heading, side image | 2-col desktop (pitch + form), form card elevated |
+| `whatsapp-cta` | phone, prefilled message | wa.me deep-link button — primary Bengali-market conversion channel; may pair with sticky-cta |
+| `form` | form_config, heading, side image | 2-col desktop (pitch + form), form card elevated; public buttons ≥ 44px height (h-11) |
 | `thank-you-redirect` | url, delay | full-screen confirmation then redirect |
 
 Landing page = NO site header/footer. Optional minimal footer (logo + contact). Goal: one action per page, zero navigation escape.
@@ -132,7 +136,7 @@ Landing page = NO site header/footer. Optional minimal footer (logo + contact). 
 
 ## 5. Admin Panel Design
 
-- Base: shadcn/ui defaults, current components reused. Keep existing sidebar shell — restyle tokens only.
+- Base: shadcn/ui defaults, current components reused. The sidebar shell is rebuilt in Plan 2 from shadcn's sidebar primitive, restyled by tokens only (the old Firebase-era implementation is deleted with that code).
 - Density: table rows 44–52px, page padding `p-6`, section gaps `gap-6`.
 - Patterns (mandatory, all admin modules identical):
   - **List page** = filter bar + table (row actions dropdown) + pagination. Bulk-select where relevant.
@@ -156,7 +160,7 @@ Landing page = NO site header/footer. Optional minimal footer (logo + contact). 
 
 ## 7. Accessibility (non-negotiable)
 
-- Semantic HTML landmarks; skip-to-content link.
+- Semantic HTML landmarks; skip-to-content link (Plan 3's public shell task owns it; the global `:focus-visible` ring ships with Plan 1's token layer).
 - All interactive: visible focus ring (2px primary offset 2px), keyboard complete (forms, kanban has move-to-status menu, lightbox esc/arrows).
 - Color never sole information carrier (status = color + label).
 - Alt text enforced in media library (upload form requires alt).
@@ -167,7 +171,7 @@ Landing page = NO site header/footer. Optional minimal footer (logo + contact). 
 
 ## 8. Performance Budget (design's part)
 
-- Above-fold: ≤ 2 webfonts (2 weights display + 2 body max loaded total page), hero image ≤ 200KB (avif/webp via next/image).
+- Above-fold: 2 webfont families max — display 2 weights + body 2 weights, pinned in `next/font` (mono is a system stack, not a webfont); hero image ≤ 200KB (avif/webp via next/image).
 - No layout shift: all media has aspect-ratio boxes; font-display swap + size-adjust fallbacks.
 - Client JS per public page target < 90KB gzipped islands (forms, gallery, mobile nav only).
 - Icons: lucide-react, tree-shaken, no icon fonts.
@@ -176,11 +180,11 @@ Landing page = NO site header/footer. Optional minimal footer (logo + contact). 
 
 ## 9. Redesign Protocol (for future designers)
 
-1. Change ONLY `:root`/`.dark` token values + optional font families in `@theme` — entire site restyles. This is the intentional redesign lever.
+1. Change ONLY token VALUES (`:root`/`.dark` color vars, radius, shadows, motion easing, font families) — never token NAMES. Full token groups: colors (incl. success/warning/info and accent-text), radius, shadows, easing, fonts. The entire site restyles — this is the intentional redesign lever.
 2. Component structure/semantics (this doc §3–6 inventories + rules) stays unless the architecture spec changes.
 3. Any new component must: use existing tokens, pass a11y §7, fit a listed page context, and get documented here (inventory row) in the same PR.
 4. New section template for LP builder = new row in §4 table + render component + admin picker entry.
-5. Verify both themes + mobile 375px + reduced-motion before merge.
+5. Verify both themes + mobile 375px + reduced-motion + AA contrast on all text pairs (4.5:1 body, 3:1 large/UI boundaries) before merge.
 
 ---
 

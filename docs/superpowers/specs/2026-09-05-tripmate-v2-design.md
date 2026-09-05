@@ -94,7 +94,7 @@ Payments substructure: `payments/gateways/{driver.ts, manual/, paylater/, sslcom
 5. **Lint + TS hard gates in build.** `ignoreBuildErrors`/`ignoreDuringBuilds` banned forever.
 6. **DB fenced** with `server-only` package — importing db into a client bundle = build failure.
 7. `dangerouslySetInnerHTML` banned (lint error). Markdown via react-markdown + rehype-sanitize.
-8. Tables snake_case; `id uuid` (gen_random_uuid); `created_at`/`updated_at`; soft-delete (`deleted_at`) only for content/media; status + event logs for leads/orders.
+8. Tables snake_case; `id uuid` (gen_random_uuid); `created_at`/`updated_at`; soft-delete (`deleted_at`) only for content/media/landing_pages; status + event logs for leads/orders.
 
 ---
 
@@ -105,7 +105,7 @@ All tables: `id uuid pk`, `created_at`, `updated_at` unless noted.
 ### users (domain table; Better Auth owns session/account/verification)
 ```
 name, email (unique), phone, role enum(superadmin,admin,staff,customer),
-status, avatar_url, permissions jsonb (null = role default),
+status, avatar_url, permissions text[] (null = role default; array membership is cheaper to query than jsonb),
 lead_id? (trace if converted from lead)
 ```
 
@@ -148,8 +148,7 @@ orders: order_no (human-readable, e.g. TM-2026-0001, unique), user_id?,
         listing_id?, listing_snapshot jsonb (price/title frozen),
         type enum(package, inquiry),
         status enum(pending,in_review,quoted,confirmed,cancelled,completed),
-        quoted_price numeric?, final_price numeric?, currency,
-        traveler_details jsonb, special_requests,
+        quoted_price numeric?, final_price numeric?, currency, special_requests,
         source enum(website, lead_conversion, manual), lead_id?, created_by?
 
 order_status_events: order_id, from_status, to_status, note, actor_id
@@ -224,7 +223,7 @@ permission keys (module-based):
   payments.verify, payments.manage_gateways, content.manage, media.manage,
   users.manage, settings.manage, tracking.view, expenses.submit, expenses.approve
 ```
-- Role → default permission set mapped in code. `users.permissions jsonb` overrides per user (grant one extra permission without role change).
+- Role → default permission set mapped in code. `users.permissions` (text[]) overrides per user (grant one extra permission without role change).
 - Admin user-edit form shows permission matrix checkboxes. Only superadmin gets `users.manage`.
 - superadmin = setup/danger-zone access, hardcoded role check in code (DB role change cannot unlock).
 
@@ -236,7 +235,7 @@ permission keys (module-based):
 | CSRF | Better Auth origin check + Server Actions same-origin |
 | Session hijack | httpOnly+secure+sameSite, 30d expiry, bcrypt (Better Auth default), admin password min 10 chars |
 | Lead spam | IP sliding-window rate limit (10/min, 100/h per form) + honeypot + Zod |
-| Upload abuse | Presigned URLs ONLY from admin-authed server actions; type whitelist (image/pdf), 25MB cap, mime sniff, uuid keys |
+| Upload abuse | Uploads only via authenticated server actions (admin: any library file; customer: own documents with ownership check); type whitelist (image/pdf), 25MB cap, mime sniff, uuid keys |
 | Enumeration | Uniform login errors; email-only login |
 | Env leak | Secrets in `server-only` modules; NEXT_PUBLIC_ only safe values (site URL, pixel ID) |
 | PII exposure | Public pages never receive users.email/phone; server components select explicit columns, never `table.*` |
@@ -248,7 +247,7 @@ permission keys (module-based):
 
 ## 7. Public Site
 
-Routes: home, `packages/` (server-side filter via URL state `?search=&cat=`), `packages/[slug]`, `services/[slug]` (inquiry-form-centric), `blog/` + `blog/[slug]`, `p/[slug]` (dynamic pages), about/faq/terms/privacy, `sitemap.ts`, `robots.ts`, `not-found`, `error`.
+Routes: home, `packages/` (server-side filter via URL state `?search=&cat=`), `packages/[slug]`, `services/[slug]` (inquiry-form-centric), `blog/` + `blog/[slug]`, `p/[slug]` (dynamic pages — also renders seeded static pages: about/faq/terms/privacy ship as `pages` rows so they stay admin-editable), `sitemap.ts`, `robots.ts`, `not-found`, `error`.
 
 Performance model:
 - All public pages PPR + Cache Components: instant static shell, dynamic holes streamed.
@@ -261,7 +260,7 @@ Performance model:
 ## 8. Landing Page Builder + Lead Flow
 
 - URL `/l/[slug]` — short, ad-friendly, no site header/footer.
-- 10 section templates (v1): hero (image/video bg), benefits, package-showcase (embeds catalog listings), gallery, testimonials, faq, countdown, sticky-cta, form, thank-you-redirect.
+- 11 section templates (v1): hero (image/video bg), benefits, package-showcase (embeds catalog listings), gallery, testimonials, faq, countdown, sticky-cta, whatsapp-cta, form, thank-you-redirect.
 - `form_config jsonb` field definitions; admin UI = section list (reorder/add/remove) + section-type picker + live preview (SAME render component as public — no divergent preview logic).
 - Lead flow (fully automatic): submit (guarded action) → insert lead → auto-assign (round-robin staff rotator, configurable) → emails (customer receipt + assigned staff) → CAPI Lead event → thank-you state.
 - Admin lead inbox: kanban board, timeline (lead_events), convert button → order form pre-filled (lead → order in two clicks). Auto-creates customer account + links if none.
@@ -329,7 +328,7 @@ Menu items permission-filtered. Server-gated layout. shadcn UI reused.
 4. SMTP config + test-email button
 5. Meta Pixel + CAPI (skippable)
 6. Seed data: demo categories/listings/landing page (optional)
-7. Complete → `settings.setup_complete = true` → route permanently locked per install.
+7. Complete → `settings` key `setup` set to `{ setupComplete: true }` → route permanently locked per install.
 
 ---
 
@@ -337,7 +336,7 @@ Menu items permission-filtered. Server-gated layout. shadcn UI reused.
 
 **Dev automation:**
 - `npm run setup` — env check → create DB → migrate → seed → dev server. One-command onboarding.
-- `npm run db:new-module <name>` — module skeleton generator.
+- `npm run new-module <name>` — module skeleton generator.
 - GitHub Actions CI: lint + typecheck + unit + build (Postgres service container). PR merge blocked unless green.
 
 **Deploy (two paths, one repo):**
@@ -362,12 +361,12 @@ This repo is modernized in place:
 1. Phase 0: strip dead code (`src/api/`, `src/next.config.ts`, genkit, `.modified`, stale blueprint), fix configs.
 2. Phase 1: stack upgrade (Next 16, React 19.2, TS strict, Tailwind v4) + folder restructure + env/lint gates.
 3. Phase 2: DB layer (Drizzle + schema + migrations + seed).
-4. Phase 3: auth + guards + admin shell.
+4. Phase 3: auth + guards + admin shell + setup wizard + email foundation (SMTP transport + send util — Plans 4-5 consume it; no-op fallback when SMTP unset).
 5. Phase 4: catalog/content/media modules + public site RSC.
 6. Phase 5: leads + LP builder + tracking (CAPI).
 7. Phase 6: orders + payments + expenses + portal.
-8. Phase 7: email + notifications + dashboard reports.
-9. Phase 8: CI + Docker + docs + starter polish.
+8. Phase 7: email templates + notification flows + dashboard reports (builds on the Phase-3 email foundation).
+9. Phase 8: CI + Docker + docs + starter polish + `npm run setup` one-command onboarding + Upstash rate-limit switch docs.
 
 Existing admin UI pages and shadcn components are adapted during their phase; the old Firebase-era data layer and client-fetch pages are replaced, not preserved.
 
@@ -376,4 +375,4 @@ Existing admin UI pages and shadcn components are adapted during their phase; th
 ## 16. Related Documents
 
 - UI Design System spec: `docs/superpowers/specs/2026-09-05-ui-design-system.md` (separate — anyone can redesign the UI from it alone)
-- Implementation plan: created via writing-plans after this spec is approved.
+- Implementation plans: `docs/superpowers/plans/` (Plan 1: Foundation committed; Plans 2-7 written when reached, per the series map in Plan 1's header).
