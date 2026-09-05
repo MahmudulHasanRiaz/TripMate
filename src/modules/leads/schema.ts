@@ -1,4 +1,5 @@
 import {
+  index,
   integer,
   jsonb,
   pgEnum,
@@ -35,7 +36,7 @@ export const landingPages = pgTable("landing_pages", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("landing_pages_status_idx").on(table.status)]);
 
 export const leads = pgTable("leads", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -54,7 +55,10 @@ export const leads = pgTable("leads", {
   notes: text("notes"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("leads_status_idx").on(table.status),
+  index("leads_assigned_to_idx").on(table.assignedTo),
+]);
 
 export const leadEvents = pgTable("lead_events", {
   id: uuid("id").primaryKey().defaultRandom(),

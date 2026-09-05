@@ -1,6 +1,7 @@
 import {
   boolean,
   date,
+  index,
   numeric,
   pgEnum,
   pgTable,
@@ -48,4 +49,7 @@ export const expenses = pgTable("expenses", {
   approvedBy: uuid("approved_by"),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("expenses_category_id_idx").on(table.categoryId),
+  index("expenses_status_idx").on(table.status),
+]);

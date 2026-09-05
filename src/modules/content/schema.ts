@@ -1,4 +1,5 @@
 import {
+  index,
   jsonb,
   pgEnum,
   pgTable,
@@ -37,7 +38,11 @@ export const posts = pgTable("posts", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("posts_status_idx").on(table.status),
+  index("posts_category_id_idx").on(table.categoryId),
+  index("posts_published_at_idx").on(table.publishedAt),
+]);
 
 export const pages = pgTable("pages", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -49,4 +54,4 @@ export const pages = pgTable("pages", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("pages_status_idx").on(table.status)]);

@@ -1,4 +1,5 @@
 import {
+  index,
   jsonb,
   numeric,
   pgEnum,
@@ -43,7 +44,7 @@ export const orders = pgTable("orders", {
   createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("orders_status_idx").on(table.status)]);
 
 export const orderStatusEvents = pgTable("order_status_events", {
   id: uuid("id").primaryKey().defaultRandom(),

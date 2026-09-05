@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   jsonb,
   numeric,
@@ -70,4 +71,9 @@ export const listings = pgTable("listings", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("listings_status_idx").on(table.status),
+  index("listings_category_id_idx").on(table.categoryId),
+  index("listings_destination_id_idx").on(table.destinationId),
+  index("listings_deleted_at_idx").on(table.deletedAt),
+]);
