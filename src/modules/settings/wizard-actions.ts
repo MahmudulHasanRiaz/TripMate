@@ -32,6 +32,26 @@ async function assertUnlocked() {
   if (setup?.setupComplete) throw new Error("Setup already completed");
 }
 
+/**
+ * Promote a user row to superadmin and VERIFY the write landed. The verify step
+ * is what stops a silent false-success: if the update matched nothing (wrong
+ * id, drifted state) we throw instead of reporting { ok: true }.
+ */
+async function escalateToSuperadmin(userId: string): Promise<void> {
+  await db
+    .update(users)
+    .set({ role: "superadmin" })
+    .where(eq(users.id, userId));
+  const row = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (row[0]?.role !== "superadmin") {
+    throw new Error("Failed to set superadmin role");
+  }
+}
+
 /** Persist one wizard-owned settings row (site / storage / meta). */
 export const wizardSetSetting = withGuard(
   { public: true },
@@ -116,6 +136,16 @@ export const wizardTestR2 = withGuard(
  * superadmin server-side. Escalation inside a setup-unlocked action is
  * legitimate: the wizard owns the first account by design.
  *
+ * Error contract (verified): a headless `auth.api.signUpEmail({ body })` call
+ * runs with `asResponse: false`, so a handler APIError (duplicate email, weak
+ * password) is RE-THROWN — the promise rejects. We keep the try/catch for that
+ * path AND defensively inspect the resolved result for a truthy `error`
+ * property (some fetch-style wrapper layers resolve `{ error }` instead of
+ * throwing) — if present we fail WITHOUT touching roles. Success resolves
+ * `{ token, user }` where `user.id` is always present, so the role escalation
+ * keys off the created user's id (not the email) and is VERIFIED before
+ * returning — no silent false `{ ok: true }`.
+ *
  * Idempotent: if a row for the email already exists (e.g. a prior attempt where
  * signup landed but the escalation step failed), we escalate instead of
  * erroring on a duplicate — the retry converges to a working superadmin.
@@ -136,20 +166,29 @@ export const wizardCreateSuperadmin = withGuard(
       if (existing[0]) {
         if (existing[0].role === "superadmin") return { ok: true };
         // Stray account from a failed earlier run — promote it now.
-        await db
-          .update(users)
-          .set({ role: "superadmin" })
-          .where(eq(users.id, existing[0].id));
+        await escalateToSuperadmin(existing[0].id);
         return { ok: true };
       }
 
-      await auth.api.signUpEmail({
+      const created = (await auth.api.signUpEmail({
         body: { email, password: input.password, name },
-      });
-      await db
-        .update(users)
-        .set({ role: "superadmin" })
-        .where(eq(users.email, email));
+      })) as unknown as
+        | { user?: { id?: string } }
+        | { error?: string | { message?: string } };
+
+      if ("error" in created && created.error) {
+        const message =
+          typeof created.error === "string"
+            ? created.error
+            : created.error.message ?? "Account creation failed";
+        return { ok: false, error: message };
+      }
+
+      const createdUserId = "user" in created ? created.user?.id : undefined;
+      if (!createdUserId) {
+        throw new Error("User created but no id returned for role escalation");
+      }
+      await escalateToSuperadmin(createdUserId);
       return { ok: true };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : "Account creation failed" };
