@@ -9,14 +9,19 @@ import { CACHE_TAGS } from "@/lib/cache-tags";
  * it to the `settings` tag so an admin settings mutation followed by
  * `revalidateTag(CACHE_TAGS.settings, ...)` refreshes it. Task 10 replaces
  * this with the real marketing home (same tagging pattern).
+ *
+ * No <main> here: the (public) layout already owns the `<main id="main">`
+ * content landmark around this page.
  */
 export default async function Home() {
   "use cache";
   cacheTag(CACHE_TAGS.settings);
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-4xl font-bold">TripMate v2 — Foundation</h1>
-    </main>
+    <div className="flex min-h-screen items-center justify-center px-4">
+      <h1 className="font-display text-4xl font-semibold tracking-tight">
+        TripMate v2 — Foundation
+      </h1>
+    </div>
   );
 }

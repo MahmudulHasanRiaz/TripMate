@@ -1,8 +1,10 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
+import Script from "next/script";
 
 import { themeColor } from "../../theme-colors";
+import { themeInitScript } from "@/lib/theme";
 
 const display = Fraunces({
   subsets: ["latin"],
@@ -31,6 +33,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
       <body className="font-body" suppressHydrationWarning>
         {children}
+        {/* Pre-paint theme bootstrap: inline beforeInteractive script reads the
+            saved theme + sets .dark on <html> before first paint (no FOUC).
+            Children-as-string is the documented next/script inline form and
+            deliberately avoids dangerouslySetInnerHTML / the react/no-danger
+            gate. */}
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
       </body>
     </html>
   );
