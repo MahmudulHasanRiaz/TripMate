@@ -163,20 +163,15 @@ Note: hardcoded R2 host is gone; the storage module (later plan) injects its hos
 }
 ```
 
-- [ ] **Step 4: Create `eslint.config.mjs` (flat config — `next lint` is removed in Next 16)**
+- [ ] **Step 4: Create `eslint.config.mjs` (flat config — `next lint` is removed in Next 16; eslint-config-next@16 exports native flat arrays)**
 
 ```js
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({ baseDirectory: __dirname });
+import coreWebVitals from "eslint-config-next/core-web-vitals";
+import nextTypescript from "eslint-config-next/typescript";
 
 export default [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  ...coreWebVitals,
+  ...nextTypescript,
   {
     rules: {
       "react/no-danger": "error",
@@ -189,8 +184,9 @@ export default [
 ```
 
 ```bash
-npm install -D eslint@^9 @eslint/eslintrc eslint-config-next
+npm install -D eslint@^9 eslint-config-next
 ```
+(Note: do NOT use FlatCompat — eslint-config-next@16 ships flat-array exports that break it. Pin TypeScript exactly `6.0.3` — latest TS 7.x violates typescript-eslint's `<6.1.0` peer cap.)
 
 - [ ] **Step 5: Create `.env.example` (initial; grows in later tasks/plans)**
 
