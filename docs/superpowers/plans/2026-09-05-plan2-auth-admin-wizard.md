@@ -1193,7 +1193,7 @@ git add -A && git commit -m "feat(wizard): multi-step setup UI with env detectio
 ### Task 10: Auth pages (login/logout)
 
 **Files:**
-- Create: `src/app/(auth)/login/page.tsx` (server shell), `src/app/(auth)/login/LoginForm.tsx` (client), `src/lib/auth-actions.ts` ('use server' signOut)
+- Create: `src/app/(auth)/login/page.tsx` (server shell), `src/app/(auth)/login/LoginForm.tsx` (client), `src/lib/auth-actions.ts` ('use server' signOut), `src/app/api/auth/[...all]/route.ts` (better-auth's required catch-all route handler — `toNextJsHandler(auth)` exporting GET/POST/PUT/PATCH/DELETE; client signIn.email posts to /api/auth/* and 404s without it)
 - Create: `src/lib/auth-client.ts` (`createAuthClient` for client components)
 
 **Interfaces:**
