@@ -8,6 +8,7 @@ const envSchema = z.object({
       message: "DATABASE_URL must be a postgresql:// connection string",
     }),
   APP_URL: z.string().url(),
+  AUTH_SECRET: z.string().min(32, "AUTH_SECRET must be at least 32 chars"),
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
