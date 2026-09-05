@@ -17,7 +17,7 @@ import { getSetting, setSetting } from "./service";
 import { writeEnvValues } from "@/lib/env-file";
 import { buildTransportFromValues } from "@/modules/email/transport";
 import { R2Driver } from "@/modules/media/drivers/r2";
-import { withGuard } from "@/lib/guard";
+import { withGuard, GuardError } from "@/lib/guard";
 import { db } from "@/db/client";
 import { users } from "@/modules/users/schema";
 import { eq } from "drizzle-orm";
@@ -52,17 +52,46 @@ async function escalateToSuperadmin(userId: string): Promise<void> {
   }
 }
 
-/** Persist one wizard-owned settings row (site / storage / meta). */
-export const wizardSetSetting = withGuard(
-  { public: true },
-  async (input: { key: string; value: Record<string, unknown> }) => {
-    await assertUnlocked();
-    if (!(WIZARD_SETTING_KEYS as readonly string[]).includes(input.key)) {
-      throw new Error(`Setting key ${input.key} is not writable via the wizard`);
+/**
+ * Relay thrown GuardError codes into the action's return payload so the client
+ * never depends on Next's error-serialization (which may mask the original
+ * message/code in production). Every wizard action returns an `{ ok }` shape,
+ * so a rate-limit rejection arrives as a plain `{ ok:false, error:"RATE_LIMITED" }`
+ * the UI maps to friendly copy.
+ */
+function relay<TInput, TOut extends { ok: boolean }>(
+  action: (input: TInput, rateKey?: string) => Promise<TOut>,
+) {
+  return async (input: TInput, rateKey?: string): Promise<TOut> => {
+    try {
+      return await action(input, rateKey);
+    } catch (e) {
+      if (e instanceof GuardError) {
+        if (e.code === "RATE_LIMITED") {
+          return { ok: false, error: "RATE_LIMITED" } as unknown as TOut;
+        }
+        if (e.code === "UNAUTHORIZED") {
+          return { ok: false, error: "UNAUTHORIZED" } as unknown as TOut;
+        }
+      }
+      throw e;
     }
-    await setSetting(input.key, input.value);
-    return { ok: true };
-  },
+  };
+}
+
+/** Persist one wizard-owned settings row (site / storage / meta). */
+export const wizardSetSetting = relay(
+  withGuard(
+    { public: true },
+    async (input: { key: string; value: Record<string, unknown> }) => {
+      await assertUnlocked();
+      if (!(WIZARD_SETTING_KEYS as readonly string[]).includes(input.key)) {
+        throw new Error(`Setting key ${input.key} is not writable via the wizard`);
+      }
+      await setSetting(input.key, input.value);
+      return { ok: true };
+    },
+  ),
 );
 
 /**
@@ -71,43 +100,47 @@ export const wizardSetSetting = withGuard(
  * a wizard call can never redirect the app's own connection string). Values are
  * hot-reloaded into process.env for call-time readers (SMTP/R2).
  */
-export const wizardWriteEnv = withGuard(
-  { public: true },
-  async (values: Record<string, string>) => {
-    await assertUnlocked();
-    writeEnvValues(values);
-    return { ok: true };
-  },
+export const wizardWriteEnv = relay(
+  withGuard(
+    { public: true },
+    async (values: Record<string, string>) => {
+      await assertUnlocked();
+      writeEnvValues(values);
+      return { ok: true };
+    },
+  ),
 );
 
 /**
  * SMTP probe: builds a transport from the submitted values and sends a real
  * test mail — values are NEVER persisted here.
  */
-export const wizardTestSmtp = withGuard(
-  { public: true, rateLimit: { limit: 5, windowMs: 60_000 } },
-  async (values: {
-    host: string;
-    port: number;
-    user?: string;
-    pass?: string;
-    from?: string;
-    to: string;
-  }) => {
-    await assertUnlocked();
-    try {
-      const transport = buildTransportFromValues(values);
-      await transport.sendMail({
-        from: values.from ?? values.user ?? "test@localhost",
-        to: values.to,
-        subject: "TripMate SMTP test",
-        text: "SMTP configuration works.",
-      });
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Send failed" };
-    }
-  },
+export const wizardTestSmtp = relay(
+  withGuard(
+    { public: true, rateLimit: { limit: 5, windowMs: 60_000 } },
+    async (values: {
+      host: string;
+      port: number;
+      user?: string;
+      pass?: string;
+      from?: string;
+      to: string;
+    }) => {
+      await assertUnlocked();
+      try {
+        const transport = buildTransportFromValues(values);
+        await transport.sendMail({
+          from: values.from ?? values.user ?? "test@localhost",
+          to: values.to,
+          subject: "TripMate SMTP test",
+          text: "SMTP configuration works.",
+        });
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, error: e instanceof Error ? e.message : "Send failed" };
+      }
+    },
+  ),
 );
 
 /**
@@ -115,13 +148,17 @@ export const wizardTestSmtp = withGuard(
  * (i.e. just-written by wizardWriteEnv, or platform-injected on the next
  * request when env is external). Never persists anything.
  */
-export const wizardTestR2 = withGuard(
-  { public: true, rateLimit: { limit: 5, windowMs: 60_000 } },
-  async () => {
-    await assertUnlocked();
-    return new R2Driver().testConnection();
-  },
+const r2Probe = relay(
+  withGuard(
+    { public: true, rateLimit: { limit: 5, windowMs: 60_000 } },
+    async () => {
+      await assertUnlocked();
+      return new R2Driver().testConnection();
+    },
+  ),
 );
+/** No-input alias so callers see a zero-arg action, not the guard's `input` slot. */
+export const wizardTestR2 = async () => r2Probe(undefined);
 
 /**
  * Create the superadmin + a password credential that can sign in through
@@ -150,60 +187,65 @@ export const wizardTestR2 = withGuard(
  * signup landed but the escalation step failed), we escalate instead of
  * erroring on a duplicate — the retry converges to a working superadmin.
  */
-export const wizardCreateSuperadmin = withGuard(
-  { public: true, rateLimit: { limit: 3, windowMs: 60_000 } },
-  async (input: { email: string; password: string; name: string }) => {
-    await assertUnlocked();
-    const email = input.email.trim().toLowerCase();
-    const name = input.name.trim();
-    try {
-      const existing = await db
-        .select({ id: users.id, role: users.role })
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
+export const wizardCreateSuperadmin = relay(
+  withGuard(
+    { public: true, rateLimit: { limit: 3, windowMs: 60_000 } },
+    async (input: { email: string; password: string; name: string }) => {
+      await assertUnlocked();
+      const email = input.email.trim().toLowerCase();
+      const name = input.name.trim();
+      try {
+        const existing = await db
+          .select({ id: users.id, role: users.role })
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
 
-      if (existing[0]) {
-        if (existing[0].role === "superadmin") return { ok: true };
-        // Stray account from a failed earlier run — promote it now.
-        await escalateToSuperadmin(existing[0].id);
+        if (existing[0]) {
+          if (existing[0].role === "superadmin") return { ok: true };
+          // Stray account from a failed earlier run — promote it now.
+          await escalateToSuperadmin(existing[0].id);
+          return { ok: true };
+        }
+
+        const created = (await auth.api.signUpEmail({
+          body: { email, password: input.password, name },
+        })) as unknown as
+          | { user?: { id?: string } }
+          | { error?: string | { message?: string } };
+
+        if ("error" in created && created.error) {
+          const message =
+            typeof created.error === "string"
+              ? created.error
+              : created.error.message ?? "Account creation failed";
+          return { ok: false, error: message };
+        }
+
+        const createdUserId = "user" in created ? created.user?.id : undefined;
+        if (!createdUserId) {
+          throw new Error("User created but no id returned for role escalation");
+        }
+        await escalateToSuperadmin(createdUserId);
         return { ok: true };
+      } catch (e) {
+        return { ok: false, error: e instanceof Error ? e.message : "Account creation failed" };
       }
-
-      const created = (await auth.api.signUpEmail({
-        body: { email, password: input.password, name },
-      })) as unknown as
-        | { user?: { id?: string } }
-        | { error?: string | { message?: string } };
-
-      if ("error" in created && created.error) {
-        const message =
-          typeof created.error === "string"
-            ? created.error
-            : created.error.message ?? "Account creation failed";
-        return { ok: false, error: message };
-      }
-
-      const createdUserId = "user" in created ? created.user?.id : undefined;
-      if (!createdUserId) {
-        throw new Error("User created but no id returned for role escalation");
-      }
-      await escalateToSuperadmin(createdUserId);
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Account creation failed" };
-    }
-  },
+    },
+  ),
 );
 
 /** Finish setup: persists setupComplete=true, locking every wizard action. */
-export const wizardComplete = withGuard({ public: true }, async () => {
-  await assertUnlocked();
-  await setSetting("setup", { setupComplete: true });
-  return { ok: true };
-});
+const completeSetup = relay(
+  withGuard({ public: true }, async () => {
+    await assertUnlocked();
+    await setSetting("setup", { setupComplete: true });
+    return { ok: true };
+  }),
+);
+export const wizardComplete = async () => completeSetup(undefined);
 
 /** Re-run status detection (used after external env edits on Vercel etc). */
-export const wizardRecheck = withGuard({ public: true }, async () =>
-  getWizardStatus(),
-);
+const recheckStatus = withGuard({ public: true }, async () => getWizardStatus());
+/** No-input alias so callers see a zero-arg action, not the guard's `input` slot. */
+export const wizardRecheck = async () => recheckStatus(undefined);
