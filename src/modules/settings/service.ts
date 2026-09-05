@@ -9,10 +9,12 @@ export type SiteSetting = {
 };
 export type StorageSetting = { driver: "local" | "r2" };
 export type SetupSetting = { setupComplete: boolean };
+export type MetaSetting = { skipped: boolean };
 
 export async function getSetting(key: "site"): Promise<SiteSetting | null>;
 export async function getSetting(key: "storage"): Promise<StorageSetting | null>;
 export async function getSetting(key: "setup"): Promise<SetupSetting | null>;
+export async function getSetting(key: "meta"): Promise<MetaSetting | null>;
 export async function getSetting(key: "home"): Promise<Record<string, unknown> | null>;
 export async function getSetting(key: string): Promise<unknown> {
   const rows = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
