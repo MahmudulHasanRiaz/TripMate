@@ -1,0 +1,144 @@
+import type { ReactNode } from "react";
+import { Check, ChevronDown, Minus } from "lucide-react";
+
+import { ProseMarkdown } from "@/components/site/ProseMarkdown";
+import { Gallery } from "@/components/site/Gallery";
+
+import type { PackageDetailData } from "../../_lib/catalog-data";
+
+/**
+ * Long-form detail sections under the hero (spec §3 PackageDetailLayout).
+ * All server-rendered: the itinerary is a native <details> accordion (zero
+ * client JS, keyboard-operable by default), the inclusions/exclusions are
+ * quiet 2-col check/cross lists, and markdown goes through ProseMarkdown's
+ * react-markdown + rehype-sanitize pipeline — never raw HTML.
+ */
+export function PackageContent({ data }: { data: PackageDetailData }) {
+  const { summary, description, gallery, itinerary, inclusions, exclusions } = data;
+  const hasLongform = Boolean(summary || description);
+
+  return (
+    <div className="space-y-12">
+      {hasLongform ? (
+        <section aria-labelledby="package-about-heading">
+          {summary ? (
+            <p
+              data-testid="package-summary"
+              className="text-lg leading-relaxed text-muted-foreground"
+            >
+              {summary}
+            </p>
+          ) : null}
+          {description ? (
+            <div className={summary ? "mt-6" : undefined}>
+              <SectionHeading id="package-about-heading">About this package</SectionHeading>
+              <ProseMarkdown className="prose-tripmate mt-4">{description}</ProseMarkdown>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {gallery.length > 0 ? (
+        <section aria-labelledby="package-gallery-heading">
+          <SectionHeading id="package-gallery-heading">Gallery</SectionHeading>
+          <Gallery
+            className="mt-5"
+            images={gallery.map((image) => ({ src: image.url, alt: image.alt }))}
+          />
+        </section>
+      ) : null}
+
+      {itinerary.length > 0 ? (
+        <section aria-labelledby="package-itinerary-heading" data-testid="package-itinerary">
+          <div className="flex items-baseline justify-between gap-4">
+            <SectionHeading id="package-itinerary-heading">Itinerary</SectionHeading>
+            <span className="shrink-0 text-sm text-muted-foreground">
+              {itinerary.length} {itinerary.length === 1 ? "day" : "days"}
+            </span>
+          </div>
+          <div className="mt-5 space-y-3">
+            {itinerary.map((day) => (
+              <details
+                key={`${day.day}-${day.title}`}
+                className="group rounded-lg border border-border bg-card transition-shadow open:shadow-sm"
+              >
+                <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3 rounded-lg px-4 py-3 text-sm font-semibold [&::-webkit-details-marker]:hidden [&::marker]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold text-primary">
+                    {day.day}
+                  </span>
+                  <span className="min-w-0 flex-1">{day.title}</span>
+                  <ChevronDown
+                    className="size-4 shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180"
+                    aria-hidden="true"
+                  />
+                </summary>
+                {day.details ? (
+                  <p className="whitespace-pre-line px-4 pb-4 text-sm leading-relaxed text-muted-foreground sm:pl-16 sm:pr-6">
+                    {day.details}
+                  </p>
+                ) : null}
+              </details>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {inclusions.length > 0 || exclusions.length > 0 ? (
+        <section aria-label="Inclusions and exclusions">
+          <div className="grid gap-5 sm:grid-cols-2">
+            {inclusions.length > 0 ? (
+              <IncludedList title="Included" items={inclusions} />
+            ) : null}
+            {exclusions.length > 0 ? (
+              <IncludedList title="Not included" items={exclusions} negative />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
+  return (
+    <h2
+      id={id}
+      className="font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
+    >
+      {children}
+    </h2>
+  );
+}
+
+function IncludedList({
+  title,
+  items,
+  negative = false,
+}: {
+  title: string;
+  items: string[];
+  negative?: boolean;
+}) {
+  const Icon = negative ? Minus : Check;
+  return (
+    <div className="rounded-lg border border-border bg-card p-5">
+      <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {title}
+      </h3>
+      <ul className="mt-4 space-y-2.5">
+        {items.map((item) => (
+          <li key={item} className="flex items-start gap-2.5 text-sm leading-relaxed">
+            <span
+              className={`mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full ${
+                negative ? "bg-muted text-muted-foreground" : "bg-secondary text-primary"
+              }`}
+            >
+              <Icon className="size-3.5" aria-hidden="true" />
+            </span>
+            <span className={negative ? "text-muted-foreground" : "text-foreground"}>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

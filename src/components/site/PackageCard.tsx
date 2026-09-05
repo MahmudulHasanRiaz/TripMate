@@ -12,10 +12,11 @@ type PackageCardProps = {
   destination: string;
   imageSrc: string;
   imageAlt: string;
-  durationDays: number;
-  rating?: number;
-  /** Whole-taka price (catalog stores 145000 = ৳1,45,000). */
-  price: number;
+  /** Whole-taka price; absent (null) hides the price row. */
+  durationDays?: number | null;
+  rating?: number | null;
+  /** Whole-taka price (catalog stores 145000 = ৳1,45,000); absent hides it. */
+  price?: number | null;
 };
 
 const IMAGE_SIZES = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
@@ -66,10 +67,12 @@ export function PackageCard({
           {title}
         </h3>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <span className="inline-flex items-center gap-1.5">
-            <Clock className="size-4 text-primary" aria-hidden="true" />
-            {durationDays} {durationDays === 1 ? "day" : "days"}
-          </span>
+          {typeof durationDays === "number" ? (
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="size-4 text-primary" aria-hidden="true" />
+              {durationDays} {durationDays === 1 ? "day" : "days"}
+            </span>
+          ) : null}
           {typeof rating === "number" ? (
             <span className="inline-flex items-center gap-1.5">
               <Star
@@ -80,10 +83,12 @@ export function PackageCard({
             </span>
           ) : null}
         </div>
-        <p className="pt-1 text-sm">
-          <span className="text-muted-foreground">From </span>
-          <span className="font-semibold text-foreground">{formatTaka(price)}</span>
-        </p>
+        {typeof price === "number" ? (
+          <p className="pt-1 text-sm">
+            <span className="text-muted-foreground">From </span>
+            <span className="font-semibold text-foreground">{formatTaka(price)}</span>
+          </p>
+        ) : null}
       </div>
     </Link>
   );

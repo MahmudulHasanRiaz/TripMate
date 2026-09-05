@@ -11,6 +11,15 @@ export function formatTaka(amount: number): string {
   return `৳${takaFormatter.format(amount)}`;
 }
 
+/**
+ * Currency-aware price label. Listings default to BDT (the ৳ market's Indian
+ * digit grouping); any other currency falls back to ISO-code + grouped number
+ * so a non-BDT listing is never mislabelled as taka.
+ */
+export function formatMoney(amount: number, currency = "BDT"): string {
+  return currency === "BDT" ? formatTaka(amount) : `${currency} ${takaFormatter.format(amount)}`;
+}
+
 /** +8801700000000 -> wa.me/8801700000000 (digits only, country code kept). */
 export function whatsappLink(phone: string): string {
   const digits = phone.replace(/\D/g, "");
