@@ -23,7 +23,7 @@ export default async function AccountPage() {
     <div className="space-y-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">My Account</h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Customer portal arrives in Plan 5.
         </p>
       </div>
