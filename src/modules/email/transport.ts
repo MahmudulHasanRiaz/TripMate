@@ -9,6 +9,10 @@ import nodemailer, { type Transporter } from "nodemailer";
  * module-load-time snapshot would be stale.
  *
  * Returns null when SMTP_HOST is unset → callers treat email as a no-op.
+ *
+ * All transports carry explicit timeouts (connection/socket 10s, greeting 5s)
+ * so a dead or black-holed SMTP peer can never stall a request path that sends
+ * mail (the public lead form sends two emails).
  */
 export function getSmtpTransport(): Transporter | null {
   const host = process.env.SMTP_HOST;
@@ -17,6 +21,9 @@ export function getSmtpTransport(): Transporter | null {
     host,
     port: Number(process.env.SMTP_PORT ?? 587),
     secure: Number(process.env.SMTP_PORT ?? 587) === 465,
+    connectionTimeout: 10000,
+    socketTimeout: 10000,
+    greetingTimeout: 5000,
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
       : undefined,
@@ -37,6 +44,9 @@ export function buildTransportFromValues(values: {
     host: values.host,
     port: values.port,
     secure: values.port === 465,
+    connectionTimeout: 10000,
+    socketTimeout: 10000,
+    greetingTimeout: 5000,
     auth: values.user ? { user: values.user, pass: values.pass } : undefined,
   });
 }

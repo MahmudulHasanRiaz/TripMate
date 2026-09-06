@@ -29,4 +29,12 @@ export const CACHE_TAGS = {
   pages: "pages",
   /** Site-wide settings (brand, contact, hero copy). */
   settings: "settings",
+  /** Lead collection + management (kanban, detail, board counts). */
+  leads: "leads",
+  /** One lead, keyed by its id. */
+  lead: (id: string) => `lead-${id}`,
+  /** Landing pages collection (builder list, /l/ render). */
+  landingPages: "landing-pages",
+  /** One landing page, keyed by its id. */
+  landingPage: (id: string) => `landing-page-${id}`,
 } as const;

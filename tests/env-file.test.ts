@@ -30,7 +30,7 @@ describe("env-file parse/serialize (pure)", () => {
   });
 });
 
-import { writeEnvValues, ENV_WRITABLE_KEYS } from "@/lib/env-file";
+import { writeEnvValues, removeEnvValues, ENV_WRITABLE_KEYS } from "@/lib/env-file";
 
 describe("writeEnvValues (tmp dir)", () => {
   let dir: string;
@@ -57,5 +57,51 @@ describe("writeEnvValues (tmp dir)", () => {
     // only apply after a restart and would invalidate every live session in
     // between — it must never be writable through the app.
     expect(() => writeEnvValues({ AUTH_SECRET: "x".repeat(32) }, join(dir, ".env"))).toThrowError(/not writable/);
+  });
+});
+
+describe("removeEnvValues (tmp dir)", () => {
+  let dir: string;
+  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), "envtest-")); });
+  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+
+  it("removes only the named KEY lines, preserving comments, blanks and order", () => {
+    const original = [
+      "# SMTP config",
+      "SMTP_HOST=smtp.a.com",
+      "SMTP_USER=u",
+      "",
+      "META_PIXEL_ID=123",
+      "# footer note",
+    ].join("\n");
+    writeFileSync(join(dir, ".env"), original);
+    process.env.SMTP_HOST = "smtp.a.com";
+    process.env.META_PIXEL_ID = "123";
+
+    removeEnvValues(["SMTP_HOST", "META_PIXEL_ID"], join(dir, ".env"));
+
+    const content = readFileSync(join(dir, ".env"), "utf8");
+    expect(content).toContain("# SMTP config");
+    expect(content).toContain("SMTP_USER=u");
+    expect(content).toContain("# footer note");
+    expect(content).not.toContain("SMTP_HOST=");
+    expect(content).not.toContain("META_PIXEL_ID=");
+    expect(content).toContain("\n\n"); // the blank line survived untouched
+    expect(content.indexOf("SMTP_USER")).toBeLessThan(content.indexOf("# footer"));
+    // The keys are deleted from process.env alongside the file.
+    expect(process.env.SMTP_HOST).toBeUndefined();
+    expect(process.env.META_PIXEL_ID).toBeUndefined();
+  });
+
+  it("rejects a key outside the whitelist without touching the file or env", () => {
+    const original = "SMTP_HOST=smtp.a.com\n# keep\n";
+    writeFileSync(join(dir, ".env"), original);
+    process.env.EVIL = "1";
+
+    expect(() => removeEnvValues(["EVIL"], join(dir, ".env"))).toThrowError(/not writable/);
+
+    expect(readFileSync(join(dir, ".env"), "utf8")).toBe(original);
+    expect(process.env.EVIL).toBe("1");
+    delete process.env.EVIL;
   });
 });

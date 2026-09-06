@@ -89,6 +89,38 @@ export function writeEnvValues(
 }
 
 /**
+ * Atomically remove the named KEY lines from the .env file (whitelist-only), then
+ * delete them from process.env so call-time readers (SMTP, R2, Meta config)
+ * stop seeing the value immediately. Counterpart to writeEnvValues for the
+ * "clear this setting" path. Only the exact `KEY=`-prefixed lines are removed;
+ * every other line — comments, blanks, ordering — passes through untouched.
+ * A key outside ENV_WRITABLE_KEYS throws before the file is touched.
+ */
+export function removeEnvValues(
+  keys: string[],
+  targetPath: string = ENV_PATH,
+): void {
+  for (const key of keys) {
+    if (!(ENV_WRITABLE_KEYS as readonly string[]).includes(key)) {
+      throw new Error(`Key ${key} is not writable via the app`);
+    }
+  }
+  const current = existsSync(targetPath) ? readFileSync(targetPath, "utf8") : "";
+  const remove = new Set(keys);
+  const next = current
+    .split(/\r?\n/)
+    .filter((line) => {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=/);
+      return !(m && remove.has(m[1]));
+    })
+    .join("\n");
+  const tmp = `${targetPath}.tmp`;
+  writeFileSync(tmp, next, "utf8");
+  renameSync(tmp, targetPath);
+  for (const key of keys) delete process.env[key];
+}
+
+/**
  * True when the app can write to .env in this directory. Probe stays fully
  * synchronous: when the file is absent it is created (wx → fails if a race
  * created it first); otherwise a `.env.probe` → `.env.probe2` rename round-trip
