@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button";
 type StickyCtaProps = {
   config: StickyCtaConfig;
   variant?: "overlay" | "inline";
+  buttonVariant?: "default" | "outline" | "secondary";
 };
 
-export function StickyCtaSection({ config, variant = "inline" }: StickyCtaProps) {
+export function StickyCtaSection({
+  config,
+  variant = "inline",
+  buttonVariant = "default",
+}: StickyCtaProps) {
   const cleanPhone = config.phone.replace(/[^\d+]/g, "");
 
   if (variant === "overlay") {
@@ -21,8 +26,9 @@ export function StickyCtaSection({ config, variant = "inline" }: StickyCtaProps)
         </div>
         <Button
           asChild
+          variant={buttonVariant}
           size="sm"
-          className="h-11 shrink-0 rounded-lg px-4 text-sm font-semibold shadow-xs"
+          className="h-11 min-h-[44px] min-w-[44px] shrink-0 rounded-lg px-4 text-sm font-semibold shadow-xs"
         >
           <a href={`tel:${cleanPhone}`}>
             <PhoneCall className="mr-2 size-4" aria-hidden="true" />

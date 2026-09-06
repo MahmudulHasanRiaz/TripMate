@@ -5,9 +5,14 @@ import { Button } from "@/components/ui/button";
 type WhatsappCtaProps = {
   config: WhatsappCtaConfig;
   variant?: "overlay" | "inline";
+  buttonVariant?: "default" | "outline" | "secondary";
 };
 
-export function WhatsappCtaSection({ config, variant = "inline" }: WhatsappCtaProps) {
+export function WhatsappCtaSection({
+  config,
+  variant = "inline",
+  buttonVariant = "default",
+}: WhatsappCtaProps) {
   const cleanPhone = config.phone.replace(/[^\d]/g, "");
   const query = config.prefill ? `?text=${encodeURIComponent(config.prefill)}` : "";
   const waUrl = `https://wa.me/${cleanPhone}${query}`;
@@ -23,8 +28,9 @@ export function WhatsappCtaSection({ config, variant = "inline" }: WhatsappCtaPr
         </div>
         <Button
           asChild
+          variant={buttonVariant}
           size="sm"
-          className="h-11 shrink-0 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary/90"
+          className="h-11 min-h-[44px] min-w-[44px] shrink-0 rounded-lg px-4 text-sm font-semibold shadow-xs"
         >
           <a href={waUrl} target="_blank" rel="noopener noreferrer">
             <MessageCircle className="mr-2 size-4" aria-hidden="true" />

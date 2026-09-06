@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Route } from "next";
 import {
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
@@ -81,50 +82,88 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
   const [isConverted, setIsConverted] = useState<boolean>(Boolean(lead.convertedOrderId || lead.status === "converted"));
   const [noteText, setNoteText] = useState(lead.notes || "");
   const [noteNotice, setNoteNotice] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const cleanPhone = lead.phone ? lead.phone.replace(/[^\d+]/g, "") : "";
   const waPhone = lead.phone ? lead.phone.replace(/[^\d]/g, "") : "";
 
   // Change status
   const handleStatusChange = (newStatus: LeadStatus) => {
+    setErrorMessage(null);
     setCurrentStatus(newStatus);
     startTransition(async () => {
-      const res = await changeLeadStatusAction({ id: lead.id, status: newStatus });
-      if (res.ok) router.refresh();
-      else setCurrentStatus(lead.status);
+      try {
+        const res = await changeLeadStatusAction({ id: lead.id, status: newStatus });
+        if (res.ok) router.refresh();
+        else {
+          setCurrentStatus(lead.status);
+          setErrorMessage(res.error || "Failed to update lead status.");
+        }
+      } catch {
+        setCurrentStatus(lead.status);
+        setErrorMessage("An unexpected error occurred while updating status.");
+      }
     });
   };
 
   // Change assignee
   const handleAssignChange = (newAssigneeId: string) => {
+    setErrorMessage(null);
     const assigneeId = newAssigneeId === "unassigned" ? null : newAssigneeId;
     setCurrentAssignee(assigneeId);
     startTransition(async () => {
-      const res = await assignLeadAction({ id: lead.id, assigneeId });
-      if (res.ok) router.refresh();
-      else setCurrentAssignee(lead.assignedTo);
+      try {
+        const res = await assignLeadAction({ id: lead.id, assigneeId });
+        if (res.ok) router.refresh();
+        else {
+          setCurrentAssignee(lead.assignedTo);
+          setErrorMessage(res.error || "Failed to assign lead.");
+        }
+      } catch {
+        setCurrentAssignee(lead.assignedTo);
+        setErrorMessage("An unexpected error occurred while assigning lead.");
+      }
     });
   };
 
   // Convert lead
   const handleConvertLead = () => {
+    setErrorMessage(null);
     setIsConverted(true);
     setCurrentStatus("converted");
     startTransition(async () => {
-      const res = await convertLeadAction({ id: lead.id });
-      if (res.ok) router.refresh();
+      try {
+        const res = await convertLeadAction({ id: lead.id });
+        if (res.ok) router.refresh();
+        else {
+          setIsConverted(Boolean(lead.convertedOrderId || lead.status === "converted"));
+          setCurrentStatus(lead.status);
+          setErrorMessage(res.error || "Failed to convert lead.");
+        }
+      } catch {
+        setIsConverted(Boolean(lead.convertedOrderId || lead.status === "converted"));
+        setCurrentStatus(lead.status);
+        setErrorMessage("An unexpected error occurred while converting lead.");
+      }
     });
   };
 
   // Save internal note
   const handleSaveNote = () => {
+    setErrorMessage(null);
     setNoteNotice(null);
     startTransition(async () => {
-      const res = await updateLeadNoteAction({ id: lead.id, note: noteText });
-      if (res.ok) {
-        setNoteNotice("Note saved.");
-        setTimeout(() => setNoteNotice(null), 2500);
-        router.refresh();
+      try {
+        const res = await updateLeadNoteAction({ id: lead.id, note: noteText });
+        if (res.ok) {
+          setNoteNotice("Note saved.");
+          setTimeout(() => setNoteNotice(null), 2500);
+          router.refresh();
+        } else {
+          setErrorMessage(res.error || "Failed to save note.");
+        }
+      } catch {
+        setErrorMessage("An unexpected error occurred while saving note.");
       }
     });
   };
@@ -134,9 +173,9 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
       {/* Top Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="icon" className="size-9">
-            <Link href={"/admin/leads" as Route}>
-              <ArrowLeft className="size-4" aria-hidden="true" />
+          <Button asChild variant="ghost" size="icon" className="size-11 min-h-[44px] min-w-[44px]">
+            <Link href={"/admin/leads" as Route} aria-label="Back to leads">
+              <ArrowLeft className="size-5" aria-hidden="true" />
             </Link>
           </Button>
           <div>
@@ -164,33 +203,50 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
         {/* Quick Contact Buttons */}
         <div className="flex items-center gap-2">
           {cleanPhone ? (
-            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+            <Button asChild variant="outline" size="sm" className="h-11 min-h-[44px] px-3.5 gap-1.5 text-xs">
               <a href={`tel:${cleanPhone}`}>
-                <Phone className="size-3.5 text-primary" aria-hidden="true" />
+                <Phone className="size-4 text-primary" aria-hidden="true" />
                 Call
               </a>
             </Button>
           ) : null}
 
           {waPhone ? (
-            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+            <Button asChild variant="outline" size="sm" className="h-11 min-h-[44px] px-3.5 gap-1.5 text-xs">
               <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="size-3.5 text-success" aria-hidden="true" />
+                <MessageCircle className="size-4 text-success" aria-hidden="true" />
                 WhatsApp
               </a>
             </Button>
           ) : null}
 
           {lead.email ? (
-            <Button asChild variant="outline" size="sm" className="h-9 gap-1.5 text-xs">
+            <Button asChild variant="outline" size="sm" className="h-11 min-h-[44px] px-3.5 gap-1.5 text-xs">
               <a href={`mailto:${lead.email}`}>
-                <Mail className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                <Mail className="size-4 text-muted-foreground" aria-hidden="true" />
                 Email
               </a>
             </Button>
           ) : null}
         </div>
       </div>
+
+      {/* Error Alert Banner */}
+      {errorMessage ? (
+        <div className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            className="font-semibold underline ml-2 hover:opacity-80"
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
 
       {/* Two-Column Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -297,32 +353,57 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                   {lead.events.map((event) => {
                     let EventIcon = PlusCircle;
                     let iconColor = "text-muted-foreground";
+                    let eventLabel = event.type.replace(/_/g, " ");
+                    let payloadText: string | null = null;
 
                     if (event.type === "created") {
                       EventIcon = PlusCircle;
                       iconColor = "text-primary";
+                      eventLabel = "Lead Created";
+                      const src =
+                        event.payload && "source" in event.payload
+                          ? String(event.payload.source)
+                          : lead.source;
+                      payloadText = `Created from source: ${src}`;
                     } else if (event.type === "assigned") {
                       EventIcon = UserCheck;
                       iconColor = "text-info";
-                    } else if (event.type === "status_change") {
+                      eventLabel = "Lead Assigned";
+                      const name =
+                        event.payload && "assigneeName" in event.payload && event.payload.assigneeName
+                          ? String(event.payload.assigneeName)
+                          : null;
+                      payloadText = name ? `Assigned to ${name}` : "Unassigned";
+                    } else if (event.type === "status" || event.type === "status_change") {
                       EventIcon = ArrowRight;
                       iconColor = "text-warning";
+                      eventLabel = "Status Changed";
+                      const to = event.payload && "to" in event.payload ? String(event.payload.to) : "";
+                      const from = event.payload && "from" in event.payload ? String(event.payload.from) : "";
+                      const note = event.payload && "note" in event.payload ? String(event.payload.note) : "";
+                      payloadText = to
+                        ? `Status changed to ${to}${from ? ` (from ${from})` : ""}${note ? ` — ${note}` : ""}`
+                        : "Status updated";
                     } else if (event.type === "note") {
                       EventIcon = MessageSquare;
                       iconColor = "text-accent-text";
+                      eventLabel = "Internal Note";
+                      payloadText =
+                        event.payload && "note" in event.payload ? String(event.payload.note) : "";
                     } else if (event.type === "converted") {
                       EventIcon = CheckCircle2;
                       iconColor = "text-success";
+                      eventLabel = "Lead Converted";
+                      const from = event.payload && "from" in event.payload ? String(event.payload.from) : "";
+                      payloadText = from
+                        ? `Converted to booking (from ${from})`
+                        : "Converted to booking";
+                    } else if (event.payload) {
+                      payloadText =
+                        typeof event.payload === "string"
+                          ? event.payload
+                          : JSON.stringify(event.payload);
                     }
-
-                    const payloadText =
-                      event.payload && "note" in event.payload
-                        ? String(event.payload.note)
-                        : event.payload && "to" in event.payload
-                          ? `Status changed to ${event.payload.to}`
-                          : event.payload && "assignedToName" in event.payload
-                            ? `Assigned to ${event.payload.assignedToName}`
-                            : null;
 
                     return (
                       <div key={event.id} className="relative">
@@ -338,7 +419,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                         <div className="text-xs">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-foreground capitalize">
-                              {event.type.replace(/_/g, " ")}
+                              {eventLabel}
                             </span>
                             <span className="text-muted-foreground">•</span>
                             <span className="text-muted-foreground">
@@ -383,7 +464,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                   onValueChange={(val: LeadStatus) => handleStatusChange(val)}
                   disabled={isPending}
                 >
-                  <SelectTrigger className="mt-1.5 h-9 w-full">
+                  <SelectTrigger className="mt-1.5 h-11 min-h-[44px] w-full text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -404,7 +485,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                   onValueChange={handleAssignChange}
                   disabled={isPending}
                 >
-                  <SelectTrigger className="mt-1.5 h-9 w-full">
+                  <SelectTrigger className="mt-1.5 h-11 min-h-[44px] w-full text-xs">
                     <SelectValue placeholder="Select staff..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -428,7 +509,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                       type="button"
                       disabled={isConverted || isPending}
                       className={cn(
-                        "w-full h-10 font-semibold gap-1.5",
+                        "w-full h-11 min-h-[44px] font-semibold gap-1.5",
                         isConverted
                           ? "bg-success/20 text-success hover:bg-success/20 cursor-default"
                           : "bg-primary text-primary-foreground",
@@ -489,7 +570,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                 size="sm"
                 disabled={isPending}
                 onClick={handleSaveNote}
-                className="w-full h-9 text-xs font-semibold gap-1.5"
+                className="w-full h-11 min-h-[44px] text-xs font-semibold gap-1.5"
               >
                 {isPending ? (
                   <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />

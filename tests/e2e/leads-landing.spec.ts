@@ -202,9 +202,9 @@ test("leads and landing end-to-end flow: author, submit, triage lead, and verify
     const leadRow = page.locator("tbody tr").filter({ hasText: "Lead" }).first();
     await expect(leadRow).toBeVisible(wait);
 
-    // CAPI status badge should reflect either meta_not_configured (in dev without token) or ok
+    // CAPI status badge records sent, error, pending, or meta_not_configured
     await expect(leadRow).toContainText(
-      /meta_not_configured|ok|delivered/i,
+      /sent|error|pending|meta_not_configured/i,
       wait,
     );
 

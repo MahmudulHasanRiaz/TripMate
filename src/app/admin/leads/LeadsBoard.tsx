@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Route } from "next";
 import {
+  AlertCircle,
   Clock,
   ExternalLink,
   Mail,
@@ -85,6 +86,7 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
   const [, startTransition] = useTransition();
   const [items, setItems] = useState<LeadListItem[]>(initialItems);
   const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Group items by status
   const itemsByStatus: Record<LeadStatus, LeadListItem[]> = {
@@ -102,34 +104,40 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
     }
   }
 
-  // Move status handler (optimistic)
+  // Move status handler (optimistic with snapshot rollback)
   const handleStatusChange = (leadId: string, targetStatus: LeadStatus) => {
-    // 1. Optimistic update
-    setItems((prev) =>
-      prev.map((item) => (item.id === leadId ? { ...item, status: targetStatus } : item)),
-    );
+    setErrorMessage(null);
+    let snapshot: LeadListItem[] = [];
+    setItems((prev) => {
+      snapshot = prev;
+      return prev.map((item) => (item.id === leadId ? { ...item, status: targetStatus } : item));
+    });
 
-    // 2. Server mutation
+    // Server mutation
     startTransition(async () => {
       try {
         const res = await changeLeadStatusAction({ id: leadId, status: targetStatus });
         if (res.ok) {
           router.refresh();
         } else {
-          // Rollback on error
-          setItems(initialItems);
+          setItems(snapshot);
+          setErrorMessage(res.error || "Failed to update lead status.");
         }
       } catch {
-        setItems(initialItems);
+        setItems(snapshot);
+        setErrorMessage("An unexpected error occurred while moving lead.");
       }
     });
   };
 
-  // Assign handler
+  // Assign handler (optimistic with snapshot rollback)
   const handleAssign = (leadId: string, assigneeId: string | null, assigneeName: string | null) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === leadId ? { ...item, assignedToName: assigneeName } : item)),
-    );
+    setErrorMessage(null);
+    let snapshot: LeadListItem[] = [];
+    setItems((prev) => {
+      snapshot = prev;
+      return prev.map((item) => (item.id === leadId ? { ...item, assignedToName: assigneeName } : item));
+    });
 
     startTransition(async () => {
       try {
@@ -137,19 +145,24 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
         if (res.ok) {
           router.refresh();
         } else {
-          setItems(initialItems);
+          setItems(snapshot);
+          setErrorMessage(res.error || "Failed to assign lead.");
         }
       } catch {
-        setItems(initialItems);
+        setItems(snapshot);
+        setErrorMessage("An unexpected error occurred while assigning lead.");
       }
     });
   };
 
-  // Convert handler
+  // Convert handler (optimistic with snapshot rollback)
   const handleConvert = (leadId: string) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === leadId ? { ...item, status: "converted" } : item)),
-    );
+    setErrorMessage(null);
+    let snapshot: LeadListItem[] = [];
+    setItems((prev) => {
+      snapshot = prev;
+      return prev.map((item) => (item.id === leadId ? { ...item, status: "converted" } : item));
+    });
 
     startTransition(async () => {
       try {
@@ -157,10 +170,12 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
         if (res.ok) {
           router.refresh();
         } else {
-          setItems(initialItems);
+          setItems(snapshot);
+          setErrorMessage(res.error || "Failed to convert lead.");
         }
       } catch {
-        setItems(initialItems);
+        setItems(snapshot);
+        setErrorMessage("An unexpected error occurred while converting lead.");
       }
     });
   };
@@ -182,209 +197,230 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
   };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-6 pt-1">
-      {LEAD_STATUSES.map((status) => {
-        const columnItems = itemsByStatus[status] || [];
-        const count = counts[status] ?? columnItems.length;
-
-        return (
-          <div
-            key={status}
-            onDragOver={onDragOver}
-            onDrop={() => onDrop(status)}
-            className="flex w-80 shrink-0 flex-col rounded-xl border border-border bg-secondary/20 p-3"
+    <div className="space-y-4">
+      {errorMessage ? (
+        <div className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            className="font-semibold underline ml-2 hover:opacity-80"
           >
-            {/* Column Header */}
-            <div className="flex items-center justify-between px-1 pb-3">
-              <div className="flex items-center gap-2">
-                <Badge
-                  variant={STATUS_BADGE_VARIANTS[status]}
-                  className="size-2.5 rounded-full p-0"
-                />
-                <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
-                  {STATUS_TITLES[status]}
+            Dismiss
+          </button>
+        </div>
+      ) : null}
+
+      <div className="flex flex-col md:flex-row md:overflow-x-auto gap-4 pb-6 pt-1">
+        {LEAD_STATUSES.map((status) => {
+          const columnItems = itemsByStatus[status] || [];
+          const count = counts[status] ?? columnItems.length;
+
+          return (
+            <div
+              key={status}
+              onDragOver={onDragOver}
+              onDrop={() => onDrop(status)}
+              className="flex w-full md:w-80 shrink-0 flex-col rounded-xl border border-border bg-secondary/20 p-3"
+            >
+              {/* Column Header */}
+              <div className="flex items-center justify-between px-1 pb-3">
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={STATUS_BADGE_VARIANTS[status]}
+                    className="size-2.5 rounded-full p-0"
+                  />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                    {STATUS_TITLES[status]}
+                  </span>
+                </div>
+                <span className="flex size-5 items-center justify-center rounded-full bg-background text-[11px] font-semibold text-muted-foreground shadow-xs">
+                  {count}
                 </span>
               </div>
-              <span className="flex size-5 items-center justify-center rounded-full bg-background text-[11px] font-semibold text-muted-foreground shadow-xs">
-                {count}
-              </span>
-            </div>
 
-            {/* Column Card List */}
-            <div className="flex-1 space-y-3 min-h-[200px]">
-              {columnItems.length === 0 ? (
-                <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border/70 text-xs text-muted-foreground">
-                  No leads in this stage
-                </div>
-              ) : (
-                columnItems.map((lead) => {
-                  const cleanPhone = lead.phone ? lead.phone.replace(/[^\d+]/g, "") : "";
-                  const waPhone = lead.phone ? lead.phone.replace(/[^\d]/g, "") : "";
+              {/* Column Card List */}
+              <div className="flex-1 space-y-3 min-h-[200px]">
+                {columnItems.length === 0 ? (
+                  <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border/70 text-xs text-muted-foreground">
+                    No leads in this stage
+                  </div>
+                ) : (
+                  columnItems.map((lead) => {
+                    const cleanPhone = lead.phone ? lead.phone.replace(/[^\d+]/g, "") : "";
+                    const waPhone = lead.phone ? lead.phone.replace(/[^\d]/g, "") : "";
 
-                  return (
-                    <div
-                      key={lead.id}
-                      draggable
-                      onDragStart={() => onDragStart(lead.id)}
-                      className="group relative flex flex-col justify-between rounded-lg border border-border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing"
-                    >
-                      <div>
-                        {/* Top card row: Name + Overflow menu */}
-                        <div className="flex items-start justify-between gap-2">
-                          <Link
-                            href={`/admin/leads/${lead.id}` as Route}
-                            className="font-semibold text-sm text-foreground hover:text-primary transition-colors line-clamp-1"
-                          >
-                            {lead.name.trim() || "Anonymous Inquiry"}
-                          </Link>
+                    return (
+                      <div
+                        key={lead.id}
+                        draggable
+                        onDragStart={() => onDragStart(lead.id)}
+                        className="group relative flex flex-col justify-between rounded-lg border border-border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing"
+                      >
+                        <div>
+                          {/* Top card row: Name + Overflow menu */}
+                          <div className="flex items-start justify-between gap-2">
+                            <Link
+                              href={`/admin/leads/${lead.id}` as Route}
+                              className="font-semibold text-sm text-foreground hover:text-primary transition-colors line-clamp-1"
+                            >
+                              {lead.name.trim() || "Anonymous Inquiry"}
+                            </Link>
 
-                          {/* Per-card menu: Move To + Actions */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="size-6 -mr-1.5 -mt-1 text-muted-foreground hover:text-foreground"
-                              >
-                                <MoreVertical className="size-3.5" aria-hidden="true" />
-                                <span className="sr-only">Lead actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48 text-xs">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/admin/leads/${lead.id}` as Route}>
-                                  <ExternalLink className="mr-2 size-3.5" aria-hidden="true" />
-                                  View Lead Details
-                                </Link>
-                              </DropdownMenuItem>
-
-                              <DropdownMenuSeparator />
-
-                              {/* Move to submenu */}
-                              <DropdownMenuSub>
-                                <DropdownMenuSubTrigger className="text-xs">
-                                  <ArrowRight className="mr-2 size-3.5" aria-hidden="true" />
-                                  Move to Status
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent className="w-44">
-                                  {LEAD_STATUSES.filter((s) => s !== lead.status).map((target) => (
-                                    <DropdownMenuItem
-                                      key={target}
-                                      onClick={() => handleStatusChange(lead.id, target)}
-                                      className="capitalize text-xs"
-                                    >
-                                      {STATUS_TITLES[target]}
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuSubContent>
-                              </DropdownMenuSub>
-
-                              {/* Assign submenu */}
-                              <DropdownMenuSub>
-                                <DropdownMenuSubTrigger className="text-xs">
-                                  <UserCheck className="mr-2 size-3.5" aria-hidden="true" />
-                                  Assign Staff
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuSubContent className="w-44">
-                                  <DropdownMenuItem
-                                    onClick={() => handleAssign(lead.id, null, null)}
-                                    className="text-xs text-muted-foreground"
-                                  >
-                                    Unassigned
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  {staffUsers.map((staff) => (
-                                    <DropdownMenuItem
-                                      key={staff.id}
-                                      onClick={() => handleAssign(lead.id, staff.id, staff.name)}
-                                      className="text-xs"
-                                    >
-                                      {staff.name}
-                                    </DropdownMenuItem>
-                                  ))}
-                                </DropdownMenuSubContent>
-                              </DropdownMenuSub>
-
-                              {lead.status !== "converted" ? (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    onClick={() => handleConvert(lead.id)}
-                                    className="text-xs text-success focus:text-success"
-                                  >
-                                    <CheckCircle2 className="mr-2 size-3.5" aria-hidden="true" />
-                                    Mark as Converted
-                                  </DropdownMenuItem>
-                                </>
-                              ) : null}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-
-                        {/* Landing Title and Source Tag */}
-                        {lead.landingTitle ? (
-                          <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
-                            {lead.landingTitle}
-                          </p>
-                        ) : null}
-
-                        {/* Phone & Quick Contact Buttons */}
-                        <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/50 pt-2.5">
-                          <div className="flex items-center gap-1.5 text-xs text-foreground font-mono">
-                            <Phone className="size-3 text-muted-foreground" aria-hidden="true" />
-                            <span>{lead.phone || "No phone"}</span>
-                          </div>
-
-                          <div className="flex items-center gap-1">
-                            {cleanPhone ? (
-                              <Button
-                                asChild
-                                variant="ghost"
-                                size="icon"
-                                title="Call phone"
-                                className="size-6 text-muted-foreground hover:text-foreground"
-                              >
-                                <a href={`tel:${cleanPhone}`}>
-                                  <Phone className="size-3" aria-hidden="true" />
-                                </a>
-                              </Button>
-                            ) : null}
-
-                            {waPhone ? (
-                              <Button
-                                asChild
-                                variant="ghost"
-                                size="icon"
-                                title="Chat on WhatsApp"
-                                className="size-6 text-muted-foreground hover:text-success"
-                              >
-                                <a
-                                  href={`https://wa.me/${waPhone}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                            {/* Per-card menu: Move To + Actions */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Lead actions"
+                                  className="size-11 min-h-[44px] min-w-[44px] -mr-2 -mt-2 inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
                                 >
-                                  <MessageCircle className="size-3" aria-hidden="true" />
-                                </a>
-                              </Button>
-                            ) : null}
+                                  <MoreVertical className="size-4" aria-hidden="true" />
+                                  <span className="sr-only">Lead actions</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 text-xs">
+                                <DropdownMenuItem asChild>
+                                  <Link href={`/admin/leads/${lead.id}` as Route}>
+                                    <ExternalLink className="mr-2 size-3.5" aria-hidden="true" />
+                                    View Lead Details
+                                  </Link>
+                                </DropdownMenuItem>
 
-                            {lead.email ? (
-                              <Button
-                                asChild
-                                variant="ghost"
-                                size="icon"
-                                title="Send email"
-                                className="size-6 text-muted-foreground hover:text-foreground"
-                              >
-                                <a href={`mailto:${lead.email}`}>
-                                  <Mail className="size-3" aria-hidden="true" />
-                                </a>
-                              </Button>
-                            ) : null}
+                                <DropdownMenuSeparator />
+
+                                {/* Move to submenu */}
+                                <DropdownMenuSub>
+                                  <DropdownMenuSubTrigger className="text-xs">
+                                    <ArrowRight className="mr-2 size-3.5" aria-hidden="true" />
+                                    Move to Status
+                                  </DropdownMenuSubTrigger>
+                                  <DropdownMenuSubContent className="w-44">
+                                    {LEAD_STATUSES.filter((s) => s !== lead.status).map((target) => (
+                                      <DropdownMenuItem
+                                        key={target}
+                                        onClick={() => handleStatusChange(lead.id, target)}
+                                        className="capitalize text-xs"
+                                      >
+                                        {STATUS_TITLES[target]}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
+                                {/* Assign submenu */}
+                                <DropdownMenuSub>
+                                  <DropdownMenuSubTrigger className="text-xs">
+                                    <UserCheck className="mr-2 size-3.5" aria-hidden="true" />
+                                    Assign Staff
+                                  </DropdownMenuSubTrigger>
+                                  <DropdownMenuSubContent className="w-44">
+                                    <DropdownMenuItem
+                                      onClick={() => handleAssign(lead.id, null, null)}
+                                      className="text-xs text-muted-foreground"
+                                    >
+                                      Unassigned
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    {staffUsers.map((staff) => (
+                                      <DropdownMenuItem
+                                        key={staff.id}
+                                        onClick={() => handleAssign(lead.id, staff.id, staff.name)}
+                                        className="text-xs"
+                                      >
+                                        {staff.name}
+                                      </DropdownMenuItem>
+                                    ))}
+                                  </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+
+                                {lead.status !== "converted" ? (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleConvert(lead.id)}
+                                      className="text-xs text-success focus:text-success"
+                                    >
+                                      <CheckCircle2 className="mr-2 size-3.5" aria-hidden="true" />
+                                      Mark as Converted
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : null}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+
+                          {/* Landing Title and Source Tag */}
+                          {lead.landingTitle ? (
+                            <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                              {lead.landingTitle}
+                            </p>
+                          ) : null}
+
+                          {/* Phone & Quick Contact Buttons */}
+                          <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/50 pt-2.5">
+                            <div className="flex items-center gap-1.5 text-xs text-foreground font-mono">
+                              <Phone className="size-3 text-muted-foreground" aria-hidden="true" />
+                              <span>{lead.phone || "No phone"}</span>
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              {cleanPhone ? (
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Call lead phone"
+                                  title="Call phone"
+                                  className="size-11 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+                                >
+                                  <a href={`tel:${cleanPhone}`}>
+                                    <Phone className="size-4" aria-hidden="true" />
+                                  </a>
+                                </Button>
+                              ) : null}
+
+                              {waPhone ? (
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Chat on WhatsApp"
+                                  title="Chat on WhatsApp"
+                                  className="size-11 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground hover:text-success"
+                                >
+                                  <a
+                                    href={`https://wa.me/${waPhone}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <MessageCircle className="size-4" aria-hidden="true" />
+                                  </a>
+                                </Button>
+                              ) : null}
+
+                              {lead.email ? (
+                                <Button
+                                  asChild
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Send email"
+                                  title="Send email"
+                                  className="size-11 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+                                >
+                                  <a href={`mailto:${lead.email}`}>
+                                    <Mail className="size-4" aria-hidden="true" />
+                                  </a>
+                                </Button>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
                       {/* Footer: Time + Assignee Chip */}
                       <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
@@ -413,6 +449,7 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

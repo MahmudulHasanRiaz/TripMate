@@ -256,6 +256,11 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
     // Check reachability if page has a form section
     const hasForm = sections.some((s) => s.type === "form");
     if (hasForm) {
+      const hasReservedHoneypot = formConfig.fields.some((f) => isReservedFieldKey(f.key));
+      if (hasReservedHoneypot) {
+        setErrorBanner("Cannot save: form contains reserved honeypot key 'company_website'. Please change or delete that field.");
+        return;
+      }
       const reachable = formConfig.fields.some((f) => f.type === "email" || f.type === "tel");
       if (!reachable) {
         setErrorBanner("Form requires at least one email or phone field so visitors can be reached.");
@@ -299,14 +304,18 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
     });
   };
 
+  const hasForm = sections.some((s) => s.type === "form");
+  const hasReservedHoneypot =
+    hasForm && formConfig.fields.some((f) => isReservedFieldKey(f.key));
+
   return (
     <div className="flex flex-col gap-4">
       {/* Top Header & Action Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="icon" className="size-9">
-            <Link href={"/admin/landing-pages" as Route}>
-              <ArrowLeft className="size-4" aria-hidden="true" />
+          <Button asChild variant="ghost" size="icon" className="size-11 min-h-[44px] min-w-[44px]">
+            <Link href={"/admin/landing-pages" as Route} aria-label="Back to landing pages">
+              <ArrowLeft className="size-5" aria-hidden="true" />
             </Link>
           </Button>
 
@@ -361,7 +370,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
             variant="outline"
             size="sm"
             onClick={() => setSettingsOpen(!settingsOpen)}
-            className="h-9 text-xs"
+            className="h-11 min-h-[44px] text-xs"
           >
             Page Settings
           </Button>
@@ -370,9 +379,9 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
             type="button"
             variant="outline"
             size="sm"
-            disabled={isPending}
+            disabled={isPending || hasReservedHoneypot}
             onClick={() => handleSave("draft")}
-            className="h-9 text-xs"
+            className="h-11 min-h-[44px] text-xs"
           >
             <Save className="mr-1.5 size-3.5" aria-hidden="true" />
             Save Draft
@@ -381,9 +390,9 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
           <Button
             type="button"
             size="sm"
-            disabled={isPending}
+            disabled={isPending || hasReservedHoneypot}
             onClick={() => handleSave("published")}
-            className="h-9 text-xs font-semibold"
+            className="h-11 min-h-[44px] text-xs font-semibold"
           >
             {isPending ? (
               <Loader2 className="mr-1.5 size-3.5 animate-spin" aria-hidden="true" />
@@ -533,9 +542,19 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
               return (
                 <div
                   key={idx}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Select ${section.type} section`}
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedIndex(idx)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedIndex(idx);
+                    }
+                  }}
                   className={cn(
-                    "flex items-center justify-between gap-2 rounded-lg border p-2.5 text-xs transition-all cursor-pointer select-none",
+                    "flex items-center justify-between gap-2 rounded-lg border p-2.5 text-xs transition-all cursor-pointer select-none focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary",
                     isSelected
                       ? "border-primary bg-primary/5 font-semibold text-foreground shadow-xs"
                       : "border-border/60 hover:border-border hover:bg-muted/40 text-muted-foreground",
@@ -551,13 +570,18 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                   </div>
 
                   {/* Section Controls */}
-                  <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="flex items-center gap-0.5 shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       disabled={idx === 0}
                       onClick={() => moveSection(idx, idx - 1)}
+                      aria-label={`Move ${section.type} section up`}
                       className="size-6 text-muted-foreground hover:text-foreground"
                     >
                       <ChevronUp className="size-3.5" aria-hidden="true" />
@@ -568,6 +592,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                       size="icon"
                       disabled={idx === sections.length - 1}
                       onClick={() => moveSection(idx, idx + 1)}
+                      aria-label={`Move ${section.type} section down`}
                       className="size-6 text-muted-foreground hover:text-foreground"
                     >
                       <ChevronDown className="size-3.5" aria-hidden="true" />
@@ -577,6 +602,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => removeSection(idx)}
+                      aria-label={`Remove ${section.type} section`}
                       className="size-6 text-muted-foreground hover:text-destructive"
                     >
                       <Trash2 className="size-3.5" aria-hidden="true" />
@@ -695,7 +721,10 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                             onChange={(e) => {
                               const newLabel = e.target.value;
                               const updatedFields = [...formConfig.fields];
-                              const newKey = autoFieldKey(newLabel);
+                              let newKey = autoFieldKey(newLabel);
+                              if (isReservedFieldKey(newKey)) {
+                                newKey = `${newKey}_url`;
+                              }
                               updatedFields[fIdx] = {
                                 ...field,
                                 label: newLabel,
@@ -733,7 +762,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                               }}
                               className={cn(
                                 "h-7 text-[11px] font-mono",
-                                isHoneypot && "border-destructive text-destructive",
+                                isHoneypot && "border-destructive text-destructive focus-visible:ring-destructive",
                               )}
                             />
                           </div>
@@ -780,9 +809,10 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                         ) : null}
 
                         {isHoneypot ? (
-                          <p className="text-[10px] text-destructive font-medium">
-                            &quot;company_website&quot; is reserved by the bot-filter. Please choose another key.
-                          </p>
+                          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-[11px] text-destructive">
+                            <p className="font-semibold">&quot;company_website&quot; is reserved by the bot-filter.</p>
+                            <p className="text-[10px] mt-0.5">Saving is disabled while this key is used. Please rename or delete this field.</p>
+                          </div>
                         ) : null}
 
                         {/* Options editor for select */}

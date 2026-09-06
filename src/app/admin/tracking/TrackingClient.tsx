@@ -357,7 +357,7 @@ export default function TrackingClient({
               size="sm"
               onClick={handleRecheckStatus}
               disabled={isPending}
-              className="h-8 gap-1.5 text-xs"
+              className="h-11 min-h-[44px] px-3.5 gap-1.5 text-xs"
             >
               <RefreshCw className={cn("size-3.5", isPending && "animate-spin")} aria-hidden="true" />
               Re-check Status
@@ -392,7 +392,7 @@ export default function TrackingClient({
                   variant="outline"
                   size="sm"
                   onClick={handleCopyLines}
-                  className="h-7 text-xs gap-1"
+                  className="h-11 min-h-[44px] px-3.5 text-xs gap-1"
                 >
                   {copiedCode ? (
                     <>
@@ -416,7 +416,7 @@ export default function TrackingClient({
                   size="sm"
                   variant="secondary"
                   onClick={handleRecheckStatus}
-                  className="h-8 text-xs font-semibold"
+                  className="h-11 min-h-[44px] px-3.5 text-xs font-semibold"
                 >
                   I&apos;ve added them — Re-check
                 </Button>
@@ -435,7 +435,7 @@ export default function TrackingClient({
                   value={pixelId}
                   onChange={(e) => setPixelId(e.target.value)}
                   placeholder="e.g. 123456789012345"
-                  className="mt-1.5 h-10 font-mono text-xs"
+                  className="mt-1.5 h-11 min-h-[44px] font-mono text-xs"
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   Leave empty to remove or disable Pixel tracking.
@@ -451,7 +451,7 @@ export default function TrackingClient({
                   value={testEventCode}
                   onChange={(e) => setTestEventCode(e.target.value)}
                   placeholder="e.g. TEST12345"
-                  className="mt-1.5 h-10 font-mono text-xs"
+                  className="mt-1.5 h-11 min-h-[44px] font-mono text-xs"
                 />
                 <p className="mt-1 text-[11px] text-muted-foreground">
                   From Meta Events Manager &rarr; Test Events tab. Leave empty in production.
@@ -478,12 +478,12 @@ export default function TrackingClient({
                   value={capiAccessToken}
                   onChange={(e) => setCapiAccessToken(e.target.value)}
                   placeholder={status?.capiTokenSet ? "Enter new token to replace..." : "EAAB..."}
-                  className="h-10 pr-10 font-mono text-xs"
+                  className="h-11 min-h-[44px] pr-12 font-mono text-xs"
                 />
                 <button
                   type="button"
                   onClick={() => setShowToken(!showToken)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-0 top-0 bottom-0 size-11 min-h-[44px] min-w-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground"
                 >
                   {showToken ? (
                     <EyeOff className="size-4" aria-hidden="true" />
@@ -499,7 +499,7 @@ export default function TrackingClient({
             </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={isPending} className="h-10 px-6 text-xs font-semibold">
+              <Button type="submit" disabled={isPending} className="h-11 min-h-[44px] px-6 text-xs font-semibold">
                 {isPending ? (
                   <Loader2 className="mr-2 size-3.5 animate-spin" aria-hidden="true" />
                 ) : null}
@@ -684,7 +684,7 @@ export default function TrackingClient({
                   variant="outline"
                   size="sm"
                   disabled={currentPage <= 1}
-                  className={currentPage <= 1 ? "pointer-events-none opacity-50" : ""}
+                  className={cn("h-11 min-h-[44px] px-4 text-xs", currentPage <= 1 && "pointer-events-none opacity-50")}
                 >
                   <Link href={`/admin/tracking?${makePageParams(-1)}` as Route}>Previous</Link>
                 </Button>
@@ -693,7 +693,7 @@ export default function TrackingClient({
                   variant="outline"
                   size="sm"
                   disabled={currentPage >= totalPages}
-                  className={currentPage >= totalPages ? "pointer-events-none opacity-50" : ""}
+                  className={cn("h-11 min-h-[44px] px-4 text-xs", currentPage >= totalPages && "pointer-events-none opacity-50")}
                 >
                   <Link href={`/admin/tracking?${makePageParams(1)}` as Route}>Next</Link>
                 </Button>
