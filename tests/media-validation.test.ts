@@ -3,10 +3,14 @@ import {
   ACCEPTED_MIME_LIST,
   MAX_UPLOAD_BYTES,
   MIME_EXTENSIONS,
+  USER_DOC_ACCEPTED_MIME_LIST,
+  USER_DOC_MAX_UPLOAD_BYTES,
   acceptFileMeta,
+  acceptUserDocFileMeta,
   buildStorageKey,
   extensionForMime,
   isAcceptedMime,
+  isAcceptedUserDocMime,
   storageKeySchema,
 } from "@/modules/media/validation";
 
@@ -145,5 +149,78 @@ describe("storage key shape (uuid + allowed extension)", () => {
   it("returns null for a disallowed mime or a malformed uuid", () => {
     expect(buildStorageKey(UUID, "image/gif")).toBeNull();
     expect(buildStorageKey("nope", "image/png")).toBeNull();
+  });
+});
+
+describe("user-document whitelist (portal uploads)", () => {
+  it("is the stricter subset of the library whitelist — no SVG", () => {
+    expect(USER_DOC_ACCEPTED_MIME_LIST).toEqual([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf",
+    ]);
+    for (const mime of USER_DOC_ACCEPTED_MIME_LIST) {
+      expect(isAcceptedUserDocMime(mime)).toBe(true);
+      // Every accepted user-doc mime also resolves to a storage extension.
+      expect(extensionForMime(mime)).toBeTruthy();
+    }
+  });
+
+  it("rejects the library-only types and everything else", () => {
+    expect(isAcceptedUserDocMime("image/svg+xml")).toBe(false);
+    expect(isAcceptedUserDocMime("image/gif")).toBe(false);
+    expect(isAcceptedUserDocMime("text/plain")).toBe(false);
+    expect(isAcceptedUserDocMime("")).toBe(false);
+  });
+
+  it("caps user documents at 10 MB, not the library's 25 MB", () => {
+    expect(USER_DOC_MAX_UPLOAD_BYTES).toBe(10 * 1024 * 1024);
+    expect(USER_DOC_MAX_UPLOAD_BYTES).toBeLessThan(MAX_UPLOAD_BYTES);
+  });
+});
+
+describe("acceptUserDocFileMeta — { name, mime, size }", () => {
+  const valid = { name: "payment-proof.png", mime: "image/png", size: 2048 };
+
+  it("accepts each whitelisted type at a normal size", () => {
+    for (const mime of USER_DOC_ACCEPTED_MIME_LIST) {
+      expect(acceptUserDocFileMeta.safeParse({ ...valid, mime }).success).toBe(true);
+    }
+  });
+
+  it("rejects SVG and other non-whitelisted types with a message naming the type", () => {
+    const res = acceptUserDocFileMeta.safeParse({ ...valid, mime: "image/svg+xml" });
+    expect(res.success).toBe(false);
+    if (!res.success) {
+      expect(res.error.issues[0].path[0]).toBe("mime");
+      expect(res.error.issues[0].message).toMatch(/image\/svg\+xml/);
+    }
+    expect(acceptUserDocFileMeta.safeParse({ ...valid, mime: "application/zip" }).success).toBe(false);
+  });
+
+  it("accepts a file exactly at the 10 MB cap and rejects one byte over", () => {
+    expect(
+      acceptUserDocFileMeta.safeParse({
+        ...valid,
+        size: USER_DOC_MAX_UPLOAD_BYTES,
+      }).success,
+    ).toBe(true);
+    const over = acceptUserDocFileMeta.safeParse({
+      ...valid,
+      size: USER_DOC_MAX_UPLOAD_BYTES + 1,
+    });
+    expect(over.success).toBe(false);
+    if (!over.success) {
+      expect(over.error.issues[0].path[0]).toBe("size");
+      expect(over.error.issues[0].message).toMatch(/10 MB/);
+    }
+  });
+
+  it("rejects an empty file, a blank name and a non-integer size", () => {
+    expect(acceptUserDocFileMeta.safeParse({ ...valid, size: 0 }).success).toBe(false);
+    expect(acceptUserDocFileMeta.safeParse({ ...valid, size: -1 }).success).toBe(false);
+    expect(acceptUserDocFileMeta.safeParse({ ...valid, size: 1.5 }).success).toBe(false);
+    expect(acceptUserDocFileMeta.safeParse({ ...valid, name: "   " }).success).toBe(false);
   });
 });

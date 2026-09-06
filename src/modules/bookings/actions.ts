@@ -15,7 +15,9 @@
  *    exists; anonymous orders carry none. Nothing after the create is allowed
  *    to fail the submission — CAPI failures are logged and swallowed so a
  *    stored order is never reported as an error (the same contract as
- *    submitLead).
+ *    submitLead), and the customer order-confirm email (Plan 5 T4) is the same
+ *    fire-and-forget: sendOrderConfirmEmail never throws and skips silently
+ *    when the customer left no email.
  *
  * 2. ADMIN group — the order quote/status/lead-conversion surface. Each action
  *    is a withGuard({ permission:"orders.manage" }) + relay + zod .safeParse
@@ -44,6 +46,8 @@ import type { Session } from "@/lib/auth-helpers";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getListingById } from "@/modules/catalog/service";
 import { trackCapiEvent } from "@/modules/tracking/service";
+import { renderOrderConfirm, renderQuoteReady } from "@/modules/email/templates/order";
+import { sendEmail } from "@/modules/email/send";
 import {
   convertLeadOrderInputSchema,
   inquiryFieldErrors,
@@ -106,6 +110,33 @@ function appOrigin(): string {
 function packageSourceUrl(slug: string): string | undefined {
   const origin = appOrigin();
   return origin ? `${origin}/packages/${slug}` : undefined;
+}
+
+/**
+ * Fire-and-forget customer order-received email (Plan 5 T4). NEVER throws — a
+ * mail failure must not fail a stored order (the same contract as the leads
+ * submit emails). Skips silently when the customer left no email; the portal
+ * link is omitted when APP_URL is unset (renderOrderConfirm drops the block).
+ */
+async function sendOrderConfirmEmail(opts: {
+  to: string | null | undefined;
+  orderNo: string;
+  customerName: string;
+  listingTitle: string;
+}): Promise<void> {
+  if (!opts.to) return;
+  try {
+    const origin = appOrigin();
+    const { subject, html } = renderOrderConfirm({
+      orderNo: opts.orderNo,
+      customerName: opts.customerName,
+      listingTitle: opts.listingTitle,
+      portalUrl: origin ? `${origin}/account/orders` : "",
+    });
+    await sendEmail({ to: opts.to, subject, html });
+  } catch (e) {
+    console.error("[bookings] order confirmation email failed", e);
+  }
 }
 
 /**
@@ -178,6 +209,14 @@ const runCreatePackageOrder = publicOrderRelay(
       } catch (e) {
         console.error("[bookings] CAPI InitiateCheckout event failed", e);
       }
+
+      // Customer order-received email — never throws, skips without an email.
+      await sendOrderConfirmEmail({
+        to: input.customer.email,
+        orderNo: created.orderNo,
+        customerName: input.customer.name,
+        listingTitle: listing.title,
+      });
 
       return { ok: true, orderId: created.id, orderNo: created.orderNo };
     },
@@ -252,6 +291,15 @@ const runCreateInquiryOrder = publicOrderRelay(
       } catch (e) {
         console.error("[bookings] CAPI InitiateCheckout event failed", e);
       }
+
+      // Customer order-received email — never throws, skips without an email.
+      // A general inquiry (no listing) renders with the title block omitted.
+      await sendOrderConfirmEmail({
+        to: input.email,
+        orderNo: created.orderNo,
+        customerName: input.name,
+        listingTitle: listing?.title ?? "",
+      });
 
       return { ok: true, orderId: created.id, orderNo: created.orderNo };
     },
@@ -357,10 +405,33 @@ export const setQuoteAction = orderAction<unknown, OrderActionResult<OrderIdRef>
   async (input, session) => {
     const parsed = parseOrderInput(setQuoteInput, input);
     if (!parsed.ok) return parsed;
-    await setQuote(parsed.data.id, parsed.data.quotedPrice, {
+    // setQuote returns the fresh post-quote detail (its own getOrderDetail
+    // read) — the customer snapshot the email needs, without a second query.
+    const order = await setQuote(parsed.data.id, parsed.data.quotedPrice, {
       actorId: session?.user.id ?? null,
     });
     expireOrder(parsed.data.id);
+
+    // Customer quote-ready email (Plan 5 T4) — never throws; skips silently
+    // when the customer snapshot carries no email. The amount is formatted
+    // inside the template via the shared formatMoney helper (pure, Intl-based).
+    try {
+      if (order.customer.email) {
+        const origin = appOrigin();
+        const { subject, html } = renderQuoteReady({
+          orderNo: order.orderNo,
+          customerName: order.customer.name,
+          listingTitle: order.listingSnapshot?.title ?? "",
+          quotedPrice: parsed.data.quotedPrice,
+          currency: order.currency,
+          portalUrl: origin ? `${origin}/account/orders` : "",
+        });
+        await sendEmail({ to: order.customer.email, subject, html });
+      }
+    } catch (e) {
+      console.error("[bookings] quote-ready email failed", e);
+    }
+
     return { ok: true, data: { id: parsed.data.id } };
   },
 );
@@ -399,5 +470,16 @@ export const createOrderFromLeadAction = orderAction<
   updateTag(CACHE_TAGS.order(order.id));
   updateTag(CACHE_TAGS.leads);
   updateTag(CACHE_TAGS.lead(parsed.data.leadId));
+
+  // Customer order-received email — never throws, skips silently when the
+  // converted lead's contact carried no email (order.customer is projected
+  // from the frozen customer_snapshot).
+  await sendOrderConfirmEmail({
+    to: order.customer.email,
+    orderNo: order.orderNo,
+    customerName: order.customer.name,
+    listingTitle: order.listingSnapshot?.title ?? "",
+  });
+
   return { ok: true, data: { id: order.id, orderNo: order.orderNo } };
 });

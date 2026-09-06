@@ -25,11 +25,12 @@
  * updateTag is the read-your-own-writes choice (Next 16; the single-arg
  * revalidateTag form is deprecated).
  *
- * EMAIL HOOKS (Plan 5 T4): verifyPaymentAction / rejectPaymentAction mark
- * where the paymentVerified / paymentRejected customer emails fire. The
- * templates do not exist yet, so the call sites stay as TODO comments ONLY —
- * no imports of not-yet-built modules; T4 fills them in (try/catch,
- * never-throw, the same contract as the leads submit emails).
+ * EMAIL HOOKS (Plan 5 T4): verifyPaymentAction / rejectPaymentAction fire the
+ * paymentVerified / paymentRejected customer emails after the payment write
+ * lands — try/catch never-throw, the same contract as the leads submit emails.
+ * The verified/rejected payment is the source of truth; a mail failure only
+ * logs and never fails the action response. The customer's email is read from
+ * the order's customer_snapshot (getOrderDetail); no email → silent skip.
  *
  * The plain READ service functions (listQueue, listForOrder, listGateways,
  * getOrderPaidTotal, …) are deliberately NOT re-exported from this 'use
@@ -45,6 +46,8 @@ import { withGuard, GuardError } from "@/lib/guard";
 import type { Session } from "@/lib/auth-helpers";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getOrderDetail } from "@/modules/bookings/service";
+import { renderPaymentRejected, renderPaymentVerified } from "@/modules/email/templates/order";
+import { sendEmail } from "@/modules/email/send";
 import {
   adminCreatePaymentInputSchema,
   gatewayInputSchema,
@@ -223,9 +226,22 @@ export const verifyPaymentAction = paymentAction<unknown, PaymentActionResult<Pa
       verifiedBy: session?.user.id ?? null,
       note: parsed.data.note ?? null,
     });
-    // T4 wires the paymentVerified customer email here (renderPaymentVerified
-    // + sendEmail, try/catch never-throw). Intentionally NOT imported until
-    // the template exists — fill this call site in, do not restructure it.
+    // Customer payment-verified email (Plan 5 T4) — never throws; skips
+    // silently when the order's customer snapshot carries no email.
+    try {
+      const order = await getOrderDetail(payment.orderId);
+      if (order?.customer.email) {
+        const { subject, html } = renderPaymentVerified({
+          orderNo: order.orderNo,
+          customerName: order.customer.name,
+          amount: payment.amount,
+          currency: payment.currency,
+        });
+        await sendEmail({ to: order.customer.email, subject, html });
+      }
+    } catch (e) {
+      console.error("[payments] payment-verified email failed", e);
+    }
     expireOrderPayments(payment.orderId);
     return { ok: true, data: { id: payment.id } };
   },
@@ -250,8 +266,22 @@ export const rejectPaymentAction = paymentAction<unknown, PaymentActionResult<Pa
       rejectedBy: session?.user.id ?? null,
       note: parsed.data.note,
     });
-    // T4 wires the paymentRejected customer email here (renderPaymentRejected
-    // + sendEmail, try/catch never-throw). Same contract as the verify hook.
+    // Customer payment-rejected email (Plan 5 T4) — never throws; skips
+    // silently when the order's customer snapshot carries no email. The
+    // operator's note passes through and is entity-escaped inside the template.
+    try {
+      const order = await getOrderDetail(payment.orderId);
+      if (order?.customer.email) {
+        const { subject, html } = renderPaymentRejected({
+          orderNo: order.orderNo,
+          customerName: order.customer.name,
+          note: parsed.data.note,
+        });
+        await sendEmail({ to: order.customer.email, subject, html });
+      }
+    } catch (e) {
+      console.error("[payments] payment-rejected email failed", e);
+    }
     expireOrderPayments(payment.orderId);
     return { ok: true, data: { id: payment.id } };
   },
