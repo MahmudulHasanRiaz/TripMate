@@ -34,6 +34,12 @@ import {
 import type { LandingPage } from "@/modules/landing-pages/service";
 import type { LandingPageStatus } from "@/modules/landing-pages/validation";
 import { slugify } from "@/modules/landing-pages/validation";
+import {
+  autoFieldKey,
+  isStandardNameKey,
+  isStandardPhoneKey,
+  isReservedFieldKey,
+} from "@/lib/landing-helpers";
 import { saveLandingPage } from "@/modules/landing-pages/actions";
 import { LandingRenderer } from "@/components/landing/LandingRenderer";
 import { Button } from "@/components/ui/button";
@@ -137,17 +143,6 @@ const DEFAULT_FORM_CONFIG: FormConfig = {
     },
   ],
 };
-
-function autoFieldKey(label: string): string {
-  const lower = label.trim().toLowerCase();
-  if (lower === "full name" || lower === "fullname") return "full_name";
-  if (lower === "name" || lower.endsWith(" name")) return "name";
-  if (lower === "phone number" || lower === "phone no" || lower === "phone") return "phone";
-  if (lower === "mobile" || lower === "mobile number") return "mobile";
-  if (lower === "telephone" || lower === "tel") return "tel";
-  if (lower === "email" || lower === "email address") return "email";
-  return lower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "field";
-}
 
 function strVal(v: unknown): string {
   return typeof v === "string" ? v : "";
@@ -689,9 +684,9 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
 
                 <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
                   {formConfig.fields.map((field, fIdx) => {
-                    const isNameKey = ["name", "full_name", "fullname"].includes(field.key);
-                    const isPhoneKey = ["phone", "tel", "mobile", "phone_number"].includes(field.key);
-                    const isHoneypot = RESERVED_FORM_FIELD_KEYS.includes(field.key);
+                    const isNameKey = isStandardNameKey(field.key);
+                    const isPhoneKey = isStandardPhoneKey(field.key);
+                    const isHoneypot = isReservedFieldKey(field.key);
 
                     return (
                       <div key={fIdx} className="rounded-lg border border-border/80 bg-secondary/30 p-3 space-y-2.5">
