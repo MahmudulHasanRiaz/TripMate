@@ -149,6 +149,10 @@ function autoFieldKey(label: string): string {
   return lower.replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40) || "field";
 }
 
+function strVal(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
 function createDefaultConfigForType(type: SectionType): Record<string, unknown> {
   switch (type) {
     case "hero":
@@ -940,7 +944,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                             {selectedSection.type === "benefits" ? (
                               <>
                                 <Input
-                                  value={item.title || ""}
+                                  value={strVal(item.title)}
                                   onChange={(e) => {
                                     const next = [...items];
                                     next[itIdx] = { ...item, title: e.target.value };
@@ -950,7 +954,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                   className="h-7 text-xs"
                                 />
                                 <Textarea
-                                  value={item.text || ""}
+                                  value={strVal(item.text)}
                                   onChange={(e) => {
                                     const next = [...items];
                                     next[itIdx] = { ...item, text: e.target.value };
@@ -964,7 +968,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                             ) : selectedSection.type === "gallery" ? (
                               <>
                                 <Input
-                                  value={item.url || ""}
+                                  value={strVal(item.url)}
                                   onChange={(e) => {
                                     const next = [...items];
                                     next[itIdx] = { ...item, url: e.target.value };
@@ -974,7 +978,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                   className="h-7 text-xs"
                                 />
                                 <Input
-                                  value={item.alt || ""}
+                                  value={strVal(item.alt)}
                                   onChange={(e) => {
                                     const next = [...items];
                                     next[itIdx] = { ...item, alt: e.target.value };
@@ -987,7 +991,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                             ) : selectedSection.type === "testimonials" ? (
                               <>
                                 <Textarea
-                                  value={item.quote || ""}
+                                  value={strVal(item.quote)}
                                   onChange={(e) => {
                                     const next = [...items];
                                     next[itIdx] = { ...item, quote: e.target.value };
@@ -999,7 +1003,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                 />
                                 <div className="grid grid-cols-2 gap-2">
                                   <Input
-                                    value={item.name || ""}
+                                    value={strVal(item.name)}
                                     onChange={(e) => {
                                       const next = [...items];
                                       next[itIdx] = { ...item, name: e.target.value };
@@ -1009,7 +1013,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                     className="h-7 text-xs"
                                   />
                                   <Input
-                                    value={item.trip || ""}
+                                    value={strVal(item.trip)}
                                     onChange={(e) => {
                                       const next = [...items];
                                       next[itIdx] = { ...item, trip: e.target.value };
@@ -1023,7 +1027,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                             ) : selectedSection.type === "faq" ? (
                               <>
                                 <Input
-                                  value={item.q || ""}
+                                  value={strVal(item.q)}
                                   onChange={(e) => {
                                     const next = [...items];
                                     next[itIdx] = { ...item, q: e.target.value };
@@ -1033,7 +1037,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                   className="h-7 text-xs font-medium"
                                 />
                                 <Textarea
-                                  value={item.a || ""}
+                                  value={strVal(item.a)}
                                   onChange={(e) => {
                                     const next = [...items];
                                     next[itIdx] = { ...item, a: e.target.value };
