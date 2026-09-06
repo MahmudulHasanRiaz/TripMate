@@ -24,6 +24,52 @@ customer. The first user — your superadmin — is created by the setup wizard;
 everyone then signs in at `/login`. Role-gated routes (e.g. `/admin`) enforce
 permissions server-side, and the admin menu is filtered to the signed-in role.
 
+## Public site
+The customer-facing site lives in `src/app/(public)`: server-rendered with zero
+client-side data fetching, and every DB read flows through Next Cache
+Components (`'use cache'`), so pages are fast and admin edits appear without a
+redeploy or manual purge.
+
+Routes:
+
+| Route | Shows |
+| --- | --- |
+| `/` | Home — hero, featured packages, service links |
+| `/packages` | Full package catalog; filter/sort/search via query string (`?cat=`, `?q=`) |
+| `/packages/[slug]` | One package — price, itinerary, gallery, "Enquire" CTA |
+| `/services/[slug]` | Service landing pages (`tour-packages`, `flight-tickets`, …) |
+| `/blog` | Published posts |
+| `/blog/[slug]` | One post — markdown prose, author, date |
+| `/p/[slug]` | Evergreen markdown pages (`about-us`, `faq`, …) |
+| `/robots.txt`, `/sitemap.xml` | Generated SEO files |
+
+Caching model:
+
+- **Cache Components.** Each route's reads sit in a per-route data module
+  (`src/app/(public)/*/_lib/*-data.ts`) whose functions are `"use cache"` scopes
+  tagged with `cacheTag(...)` and given a `cacheLife` profile. Detail routes
+  stream inside `<Suspense>` under a PPR shell.
+- **Tags are the contract.** `listings` (catalog grids), `listing-<id>` (one
+  package), `posts` (blog index + a post), `pages` (evergreen pages), `settings`
+  (brand/contact/hero copy). The tag registry is `src/lib/cache-tags.ts`.
+- **Admin edits invalidate.** Every catalog/content/static-page save calls
+  `updateTag(...)` on the affected tag, so the next public read re-renders fresh.
+  Example: editing a listing's title expires `listings`; publishing a post
+  expires `posts`.
+
+Adding content:
+
+- **Listing / package** — create in `/admin/catalog`; it appears on `/packages`
+  and in the home featured band while under the cap.
+- **Blog post** — write a markdown post in `/admin/content/posts` and publish;
+  it shows on `/blog` and its detail route immediately.
+- **Static page** — add markdown in `/admin/content/pages`; served at
+  `/p/<slug>`.
+- **A brand-new public route** — add a page under `src/app/(public)` and give it
+  a tagged `'use cache'` data module; register any new revalidation tag in
+  `src/lib/cache-tags.ts` and fire `updateTag` from the admin mutation that
+  changes that data.
+
 ## Commands
 - `npm run dev` / `build` / `start`
 - `npm run lint` / `typecheck` — hard gates, no ignores
