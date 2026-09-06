@@ -47,7 +47,10 @@ export class MediaError extends Error {
 
 type MediaFilesRow = typeof mediaFiles.$inferSelect;
 
-function toMediaFile(row: MediaFilesRow): MediaFile {
+/** Project a media_files row into the public MediaFile shape. Exported for
+ *  the sibling user-docs.ts (the portal-owned upload/list surface), which
+ *  reads the same table and must return the same projection. */
+export function toMediaFile(row: MediaFilesRow): MediaFile {
   return {
     id: row.id,
     name: row.name,
@@ -73,7 +76,10 @@ function searchCondition(query: string): SQL {
 }
 
 export async function listFiles(query: MediaListQuery = {}): Promise<Paginated<MediaFile>> {
-  const conditions: SQL[] = [isNull(mediaFiles.deletedAt)];
+  // Owner-scoped rows (customer documents) never appear in the admin library
+  // grid — the library is the content-asset surface; user documents have
+  // their own owner-keyed read (user-docs.ts listUserDocuments).
+  const conditions: SQL[] = [isNull(mediaFiles.deletedAt), isNull(mediaFiles.ownerUserId)];
 
   const search = query.search?.trim();
   if (search) conditions.push(searchCondition(search));

@@ -1,4 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import "dotenv/config";
+
+// service.ts imports "server-only" (it throws outside a React Server runtime);
+// stub the marker so this suite actually runs under vitest's node env when
+// RUN_DB_INTEGRATION=1 — the same pattern as the other module integration
+// suites (bookings/payments/expenses). dotenv/config loads DATABASE_URL (and
+// friends) before the db client's env validation runs at import time.
+vi.mock("server-only", () => ({}));
 
 // DB-backed integration suite for the settings service. The drizzle client
 // connects against process.env.DATABASE_URL at module load, and local

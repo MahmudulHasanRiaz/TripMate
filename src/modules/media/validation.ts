@@ -107,6 +107,70 @@ export const acceptFileMeta = z
   });
 export type FileMeta = z.infer<typeof acceptFileMeta>;
 
+// ---- user documents (portal uploads — Plan 5 T3) --------------------------------
+//
+// The customer-portal upload path accepts a deliberately STRICTER subset of
+// the admin library whitelist: no SVG (attacker-authored script vector when
+// rendered inline — admins may consciously upload it, customers may not) and
+// a 10MB cap instead of 25MB. Sizes are validated from the multipart meta
+// BEFORE the body is read into memory, exactly like the admin path.
+
+/** Accepted user-document mimes (a subset of MIME_EXTENSIONS — the extension
+ *  lookup reuses the admin map, which carries identical extensions). */
+export const USER_DOC_ACCEPTED_MIME_LIST = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+] as const satisfies readonly (keyof typeof MIME_EXTENSIONS)[];
+
+export type UserDocMime = (typeof USER_DOC_ACCEPTED_MIME_LIST)[number];
+
+export function isAcceptedUserDocMime(mime: string): mime is UserDocMime {
+  return (USER_DOC_ACCEPTED_MIME_LIST as readonly string[]).includes(mime);
+}
+
+/** Hard per-file cap for user documents, in bytes (10MB — NOT the library's
+ *  25MB; the next.config bodySizeLimit accommodates both). */
+export const USER_DOC_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+/** The multipart meta of a user-document upload. Errors are zod issues on the
+ *  offending field (same shape as acceptFileMeta) so the action can surface a
+ *  precise "File exceeds the 10 MB upload limit."-style message. */
+export const acceptUserDocFileMeta = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, "File name is required")
+      .max(255, "File name must be 255 characters or fewer"),
+    mime: z.string().trim().min(1, "File type is missing"),
+    size: z.number().int("Invalid file size").nonnegative("Invalid file size"),
+  })
+  .superRefine((meta, ctx) => {
+    if (!isAcceptedUserDocMime(meta.mime)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["mime"],
+        message: `File type "${meta.mime}" is not accepted. Allowed: JPEG, PNG, WebP, PDF.`,
+      });
+    }
+    if (!Number.isInteger(meta.size) || meta.size <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["size"],
+        message: "File is empty.",
+      });
+    } else if (meta.size > USER_DOC_MAX_UPLOAD_BYTES) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["size"],
+        message: "File exceeds the 10 MB upload limit.",
+      });
+    }
+  });
+export type UserDocFileMeta = z.infer<typeof acceptUserDocFileMeta>;
+
 /** Human-readable byte size for grid captions ("1.2 MB"). */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return "—";
