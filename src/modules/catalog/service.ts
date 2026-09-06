@@ -277,6 +277,22 @@ export async function listPublishedListings(
   return { items: rows.map(toListing), total: countRow.total };
 }
 
+export type PublicListingRef = { slug: string; updatedAt: Date };
+
+/** slug + updatedAt for every published, non-deleted listing — the sitemap's
+ *  /packages/[slug] URL set. Same predicate as listPublishedListings (published
+ *  rows are by construction attached to active categories), unpaginated because
+ *  a sitemap needs the whole set, and it projects only the two columns the XML
+ *  needs rather than dragging full JSONB bodies across.
+ */
+export async function listPublishedListingRefs(): Promise<PublicListingRef[]> {
+  return db
+    .select({ slug: listings.slug, updatedAt: listings.updatedAt })
+    .from(listings)
+    .where(and(eq(listings.status, "published"), isNull(listings.deletedAt)))
+    .orderBy(asc(listings.slug));
+}
+
 export async function getListingBySlug(slug: string): Promise<ListingWithRefs | null> {
   const rows = await listingQuery()
     .where(
@@ -335,6 +351,32 @@ export async function listCategories(activeOnly: boolean): Promise<Category[]> {
     })
     .from(serviceCategories)
     .where(activeOnly ? eq(serviceCategories.isActive, true) : undefined)
+    .orderBy(asc(serviceCategories.sortOrder), asc(serviceCategories.name));
+}
+
+export type ActiveCategoryRef = {
+  slug: string;
+  kind: ServiceKind;
+  redirectUrl: string | null;
+  updatedAt: Date;
+};
+
+/** slug/kind/redirect + updatedAt for ACTIVE categories — the sitemap's
+ *  /services/[slug] URL set. A dedicated light projection so the shared public
+ *  `Category` type (consumed by the home/services grids) doesn't grow an
+ *  updatedAt column it never renders. The sitemap caller skips redirect-kind
+ *  landings because they exist mostly to bounce to a partner site.
+ */
+export async function listActiveCategoryRefs(): Promise<ActiveCategoryRef[]> {
+  return db
+    .select({
+      slug: serviceCategories.slug,
+      kind: serviceCategories.kind,
+      redirectUrl: serviceCategories.redirectUrl,
+      updatedAt: serviceCategories.updatedAt,
+    })
+    .from(serviceCategories)
+    .where(eq(serviceCategories.isActive, true))
     .orderBy(asc(serviceCategories.sortOrder), asc(serviceCategories.name));
 }
 

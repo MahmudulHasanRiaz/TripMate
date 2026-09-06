@@ -239,6 +239,40 @@ export async function listPublishedPosts(
   return { items: rows.map(toPost), total: countRow.total };
 }
 
+export type PublicPostRef = { slug: string; publishedAt: Date | null; updatedAt: Date };
+export type PublicPageRef = { slug: string; updatedAt: Date };
+
+/** slug + publish/update dates for every published post — the sitemap's
+ *  /blog/[slug] URL set. Mirrors listPublishedPosts' predicate (published, not
+ *  deleted, publish-stamped) without pagination or the joined card columns, so
+ *  the sitemap only drags the few columns the XML needs across. publishedAt is
+ *  typed nullable (codebase convention) even though the predicate guarantees a
+ *  stamp; consumers fall back to updatedAt when reading it.
+ */
+export async function listPublishedPostRefs(): Promise<PublicPostRef[]> {
+  return db
+    .select({ slug: posts.slug, publishedAt: posts.publishedAt, updatedAt: posts.updatedAt })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.status, "published"),
+        isNull(posts.deletedAt),
+        isNotNull(posts.publishedAt),
+      ),
+    )
+    .orderBy(asc(posts.slug));
+}
+
+/** slug + updatedAt for every published, non-deleted page — the sitemap's
+ *  /p/[slug] URL set (same predicate as getPublishedPageBySlug, unpaginated). */
+export async function listPublishedPageRefs(): Promise<PublicPageRef[]> {
+  return db
+    .select({ slug: pages.slug, updatedAt: pages.updatedAt })
+    .from(pages)
+    .where(and(eq(pages.status, "published"), isNull(pages.deletedAt)))
+    .orderBy(asc(pages.slug));
+}
+
 export async function getPublishedPostBySlug(slug: string): Promise<PostWithRefs | null> {
   const rows = await postQuery()
     .where(

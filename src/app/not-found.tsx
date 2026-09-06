@@ -11,6 +11,13 @@ import { SiteFooter } from "@/components/site/SiteFooter";
  * like a broken, unstyled dead end, and mirrors the (public) layout structure
  * (SkipLink → header → <main id="main"> → footer) so the skip-link target and
  * landmarks behave identically on error pages.
+ *
+ * SEO note: a 404 is inherently noindex — Next automatically injects
+ * `<meta name="robots" content="noindex" />` for responses that carry a 404
+ * status (installed docs, app/.../not-found.md), so an explicit robots meta on
+ * this page would be redundant. The polish here is therefore recoverability:
+ * a primary route home plus obvious onward journeys (Packages, Blog) so a
+ * dead link never reads as a dead end.
  */
 export default async function NotFound() {
   const site = await getSiteSettings();
@@ -35,12 +42,29 @@ export default async function NotFound() {
             The link may be old, or the page may have moved. Let&apos;s get you
             back to the journey.
           </p>
-          <Link
-            href="/"
-            className="mt-2 inline-flex min-h-12 items-center justify-center rounded-md bg-primary px-8 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          <nav
+            aria-label="Suggested pages"
+            className="mt-2 flex flex-wrap items-center justify-center gap-3"
           >
-            Back to home
-          </Link>
+            <Link
+              href="/"
+              className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary px-8 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Back to home
+            </Link>
+            <Link
+              href="/packages"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-transparent px-5 text-sm font-semibold text-foreground transition-colors duration-150 hover:border-foreground/40"
+            >
+              Browse packages
+            </Link>
+            <Link
+              href="/blog"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-transparent px-5 text-sm font-semibold text-foreground transition-colors duration-150 hover:border-foreground/40"
+            >
+              Read the journal
+            </Link>
+          </nav>
         </div>
       </main>
       <SiteFooter
