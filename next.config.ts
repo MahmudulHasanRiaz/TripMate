@@ -6,10 +6,27 @@ import type { NextConfig } from "next";
 // at CONFIG time (build-time), so production builds need R2_PUBLIC_URL set when
 // storage=r2 — a Vercel project env var / Docker build arg (see README). The
 // host is parsed via `new URL(...)` so a value like https://cdn.example.com
-// yields just its hostname for the pattern.
-const r2Hostname = process.env.R2_PUBLIC_URL
-  ? new URL(process.env.R2_PUBLIC_URL).hostname
-  : null;
+// yields just its hostname for the pattern. A malformed value must NOT crash
+// config load — it is warned about and treated as absent.
+const r2Hostname = readR2Hostname();
+
+/** Hostname of R2_PUBLIC_URL, or null when unset / whitespace / unparseable. */
+function readR2Hostname(): string | null {
+  const value = process.env.R2_PUBLIC_URL?.trim();
+  if (!value) return null;
+  try {
+    return new URL(value).hostname;
+  } catch {
+    // Operators paste BARE hostnames (cdn.example.com), which new URL rejects —
+    // fail soft (pattern omitted) with a clear message rather than crash the
+    // build. URL values like https://cdn.example.com parse fine.
+    console.warn(
+      `[config] R2_PUBLIC_URL is set but is not a valid absolute URL ("${value}") — ` +
+        "R2 image remote pattern omitted. Set it to e.g. https://cdn.example.com when storage=r2.",
+    );
+    return null;
+  }
+}
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
