@@ -401,6 +401,12 @@ This repo is modernized in place:
 - Plan 7: define sendEmail's failure contract (return vs throw) before lead/order flows consume it; template authors must use react-email components (escaped) — never concatenate user data into `bodyHtml`; flip `RUN_DB_INTEGRATION` on in the isolated-Postgres CI job.
 - Plan 8 (launch gate): wizard claim hardening — SETUP_TOKEN claim secret and/or auto-lock; non-root Docker user must own `.env` and uploads dir (isEnvWritable probe + public/uploads writability).
 
+**Plan 3 final-review carry-overs (binding):**
+- Plan 4: swap admin form image URL text inputs for a MediaPicker (library-backed); blog-data doc comment cleanup (unimplemented slug-tag claim).
+- Plan 5: media "empty trash" feature — hard-delete objects via driver.delete (currently dead code; soft-deleted rows accumulate).
+- Plan 6 (settings page, extends the P3-T13 item): every settings save calls updateTag(CACHE_TAGS.settings); home page gets generateMetadata (marketing title/description); normalize existing DB seo-titles that still carry the "| TripMate" suffix.
+- Plan 7: SVG upload hardening (serve with sandbox/content-disposition or off-origin host — same-origin SVG executes script if navigated directly); admin pages-list pagination beyond 50; verify client-JS island budget against the ~226KB/page transfer figure; consolidate cross-module duplication (escapeLike/slug-recovery/action-utils ×3) once module count stabilizes; STORAGE_LOCAL_DIR custom-dir URL footgun guard.
+
 Existing admin UI pages and shadcn components are adapted during their phase; the old Firebase-era data layer and client-fetch pages are replaced, not preserved.
 
 ---
