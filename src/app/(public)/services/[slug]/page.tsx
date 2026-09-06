@@ -19,6 +19,7 @@ import { telLink, whatsappLink } from "@/components/site/currency";
 
 import { getServicePageData, type ServicePageData } from "../_lib/service-data";
 import { ServiceHero } from "./_components/ServiceHero";
+import { InquiryForm } from "@/components/site/InquiryForm";
 
 /**
  * Service category landing — /services/[slug].
@@ -79,7 +80,7 @@ async function ServicePageBody({ params }: { params: Promise<{ slug: string }> }
       {data.kind === "package" ? (
         <PackageListing data={data} />
       ) : data.kind === "inquiry_based" ? (
-        <InquirySection name={data.name} site={site} />
+        <InquirySection data={data} site={site} />
       ) : (
         <RedirectSection data={data} site={site} />
       )}
@@ -168,14 +169,9 @@ function PackageListing({ data }: { data: ServicePageData }) {
 }
 
 /**
- * inquiry_based kind: a "what we'll need from you" checklist + contact actions.
+ * inquiry_based kind: a "what we'll need from you" checklist + dynamic InquiryForm.
  *
- * Categories have no form_config or description (schema), so this checklist is
- * STATIC COPY appropriate to any custom-quote inquiry service (flights, visa).
- * SCOPE GUARD (Plan 4): a real lead-capturing InquiryForm — driven by a
- * category-level form_config jsonb and writing to the leads module — replaces
- * this section in Plan 4. Until then the conversion path is the market's three
- * preferred channels: call, WhatsApp and email.
+ * Scope guard: redirect-kind services unchanged.
  */
 const NEEDS: { title: string; detail: string }[] = [
   {
@@ -197,50 +193,61 @@ const NEEDS: { title: string; detail: string }[] = [
 ];
 
 function InquirySection({
-  name,
+  data,
   site,
 }: {
-  name: string;
+  data: ServicePageData;
   site: { phone: string; email: string };
 }) {
   return (
     <section aria-labelledby="inquiry-needs-heading" className="bg-secondary">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">
-        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-16">
-          <div>
-            <SectionHeading
-              kicker="How it works"
-              title="What we'll need from you"
-              lead="Every inquiry service is quoted to your plan — there's no published price list. To put together an accurate, no-surprises breakdown, an advisor will ask for:"
-            />
-            <ul className="mt-10 space-y-4">
-              {NEEDS.map((need) => (
-                <li
-                  key={need.title}
-                  className="flex items-start gap-4 rounded-lg border border-border bg-card p-5 shadow-sm"
-                >
-                  <CheckCircle2
-                    className="mt-0.5 size-5 shrink-0 text-primary"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className="font-display text-lg font-semibold tracking-tight">
-                      {need.title}
-                    </p>
-                    <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                      {need.detail}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-8 text-sm leading-relaxed text-muted-foreground">
-              No obligation — you&apos;ll receive a written cost breakdown before
-              you commit to anything.
-            </p>
+        <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:gap-16">
+          <div className="space-y-10">
+            <div>
+              <SectionHeading
+                kicker="How it works"
+                title="What we'll need from you"
+                lead="Every inquiry service is quoted to your plan — there's no published price list. To put together an accurate, no-surprises breakdown, an advisor will ask for:"
+              />
+              <ul className="mt-10 space-y-4">
+                {NEEDS.map((need) => (
+                  <li
+                    key={need.title}
+                    className="flex items-start gap-4 rounded-lg border border-border bg-card p-5 shadow-sm"
+                  >
+                    <CheckCircle2
+                      className="mt-0.5 size-5 shrink-0 text-primary"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <p className="font-display text-lg font-semibold tracking-tight">
+                        {need.title}
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                        {need.detail}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-8 text-sm leading-relaxed text-muted-foreground">
+                No obligation — you&apos;ll receive a written cost breakdown before
+                you commit to anything.
+              </p>
+            </div>
+
+            <ContactOptions name={data.name} phone={site.phone} email={site.email} />
           </div>
 
-          <ContactOptions name={name} phone={site.phone} email={site.email} />
+          <div>
+            <InquiryForm
+              listingId={data.primaryListing?.id}
+              listingTitle={data.primaryListing?.title}
+              categoryName={data.name}
+              formConfig={data.primaryListing?.formConfig}
+            />
+          </div>
         </div>
       </div>
     </section>

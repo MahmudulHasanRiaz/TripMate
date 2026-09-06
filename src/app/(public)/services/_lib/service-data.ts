@@ -7,7 +7,13 @@ import {
   listPublishedListings,
   type ListingWithRefs,
 } from "@/modules/catalog/service";
+import { formConfigSchema, type FormConfig } from "@/modules/landing-pages/section-types";
 import type { ServiceKind } from "@/modules/catalog/validation";
+
+function toFormConfig(value: unknown): FormConfig | null {
+  const parsed = formConfigSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
 
 /**
  * Cache-tagged read for the /services/{slug} category landing.
@@ -46,6 +52,7 @@ export type ServiceListingCard = {
   currency: string;
 };
 
+
 /** Serializable slice of a service category that renders the landing page. */
 export type ServicePageData = {
   id: string;
@@ -56,6 +63,11 @@ export type ServicePageData = {
   icon: string | null;
   /** Published listings in this category (empty for non-package kinds). */
   listings: ServiceListingCard[];
+  primaryListing?: {
+    id: string;
+    title: string;
+    formConfig: FormConfig | null;
+  } | null;
 };
 
 function toCardData(listing: ListingWithRefs): ServiceListingCard {
@@ -85,7 +97,14 @@ export async function getServicePageData(slug: string): Promise<ServicePageData 
   const listings =
     category.kind === "package"
       ? await listPublishedListings({ categorySlug: category.slug })
-      : { items: [] };
+      : category.kind === "inquiry_based"
+        ? await listPublishedListings({ categorySlug: category.slug, perPage: 1 })
+        : { items: [] };
+
+  const firstInquiryListing =
+    category.kind === "inquiry_based" && listings.items.length > 0
+      ? listings.items[0]
+      : null;
 
   return {
     id: category.id,
@@ -94,6 +113,14 @@ export async function getServicePageData(slug: string): Promise<ServicePageData 
     kind: category.kind,
     redirectUrl: category.redirectUrl,
     icon: category.icon,
-    listings: listings.items.map(toCardData),
+    listings: category.kind === "package" ? listings.items.map(toCardData) : [],
+    primaryListing: firstInquiryListing
+      ? {
+          id: firstInquiryListing.id,
+          title: firstInquiryListing.title,
+          formConfig: toFormConfig(firstInquiryListing.formConfig),
+        }
+      : null,
   };
 }
+

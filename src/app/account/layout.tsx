@@ -1,42 +1,41 @@
+import Link from "next/link";
 import { requireSession } from "@/lib/auth-helpers";
 import { signOutAction } from "@/lib/auth-actions";
+import { AccountNav } from "./AccountNav";
 
-/**
- * Session-gated account shell: renders only after a request-time session
- * lookup, so it has no static shell to prerender. Opt out of Cache
- * Components' static-shell prerendering (`cacheComponents` replacement for
- * `dynamic = "force-dynamic"`).
- */
 export const instant = false;
 
-/**
- * Server-gated account shell — any authenticated user passes (customers
- * included; role checks happen per-feature, not here). Anonymous visitors
- * are redirected to /login by requireSession before this tree renders.
- * The real customer portal chrome replaces this minimal header in Plan 5.
- */
 export default async function AccountLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireSession();
+  const session = await requireSession();
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
-          <span className="font-display text-lg font-semibold tracking-tight">
-            TripMate
-          </span>
-          <form action={signOutAction}>
-            <button
-              type="submit"
-              className="cursor-pointer rounded-md px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            >
-              Sign out
-            </button>
-          </form>
+    <div className="flex min-h-svh flex-col bg-background">
+      <header className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-30">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6 gap-4">
+          <div className="flex items-center gap-6">
+            <Link href="/" className="font-display text-lg font-semibold tracking-tight text-foreground hover:text-primary transition-colors">
+              TripMate
+            </Link>
+            <AccountNav />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:inline text-xs text-muted-foreground">
+              {session.user.name || session.user.email}
+            </span>
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="cursor-pointer rounded-md border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-6 md:py-8">

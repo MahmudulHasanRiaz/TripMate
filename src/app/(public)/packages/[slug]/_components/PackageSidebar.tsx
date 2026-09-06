@@ -1,6 +1,7 @@
 import { CalendarClock, Mail, MessageCircle, Phone, Star } from "lucide-react";
 
 import { formatMoney, telLink, whatsappLink } from "@/components/site/currency";
+import { BookingForm } from "@/components/site/BookingForm";
 
 import type { PackageDetailData } from "../../_lib/catalog-data";
 
@@ -9,11 +10,8 @@ type EnquiryTargets = { phone: string; email: string };
 /**
  * Enquiry CTAs for a package (spec §3 PackageDetailLayout sidebar).
  *
- * The spec's booking form is deliberately OUT of Task 11 scope — Plan 5 owns
- * it. Until then the conversion path is the market's three preferred channels:
- * a phone call (tel:), WhatsApp, and an email whose subject already carries the
- * package title so an advisor knows what the lead is about. Everything is a
- * plain mailto/tel/wa.me href — no client JS needed.
+ * BookingForm mounts as the primary conversion CTA with phone, WhatsApp, and
+ * email as complementary direct channels.
  */
 
 function priceLine(data: PackageDetailData) {
@@ -88,12 +86,18 @@ export function PackageEnquiryCard({
       </dl>
 
       <div className="mt-6 space-y-2.5">
+        <BookingForm
+          listingId={data.id}
+          listingTitle={data.title}
+          price={data.price}
+          currency={data.currency}
+        />
         {telHref ? (
           <a
             href={telHref}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
           >
-            <Phone className="size-4" aria-hidden="true" />
+            <Phone className="size-4 text-primary" aria-hidden="true" />
             <span dir="ltr">{phone}</span>
           </a>
         ) : null}
@@ -160,13 +164,21 @@ export function PackageMobileBar({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
+          <BookingForm
+            listingId={data.id}
+            listingTitle={data.title}
+            price={data.price}
+            currency={data.currency}
+            triggerClassName="inline-flex min-h-11 px-4 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            triggerLabel="Book"
+          />
           {telHref ? (
             <a
               href={telHref}
               aria-label={`Call ${phone}`}
-              className="inline-flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex size-11 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-secondary"
             >
-              <Phone className="size-5" aria-hidden="true" />
+              <Phone className="size-5 text-primary" aria-hidden="true" />
             </a>
           ) : null}
           {waHref ? (
