@@ -28,7 +28,6 @@ import type {
 } from "@/modules/landing-pages/section-types";
 import {
   CONTENT_FIELDS,
-  RESERVED_FORM_FIELD_KEYS,
   LANDING_FORM_FIELD_TYPES,
 } from "@/modules/landing-pages/section-types";
 import type { LandingPage } from "@/modules/landing-pages/service";

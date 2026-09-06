@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getPublishedLandingBySlug } from "@/modules/landing-pages/service";
 import { LandingRenderer } from "@/components/landing/LandingRenderer";
@@ -31,7 +32,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function LandingPublicPage({ params }: PageProps) {
+function LandingFallback() {
+  return (
+    <div className="min-h-screen bg-background animate-pulse" aria-hidden="true">
+      <div className="h-96 w-full bg-muted/60" />
+      <div className="mx-auto max-w-4xl px-4 py-16 space-y-6">
+        <div className="h-8 w-1/2 bg-muted/80 rounded mx-auto" />
+        <div className="h-4 w-3/4 bg-muted/60 rounded mx-auto" />
+      </div>
+    </div>
+  );
+}
+
+export default function LandingPublicPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<LandingFallback />}>
+      <LandingPublicBody params={params} />
+    </Suspense>
+  );
+}
+
+async function LandingPublicBody({ params }: PageProps) {
   const { slug } = await params;
   const landing = await getPublishedLandingBySlug(slug);
 

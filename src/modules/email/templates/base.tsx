@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToStaticMarkup } from "react-dom/server.edge";
 
 /**
  * Minimal branded HTML shell shared by all transactional emails.

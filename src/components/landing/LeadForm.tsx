@@ -113,9 +113,17 @@ export function LeadForm({ formConfig, landingSlug, previewMode = false }: LeadF
         const fbParams = getFbCookies();
         const honeypotVal = formData.company_website || "";
 
+        const fullFormData: Record<string, string> = {};
+        for (const f of fields) {
+          fullFormData[f.key] = formData[f.key] ?? "";
+        }
+        if (formData.company_website) {
+          fullFormData.company_website = formData.company_website;
+        }
+
         const result = await submitLead({
           landingSlug,
-          formData,
+          formData: fullFormData,
           fbParams,
           honeypot: honeypotVal,
         });
