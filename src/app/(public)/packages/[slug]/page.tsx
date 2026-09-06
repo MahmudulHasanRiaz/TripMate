@@ -102,6 +102,7 @@ async function PackageDetailBody({
                   durationDays={pkg.durationDays ?? undefined}
                   rating={pkg.rating ?? undefined}
                   price={pkg.price ?? undefined}
+                  currency={pkg.currency}
                 />
               ))}
             </div>

@@ -20,7 +20,9 @@ export function PackageContent({ data }: { data: PackageDetailData }) {
   return (
     <div className="space-y-12">
       {hasLongform ? (
-        <section aria-labelledby="package-about-heading">
+        <section
+          aria-labelledby={description ? "package-about-heading" : undefined}
+        >
           {summary ? (
             <p
               data-testid="package-summary"

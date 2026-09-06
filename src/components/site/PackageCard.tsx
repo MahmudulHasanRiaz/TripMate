@@ -4,7 +4,7 @@ import type { Route } from "next";
 import { Clock, MapPin, Star } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { formatTaka } from "./currency";
+import { formatMoney } from "./currency";
 
 type PackageCardProps = {
   href: string;
@@ -12,11 +12,13 @@ type PackageCardProps = {
   destination: string;
   imageSrc: string;
   imageAlt: string;
-  /** Whole-taka price; absent (null) hides the price row. */
+  /** Whole-taka duration in days; absent (null) hides the duration row. */
   durationDays?: number | null;
   rating?: number | null;
-  /** Whole-taka price (catalog stores 145000 = ৳1,45,000); absent hides it. */
+  /** Price amount in `currency`; absent (null) hides the price row. */
   price?: number | null;
+  /** ISO 4217 code; defaults to BDT so legacy callers keep taka labels. */
+  currency?: string;
 };
 
 const IMAGE_SIZES = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw";
@@ -35,6 +37,7 @@ export function PackageCard({
   durationDays,
   rating,
   price,
+  currency = "BDT",
 }: PackageCardProps) {
   return (
     <Link
@@ -86,7 +89,7 @@ export function PackageCard({
         {typeof price === "number" ? (
           <p className="pt-1 text-sm">
             <span className="text-muted-foreground">From </span>
-            <span className="font-semibold text-foreground">{formatTaka(price)}</span>
+            <span className="font-semibold text-foreground">{formatMoney(price, currency)}</span>
           </p>
         ) : null}
       </div>

@@ -69,6 +69,7 @@ export async function PackagesExplorer({
                   durationDays={pkg.durationDays ?? undefined}
                   rating={pkg.rating ?? undefined}
                   price={pkg.price ?? undefined}
+                  currency={pkg.currency}
                 />
               ))}
             </div>

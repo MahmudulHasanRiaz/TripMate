@@ -53,7 +53,7 @@ export function PackageHero({ data }: { data: PackageDetailData }) {
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={`/packages?cat=${data.category.slug}` as Route}
-              className={`inline-flex min-h-7 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold backdrop-blur-sm transition-colors ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 py-1 text-xs font-semibold backdrop-blur-sm transition-colors ${
                 hasCover
                   ? "border-white/25 bg-white/10 text-white hover:bg-white/20"
                   : "border-border bg-background text-foreground hover:bg-secondary"
@@ -68,7 +68,7 @@ export function PackageHero({ data }: { data: PackageDetailData }) {
             {data.destination ? (
               <Link
                 href={`/packages?dest=${data.destination.slug}` as Route}
-                className={`inline-flex min-h-7 items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium backdrop-blur-sm transition-colors ${
+                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 py-1 text-xs font-medium backdrop-blur-sm transition-colors ${
                   hasCover
                     ? "border-white/25 bg-white/10 text-white/90 hover:bg-white/20"
                     : "border-border bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"

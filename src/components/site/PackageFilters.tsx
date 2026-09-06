@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { ChevronDown, Search, X } from "lucide-react";
@@ -68,6 +68,15 @@ export function PackageFilters({ options }: { options: PackageFilterOptions }) {
     setLastParams(searchParams);
     setFields(fieldParams(searchParams));
   }
+
+  // If the island unmounts (route change) while a keystroke is mid-debounce,
+  // cancel the pending commit so it can't router.replace after we're gone.
+  // Cleanup-only effect: no setState in the body, so it never cascades renders.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const commit = (next: Fields) => {
     const params = new URLSearchParams();

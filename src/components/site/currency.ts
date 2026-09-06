@@ -12,12 +12,47 @@ export function formatTaka(amount: number): string {
 }
 
 /**
+ * Formatters per ISO currency. `Intl.NumberFormat` picks the correct digit
+ * grouping for the currency's own conventions (en-US would Indian-group "USD
+ * 8,50,000" otherwise); one formatter is built and reused per currency. Invalid
+ * ISO codes are never trusted to throw at render time — they fall back to a
+ * plain grouped number under a bare code prefix.
+ */
+const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
+
+function formatterFor(currency: string): Intl.NumberFormat | null {
+  const cached = currencyFormatterCache.get(currency);
+  if (cached) return cached;
+  let formatter: Intl.NumberFormat | null = null;
+  try {
+    formatter = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+      maximumFractionDigits: 2,
+    });
+    // Verify the code is real (the constructor accepts some junk silently).
+    void formatter.format(0);
+  } catch {
+    formatter = null;
+  }
+  if (formatter) currencyFormatterCache.set(currency, formatter);
+  return formatter;
+}
+
+const groupedFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+
+/**
  * Currency-aware price label. Listings default to BDT (the ৳ market's Indian
- * digit grouping); any other currency falls back to ISO-code + grouped number
- * so a non-BDT listing is never mislabelled as taka.
+ * digit grouping via formatTaka); any other currency renders through that
+ * ISO's own Intl formatter ("$8,50,000" would be wrong — USD groups as
+ * "$850,000"), or a bare-code grouped fallback when the code is unparseable.
  */
 export function formatMoney(amount: number, currency = "BDT"): string {
-  return currency === "BDT" ? formatTaka(amount) : `${currency} ${takaFormatter.format(amount)}`;
+  if (currency === "BDT") return formatTaka(amount);
+  const formatter = formatterFor(currency);
+  if (formatter) return formatter.format(amount);
+  return `${currency} ${groupedFormatter.format(amount)}`;
 }
 
 /** +8801700000000 -> wa.me/8801700000000 (digits only, country code kept). */

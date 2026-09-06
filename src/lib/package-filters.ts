@@ -96,18 +96,6 @@ export function hasActiveFilters(f: PackageFilters): boolean {
   return Boolean(f.q || f.cat || f.dest || f.max !== undefined);
 }
 
-/** Copy the filters with `overrides` applied; a filter change resets to page 1. */
-export function applyFilterChanges(
-  f: PackageFilters,
-  overrides: Partial<Pick<PackageFilters, "q" | "cat" | "dest" | "max">>,
-): PackageFilters {
-  return { ...f, ...overrides, page: 1 };
-}
-
-export function totalPageCount(total: number, perPage: number): number {
-  return Math.max(1, Math.ceil(total / perPage));
-}
-
 /** Ellipsis marker used in the compact page-number row. */
 export type PageListEntry = number | "gap";
 

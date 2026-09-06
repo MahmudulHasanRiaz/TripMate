@@ -45,6 +45,8 @@ export type PackageCardData = {
   durationDays: number | null;
   rating: number | null;
   price: number | null;
+  /** ISO 4217 code the `price` is denominated in (catalog default BDT). */
+  currency: string;
 };
 
 /** Serializable slice of a listing that renders the package detail page. */
@@ -97,6 +99,7 @@ function toCardData(listing: ListingWithRefs): PackageCardData {
     durationDays: listing.durationDays,
     rating: listing.rating,
     price: listing.price,
+    currency: listing.currency,
   };
 }
 
