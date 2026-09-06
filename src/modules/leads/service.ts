@@ -591,14 +591,15 @@ export async function assignLead(
 }
 
 /**
- * Mark a lead converted. P4 just clears the inbox: status → converted plus a
- * "converted" event, and `convertedOrderId` deliberately stays null (wiring the
- * lead to a full order is Plan 5). Idempotent — an already-converted lead is
- * returned untouched with no duplicate event.
+ * Mark a lead converted. Plan 5 wiring: callers may pass the created order id,
+ * which is stored on leads.convertedOrderId and echoed into the "converted"
+ * event payload (bookings convertLeadToOrder does exactly that). Without an
+ * order id the P4 behavior is unchanged. Idempotent — an already-converted
+ * lead is returned untouched with no duplicate event.
  */
 export async function markLeadConverted(
   leadId: string,
-  opts: { actorId?: string | null } = {},
+  opts: { actorId?: string | null; convertedOrderId?: string | null } = {},
 ): Promise<LeadDetail> {
   const current = await getLeadDetail(leadId);
   if (!current) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
@@ -608,20 +609,24 @@ export async function markLeadConverted(
 
 async function transitionToConverted(
   current: LeadDetail,
-  opts: { actorId?: string | null },
+  opts: { actorId?: string | null; convertedOrderId?: string | null },
 ): Promise<LeadDetail> {
   // Conversion write + "converted" audit event commit atomically.
   await db.transaction(async (tx) => {
     const [row] = await tx
       .update(leads)
-      .set({ status: "converted", updatedAt: new Date() })
+      .set({
+        status: "converted",
+        updatedAt: new Date(),
+        ...(opts.convertedOrderId ? { convertedOrderId: opts.convertedOrderId } : {}),
+      })
       .where(eq(leads.id, current.id))
       .returning({ id: leads.id });
     if (!row) throw new LeadError("NOT_FOUND", `Lead ${current.id} not found.`);
     await addLeadEventOn(tx, current.id, {
       type: "converted",
       actorId: opts.actorId ?? null,
-      payload: { from: current.status, convertedOrderId: null },
+      payload: { from: current.status, convertedOrderId: opts.convertedOrderId ?? null },
     });
   });
 
