@@ -31,6 +31,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
   { href: "/admin/landing-pages", label: "Landing Pages", icon: "megaphone", permission: "content.manage" },
   { href: "/admin/media", label: "Media", icon: "image", permission: "media.manage" },
   { href: "/admin/users", label: "Users", icon: "users", permission: "users.manage" },
+  { href: "/admin/tracking", label: "Tracking", icon: "activity", permission: "tracking.view" },
   { href: "/admin/settings", label: "Settings", icon: "settings", permission: "settings.manage" },
 ];
 

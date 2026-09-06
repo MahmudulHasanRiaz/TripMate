@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Route } from "next";
 import {
+  Activity,
   Banknote,
   BookCopy,
   ExternalLink,
@@ -64,6 +65,7 @@ const MENU_ICONS: Record<string, LucideIcon> = {
   megaphone: Megaphone,
   image: ImageIcon,
   users: Users,
+  activity: Activity,
   settings: Settings,
 };
 
