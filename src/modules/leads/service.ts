@@ -130,9 +130,9 @@ function leadSearchCondition(query: string): SQL {
   ) as SQL;
 }
 
-function pagination(page?: number, perPage?: number, defaultPerPage = 20) {
+function pagination(page?: number, perPage?: number, defaultPerPage = 20, maxPerPage = 50) {
   const safePage = Math.max(1, Math.floor(page ?? 1));
-  const safePerPage = Math.min(50, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
+  const safePerPage = Math.min(maxPerPage, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
   return { page: safePage, perPage: safePerPage, offset: (safePage - 1) * safePerPage };
 }
 
@@ -236,7 +236,7 @@ export async function listLeads(query: LeadListQuery = {}): Promise<Paginated<Le
   if (search) conditions.push(leadSearchCondition(search));
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 20);
+  const { offset, perPage } = pagination(query.page, query.perPage, 20, query.perPage ? 200 : 50);
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })
