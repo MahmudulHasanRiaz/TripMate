@@ -35,6 +35,8 @@ export const CACHE_TAGS = {
   orders: "orders",
   /** One order, keyed by its id. */
   order: (id: string) => `order-${id}`,
+  /** Payments collection (verification queue, gateway config reads). */
+  payments: "payments",
   /** One lead, keyed by its id. */
   lead: (id: string) => `lead-${id}`,
   /** Landing pages collection (builder list, /l/ render). */

@@ -336,7 +336,9 @@ const setQuoteInput = z.object({
     .number({ invalid_type_error: "Quoted price must be a number" })
     .finite("Quoted price must be a number")
     .positive("Quoted price must be greater than zero")
-    .max(1e12, "Quoted price is too large"),
+    // numeric(14,2) caps at 999,999,999,999.99 — a value between that and 1e12
+    // would round up on toFixed(2) and overflow the column at insert.
+    .max(999_999_999_999.99, "Quoted price is too large"),
 });
 
 const updateOrderStatusInput = z.object({
