@@ -31,6 +31,10 @@ export const CACHE_TAGS = {
   settings: "settings",
   /** Lead collection + management (kanban, detail, board counts). */
   leads: "leads",
+  /** Orders collection + management (board, detail, portal lists). */
+  orders: "orders",
+  /** One order, keyed by its id. */
+  order: (id: string) => `order-${id}`,
   /** One lead, keyed by its id. */
   lead: (id: string) => `lead-${id}`,
   /** Landing pages collection (builder list, /l/ render). */
