@@ -24,13 +24,16 @@ export type PublicNavItem = {
  * The public navigation. Generic (Packages / Blog / About) in this task;
  * a later task will drive items + CTA from site settings.
  *
- * hrefs are cast because the destination pages land in Tasks 11-12; once they
- * exist the casts come off and typedRoutes validates them like any route.
+ * hrefs are cast because typed routes don't enumerate route-group paths and
+ * `/p/about-us` is a dynamic-segment literal; the casts stay until the types
+ * can validate them (Task 9 noted the same).
  */
 const NAV_ITEMS: PublicNavItem[] = [
   { label: "Packages", href: "/packages" as Route },
   { label: "Blog", href: "/blog" as Route },
-  { label: "About", href: "/about" as Route },
+  // About lands on the seeded about-us static page (Task 12) — the seeded page
+  // set lives under /p/{slug}, so that's the canonical URL, not /about.
+  { label: "About", href: "/p/about-us" as Route },
 ];
 
 type SiteHeaderProps = {

@@ -16,6 +16,12 @@
  * directives on purpose — it is a leaf so either graph can import it.
  */
 
+// The compact page-number row is generic pagination UI, shared with the blog
+// index — it lives in src/lib/pagination.ts and is re-exported here so existing
+// /packages consumers keep a stable import path.
+export type { PageListEntry } from "@/lib/pagination";
+export { paginationPageList } from "@/lib/pagination";
+
 export type PackageFilters = {
   /** Free-text query (matches title / destination name). Empty = none. */
   q: string;
@@ -94,31 +100,4 @@ export function packagesIndexHref(f: PackageFilters): string {
 /** True when the visitor has narrowed the index beyond the plain page-1 view. */
 export function hasActiveFilters(f: PackageFilters): boolean {
   return Boolean(f.q || f.cat || f.dest || f.max !== undefined);
-}
-
-/** Ellipsis marker used in the compact page-number row. */
-export type PageListEntry = number | "gap";
-
-/**
- * Compact page list: first, last and a sliding window around the current page,
- * with `gap` entries for the runs in between — "1 … 4 5 [6] 7 … 12".
- */
-export function paginationPageList(current: number, totalPages: number): PageListEntry[] {
-  if (totalPages <= 7) {
-    return range(1, totalPages);
-  }
-  const entries: PageListEntry[] = [1];
-  const start = Math.max(2, current - 1);
-  const end = Math.min(totalPages - 1, current + 1);
-  if (start > 2) entries.push("gap");
-  for (let n = start; n <= end; n++) entries.push(n);
-  if (end < totalPages - 1) entries.push("gap");
-  entries.push(totalPages);
-  return entries;
-}
-
-function range(from: number, to: number): number[] {
-  const out: number[] = [];
-  for (let n = from; n <= to; n++) out.push(n);
-  return out;
 }

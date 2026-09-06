@@ -338,6 +338,39 @@ export async function listCategories(activeOnly: boolean): Promise<Category[]> {
     .orderBy(asc(serviceCategories.sortOrder), asc(serviceCategories.name));
 }
 
+/** Single active category by slug for the public /services/{slug} landing. */
+export async function getCategoryBySlug(
+  slug: string,
+  activeOnly = true,
+): Promise<Category | null> {
+  const rows = await db
+    .select({
+      id: serviceCategories.id,
+      name: serviceCategories.name,
+      slug: serviceCategories.slug,
+      kind: serviceCategories.kind,
+      redirectUrl: serviceCategories.redirectUrl,
+      icon: serviceCategories.icon,
+      sortOrder: serviceCategories.sortOrder,
+      isActive: serviceCategories.isActive,
+    })
+    .from(serviceCategories)
+    .where(and(eq(serviceCategories.slug, slug), activeOnly ? eq(serviceCategories.isActive, true) : undefined))
+    .limit(1);
+  if (!rows[0]) return null;
+  const row = rows[0];
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    kind: row.kind,
+    redirectUrl: row.redirectUrl,
+    icon: row.icon,
+    sortOrder: row.sortOrder,
+    isActive: row.isActive,
+  };
+}
+
 export async function listDestinations(activeOnly = true): Promise<Destination[]> {
   return db
     .select({

@@ -6,12 +6,13 @@ import Logo from "@/components/icons/Logo";
 
 /**
  * Footer quick links mirror the header nav for now (settings-driven later).
- * Casts come off once the destination routes exist (Tasks 11-12).
+ * Like the header, About targets the seeded about-us page under /p/{slug} —
+ * that is the canonical URL for the static page set (Task 12).
  */
 const QUICK_LINKS: { label: string; href: Route }[] = [
   { label: "Packages", href: "/packages" as Route },
   { label: "Blog", href: "/blog" as Route },
-  { label: "About", href: "/about" as Route },
+  { label: "About", href: "/p/about-us" as Route },
 ];
 
 /** Placeholder socials — real profile URLs arrive with a settings drive. */

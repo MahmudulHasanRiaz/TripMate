@@ -8,10 +8,10 @@ import { PackageFilters } from "@/components/site/PackageFilters";
 import {
   hasActiveFilters,
   packagesIndexHref,
-  paginationPageList,
   parsePackageSearchParams,
   type PackageFilters as PackageFiltersValue,
 } from "@/lib/package-filters";
+import { paginationPageList } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 
 import {

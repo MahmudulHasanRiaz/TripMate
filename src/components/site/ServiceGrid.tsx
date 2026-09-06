@@ -1,17 +1,9 @@
 import Link from "next/link";
 import type { Route } from "next";
-import {
-  Compass,
-  ExternalLink,
-  FileCheck,
-  HeartPulse,
-  Moon,
-  MoonStar,
-  PlaneTakeoff,
-  type LucideIcon,
-} from "lucide-react";
+import { ExternalLink } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { ServiceIcon } from "./ServiceIcon";
 
 export type ServiceGridItem = {
   /** Stable catalog identity — React list key. Never the href: two redirect
@@ -27,26 +19,6 @@ export type ServiceGridItem = {
   /** One-line customer-facing promise (v1: derived from the category kind). */
   blurb: string;
 };
-
-/**
- * Catalog icons are stored as strings (service_categories.icon). Map the known
- * seed values to lucide components; anything unrecognised falls back to Compass
- * rather than crashing on an unknown import. Extend this map as the catalog
- * gains categories.
- */
-const ICON_MAP: Record<string, LucideIcon> = {
-  compass: Compass,
-  "moon-star": MoonStar,
-  moon: Moon,
-  "heart-pulse": HeartPulse,
-  "plane-takeoff": PlaneTakeoff,
-  "file-check": FileCheck,
-};
-
-function ServiceIcon({ name }: { name: string | null }) {
-  const Icon = (name && ICON_MAP[name]) || Compass;
-  return <Icon className="size-6" aria-hidden="true" />;
-}
 
 /**
  * The 6 (or N) service-category tiles (spec §3 ServiceGrid): icon in a
