@@ -2,6 +2,7 @@ import "dotenv/config";
 import { db } from "./connection";
 import {
   destinations,
+  expenseCategories,
   listings,
   paymentGateways,
   serviceCategories,
@@ -163,10 +164,30 @@ async function seedPaymentGateways() {
   console.log("Payment gateway seed complete.");
 }
 
+async function seedExpenseCategories() {
+  const existing = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(expenseCategories);
+  if (existing[0].count > 0) {
+    console.log("Expense category seed skipped: already present.");
+    return;
+  }
+  await db.insert(expenseCategories).values([
+    { name: "Office & Utilities", kind: "operational", description: "Rent, electricity, internet, supplies." },
+    { name: "Marketing & Ads", kind: "operational", description: "Meta ads, boosts, creative costs." },
+    { name: "Salaries & Commission", kind: "operational", description: "Staff payroll and sales commission." },
+    { name: "Travel & Tickets", kind: "cost_of_sales", description: "Air tickets, hotel bookings tied to orders." },
+    { name: "Visa & Processing Fees", kind: "cost_of_sales", description: "Embassy/agent fees tied to orders." },
+    { name: "Transport & Logistics", kind: "cost_of_sales", description: "Ground transport, deliveries." },
+  ]);
+  console.log("Expense category seed complete.");
+}
+
 async function seed() {
   await seedCatalog();
   await seedSettings();
   await seedPaymentGateways();
+  await seedExpenseCategories();
   const { categoriesInserted, pagesInserted } = await seedStaticContent(db);
   console.log(
     pagesInserted === 0 && categoriesInserted === 0

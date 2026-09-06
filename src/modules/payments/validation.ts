@@ -177,7 +177,9 @@ export const amountInputSchema = z.coerce
   .number({ invalid_type_error: "Amount must be a number" })
   .finite("Amount must be a number")
   .positive("Amount must be greater than zero")
-  .max(1e12, "Amount is too large")
+  // numeric(14,2) caps at 999,999,999,999.99 — pin AT the ceiling: exactly
+  // 1e12 (13 integer digits) would overflow the column at insert time.
+  .max(999_999_999_999.99, "Amount is too large")
   .refine(
     (v) => Math.round(v * 100) / 100 === v,
     "Amount supports at most two decimal places",
