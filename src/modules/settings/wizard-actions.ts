@@ -26,10 +26,12 @@
  * `{ ok, error }` (or the step booleans from getWizardStatus) only.
  */
 
+import { updateTag } from "next/cache";
 import { getSetting, setSetting } from "./service";
 import { writeEnvValues } from "@/lib/env-file";
 import { buildTransportFromValues } from "@/modules/email/transport";
 import { R2Driver } from "@/modules/media/drivers/r2";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { withGuard, GuardError } from "@/lib/guard";
 import { db } from "@/db/client";
 import { users } from "@/modules/users/schema";
@@ -102,6 +104,13 @@ export const wizardSetSetting = relay(
         throw new Error(`Setting key ${input.key} is not writable via the wizard`);
       }
       await setSetting(input.key, input.value);
+      // Public chrome (header/footer/home) caches reads on CACHE_TAGS.settings
+      // (see lib/site-settings.ts + the home page) but nothing on the wizard's
+      // write path ever invalidated it — so brand/contact went stale after setup
+      // on a fresh deploy. updateTag is the server-action read-your-own-writes
+      // form. PLAN 6 NOTE: the settings admin page MUST do the same on every
+      // settings save (site/home/storage/meta writes all expire this tag).
+      updateTag(CACHE_TAGS.settings);
       return { ok: true };
     },
   ),
@@ -272,6 +281,12 @@ const completeSetup = relay(
   withGuard({ public: true }, async () => {
     await assertUnlocked();
     await setSetting("setup", { setupComplete: true });
+    // The setup row itself isn't read by public chrome, but completing the
+    // wizard is the final settings mutation of the onboarding flow — expire the
+    // settings tag so any public read that raced the wizard's site/meta writes
+    // is not served stale on the first visitor (same contract as the per-key
+    // updateTag in wizardSetSetting above).
+    updateTag(CACHE_TAGS.settings);
     return { ok: true };
   }),
 );

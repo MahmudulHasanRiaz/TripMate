@@ -1,5 +1,16 @@
 import type { NextConfig } from "next";
 
+// When storage is r2 the media driver returns ABSOLUTE urls on the operator's
+// custom domain (R2_PUBLIC_URL), so every public next/image <img> optimization
+// request to that host would 400 unless it is whitelisted here. The env is read
+// at CONFIG time (build-time), so production builds need R2_PUBLIC_URL set when
+// storage=r2 — a Vercel project env var / Docker build arg (see README). The
+// host is parsed via `new URL(...)` so a value like https://cdn.example.com
+// yields just its hostname for the pattern.
+const r2Hostname = process.env.R2_PUBLIC_URL
+  ? new URL(process.env.R2_PUBLIC_URL).hostname
+  : null;
+
 const nextConfig: NextConfig = {
   typedRoutes: true,
   // Next 16 Cache Components: single unified flag that turns on the
@@ -22,6 +33,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.pexels.com", pathname: "/**" },
       { protocol: "https", hostname: "placehold.co", pathname: "/**" },
+      // R2-backed imagery when R2_PUBLIC_URL is configured (see top of file).
+      ...(r2Hostname
+        ? [{ protocol: "https" as const, hostname: r2Hostname, pathname: "/**" }]
+        : []),
     ],
   },
 };

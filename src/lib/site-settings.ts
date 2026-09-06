@@ -1,4 +1,4 @@
-import { cacheTag } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getSetting } from "@/modules/settings/service";
 
@@ -29,14 +29,18 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
  * Cached read of the site identity for the public chrome — the same Cache
  * Components contract content pages use (`'use cache'` + `cacheTag`). Tagging
  * with `CACHE_TAGS.settings` means an admin settings mutation that calls
- * `revalidateTag(CACHE_TAGS.settings, "max")` refreshes the header/footer in
- * exactly the places that read it. The `getSetting` call is server-only, so
- * this module must never be imported from a client component — the chrome
- * receives the resolved strings as props instead.
+ * `updateTag(CACHE_TAGS.settings)` refreshes the header/footer in exactly the
+ * places that read it; `cacheLife("hours")` makes the lifetime explicit
+ * (content changes a few times a day at most — the docs recommend always
+ * setting a profile rather than relying on the implicit `default`). The
+ * `getSetting` call is server-only, so this module must never be imported from
+ * a client component — the chrome receives the resolved strings as props
+ * instead.
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
   "use cache";
   cacheTag(CACHE_TAGS.settings);
+  cacheLife("hours");
 
   const site = await getSetting("site");
   if (!site) return DEFAULT_SITE_SETTINGS;

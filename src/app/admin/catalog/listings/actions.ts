@@ -35,20 +35,37 @@ function revalidateListing(ref: ListingRef): void {
   updateTag(CACHE_TAGS.listing(ref.slug));
 }
 
-/** First failing schema issue, rendered as "path: message" for the form. */
-function firstIssueMessage(input: unknown): string {
+/**
+ * Parse the listing body once and hand the COERCED result to the service.
+ * `input` as it arrives over the wire is the RAW form payload — numeric fields
+ * still strings, blank optionals still "" — while only `parsed.data` has the
+ * schema's preprocess transforms applied (price/rating/durationDays →
+ * number, blank text → null). Passing the raw input downstream would hand a
+ * string price/rating to the service's `toFixed(2)` and throw an uncaught
+ * TypeError. The first failing issue is rendered as "path: message" for the
+ * form.
+ */
+function parseListing(
+  input: unknown,
+):
+  | { ok: true; data: ListingInput }
+  | { ok: false; code: "VALIDATION"; error: string } {
   const parsed = listingInput.safeParse(input);
-  if (parsed.success) return "";
+  if (parsed.success) return { ok: true, data: parsed.data };
   const issue = parsed.error.issues[0];
   const field = issue.path.join(".");
-  return field ? `${field}: ${issue.message}` : issue.message;
+  return {
+    ok: false,
+    code: "VALIDATION",
+    error: field ? `${field}: ${issue.message}` : issue.message,
+  };
 }
 
 /** Create or update a listing. The body is re-parsed here as the trust boundary. */
 export const saveListing = adminAction<ListingInput, SaveResult>(async (input) => {
-  const message = firstIssueMessage(input);
-  if (message) return { ok: false, code: "VALIDATION", error: message };
-  const saved = await upsertListing(input);
+  const parsed = parseListing(input);
+  if (!parsed.ok) return parsed;
+  const saved = await upsertListing(parsed.data);
   revalidateListing({ id: saved.id, slug: saved.slug });
   return { ok: true, data: { id: saved.id, slug: saved.slug } };
 });

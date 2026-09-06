@@ -18,6 +18,13 @@ Tailwind CSS v4 · Drizzle ORM + PostgreSQL · Zod · Vitest + Playwright
    superadmin and configures storage/SMTP (writes `.env` locally; on Vercel/
    Portainer it shows copy-paste env blocks)
 
+> **Storage = R2 builds need `R2_PUBLIC_URL`.** When the wizard selects R2,
+> uploaded images are served from the operator's custom domain bound to the
+> bucket. `next.config.ts` reads `R2_PUBLIC_URL` at build time to whitelist that
+> host for `next/image` optimization — so a production build (Vercel project env
+> / Docker build arg) must have `R2_PUBLIC_URL` set, or R2-hosted imagery 400s on
+> the public site. Local dev reads it from `.env` like the other R2 credentials.
+
 ## Auth
 Session auth runs on better-auth with four roles: superadmin, admin, staff and
 customer. The first user — your superadmin — is created by the setup wizard;

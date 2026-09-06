@@ -24,21 +24,36 @@ function revalidatePublic(): void {
   updateTag(CACHE_TAGS.listings);
 }
 
-/** First failing schema issue, rendered as "path: message" for the form. */
-function firstIssueMessage(input: unknown): string {
+/**
+ * Parse the category body once and hand the COERCED result to the service.
+ * `input` as it arrives over the wire is the RAW form payload; only
+ * `parsed.data` has the schema's transforms applied (sortOrder string →
+ * number, isActive absent → default). Passing the raw input downstream would
+ * hand the service a string sortOrder / unparsed isActive. The first failing
+ * issue is rendered as "path: message" for the form.
+ */
+function parseCategory(
+  input: unknown,
+):
+  | { ok: true; data: CategoryInput }
+  | { ok: false; code: "VALIDATION"; error: string } {
   const parsed = categoryInput.safeParse(input);
-  if (parsed.success) return "";
+  if (parsed.success) return { ok: true, data: parsed.data };
   const issue = parsed.error.issues[0];
   const field = issue.path.join(".");
-  return field ? `${field}: ${issue.message}` : issue.message;
+  return {
+    ok: false,
+    code: "VALIDATION",
+    error: field ? `${field}: ${issue.message}` : issue.message,
+  };
 }
 
 /** Create or update a category. Body re-parsed here as the trust boundary. */
 export const saveCategory = adminAction<CategoryInput, ActionResult<{ id: string }>>(
   async (input) => {
-    const message = firstIssueMessage(input);
-    if (message) return { ok: false, code: "VALIDATION", error: message };
-    const saved = await upsertCategory(input);
+    const parsed = parseCategory(input);
+    if (!parsed.ok) return parsed;
+    const saved = await upsertCategory(parsed.data);
     revalidatePublic();
     return { ok: true, data: { id: saved.id } };
   },

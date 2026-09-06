@@ -29,6 +29,10 @@ export function CTASection({
   phone,
   whatsapp = true,
 }: CTASectionProps) {
+  // tel/wa hrefs are null when the site has no usable phone (unset or
+  // whitespace-only) — render those escapes only when the href actually exists.
+  const telHref = telLink(phone ?? "");
+  const waHref = whatsapp ? whatsappLink(phone ?? "") : null;
   return (
     <section className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">
       <div className="overflow-hidden rounded-2xl bg-primary px-6 py-12 text-primary-foreground sm:px-12 lg:py-16">
@@ -48,18 +52,18 @@ export function CTASection({
             >
               {ctaLabel}
             </Link>
-            {phone ? (
+            {telHref ? (
               <span className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                 <a
-                  href={telLink(phone)}
+                  href={telHref}
                   className="inline-flex min-h-11 items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"
                 >
                   <Phone className="size-4" aria-hidden="true" />
                   <span dir="ltr">{phone}</span>
                 </a>
-                {whatsapp ? (
+                {waHref ? (
                   <a
-                    href={whatsappLink(phone)}
+                    href={waHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex min-h-11 items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"

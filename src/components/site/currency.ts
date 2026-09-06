@@ -55,14 +55,19 @@ export function formatMoney(amount: number, currency = "BDT"): string {
   return `${currency} ${groupedFormatter.format(amount)}`;
 }
 
-/** +8801700000000 -> wa.me/8801700000000 (digits only, country code kept). */
-export function whatsappLink(phone: string): string {
+/**
+ * +8801700000000 -> wa.me/8801700000000 (digits only, country code kept).
+ * Returns null when the phone carries no digits (empty, whitespace-only or
+ * punctuation) so callers can skip the link entirely instead of emitting a
+ * broken `wa.me/` — render sites guard on the non-null href.
+ */
+export function whatsappLink(phone: string): string | null {
   const digits = phone.replace(/\D/g, "");
-  return `https://wa.me/${digits}`;
+  return digits ? `https://wa.me/${digits}` : null;
 }
 
-/** +8801700000000 -> tel:+8801700000000. */
-export function telLink(phone: string): string {
+/** +8801700000000 -> tel:+8801700000000. Null on an empty/whitespace phone. */
+export function telLink(phone: string): string | null {
   const digits = phone.replace(/\D/g, "");
-  return `tel:+${digits}`;
+  return digits ? `tel:+${digits}` : null;
 }

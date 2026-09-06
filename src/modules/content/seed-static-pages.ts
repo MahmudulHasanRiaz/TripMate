@@ -24,6 +24,13 @@ export type StaticPageSeed = {
   seo: { title: string; description: string };
 };
 
+// SEO title convention: these `seo.title` values must NOT carry a trailing
+// "| TripMate" — the root layout's title.template ("%s | TripMate") appends the
+// suffix at render time, so an inline one would double it. NOTE: rows seeded
+// before this convention (the FAQ/Terms/Privacy "…| TripMate" titles) keep the
+// old suffixed value in an existing DB — seeding only inserts when the slug is
+// absent and never rewrites admin rows. Plan 6's settings polish can normalize
+// those pre-existing rows.
 export const STATIC_PAGES: StaticPageSeed[] = [
   {
     title: "About Us",
@@ -73,7 +80,7 @@ export const STATIC_PAGES: StaticPageSeed[] = [
       },
     ],
     seo: {
-      title: "FAQ — Hajj, Umrah & travel questions answered | TripMate",
+      title: "FAQ — Hajj, Umrah & travel questions answered",
       description: "Answers to common questions about TripMate packages, inclusions, payments, booking confirmation and cancellations.",
     },
   },
@@ -99,7 +106,7 @@ export const STATIC_PAGES: StaticPageSeed[] = [
       },
     ],
     seo: {
-      title: "Terms of Service | TripMate",
+      title: "Terms of Service",
       description: "The terms governing use of TripMate's website and travel services — bookings, payments, cancellations and liability.",
     },
   },
@@ -125,7 +132,7 @@ export const STATIC_PAGES: StaticPageSeed[] = [
       },
     ],
     seo: {
-      title: "Privacy Policy | TripMate",
+      title: "Privacy Policy",
       description: "How TripMate collects, uses and protects your personal information — what we hold, why, and the choices you have.",
     },
   },

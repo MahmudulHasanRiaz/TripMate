@@ -25,20 +25,35 @@ function revalidatePublic(): void {
   updateTag(CACHE_TAGS.listings);
 }
 
-function firstIssueMessage(input: unknown): string {
+/**
+ * Parse the destination body once and hand the COERCED result to the service.
+ * `input` as it arrives over the wire is the RAW form payload; only
+ * `parsed.data` has the schema's transforms applied (isActive absent →
+ * default). The first failing issue is rendered as "path: message" for the
+ * form.
+ */
+function parseDestination(
+  input: unknown,
+):
+  | { ok: true; data: DestinationInput }
+  | { ok: false; code: "VALIDATION"; error: string } {
   const parsed = destinationInput.safeParse(input);
-  if (parsed.success) return "";
+  if (parsed.success) return { ok: true, data: parsed.data };
   const issue = parsed.error.issues[0];
   const field = issue.path.join(".");
-  return field ? `${field}: ${issue.message}` : issue.message;
+  return {
+    ok: false,
+    code: "VALIDATION",
+    error: field ? `${field}: ${issue.message}` : issue.message,
+  };
 }
 
 /** Create or update a destination. Body re-parsed here as the trust boundary. */
 export const saveDestination = adminAction<DestinationInput, ActionResult<{ id: string }>>(
   async (input) => {
-    const message = firstIssueMessage(input);
-    if (message) return { ok: false, code: "VALIDATION", error: message };
-    const saved = await upsertDestination(input);
+    const parsed = parseDestination(input);
+    if (!parsed.ok) return parsed;
+    const saved = await upsertDestination(parsed.data);
     revalidatePublic();
     return { ok: true, data: { id: saved.id } };
   },

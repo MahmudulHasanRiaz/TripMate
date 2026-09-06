@@ -41,13 +41,27 @@ function revalidatePosts(): void {
   updateTag(CACHE_TAGS.posts);
 }
 
-/** First failing schema issue, rendered as "path: message" for the form. */
-function firstIssueMessage(input: unknown): string {
+/**
+ * Parse the post body once and hand the COERCED result to the service. `input`
+ * as it arrives over the wire is the RAW form payload — markdown bodies
+ * untrimmed, blank optionals still "" — while only `parsed.data` has the
+ * schema's preprocess transforms applied (blank → null, trim). The first
+ * failing issue is rendered as "path: message" for the form.
+ */
+function parsePost(
+  input: unknown,
+):
+  | { ok: true; data: PostInput }
+  | { ok: false; code: "VALIDATION"; error: string } {
   const parsed = postInput.safeParse(input);
-  if (parsed.success) return "";
+  if (parsed.success) return { ok: true, data: parsed.data };
   const issue = parsed.error.issues[0];
   const field = issue.path.join(".");
-  return field ? `${field}: ${issue.message}` : issue.message;
+  return {
+    ok: false,
+    code: "VALIDATION",
+    error: field ? `${field}: ${issue.message}` : issue.message,
+  };
 }
 
 /**
@@ -63,15 +77,16 @@ function withoutAuthorId(input: PostInput): PostInput {
 }
 
 export const savePost = contentAction<PostInput, SaveResult>(async (input, session) => {
-  const message = firstIssueMessage(input);
-  if (message) return { ok: false, code: "VALIDATION", error: message };
+  const parsed = parsePost(input);
+  if (!parsed.ok) return parsed;
   // AUTHOR IS SERVER-SET AND IMMUTABLE. A new post is stamped with the current
   // session user (never a client field); an edit keeps the byline the post was
-  // created with. The edit payload is stripped of any supplied authorId so a
+  // created with. The parsed payload is stripped of any supplied authorId so a
   // crafted server-action call cannot reassign or null the author.
-  const payload = input.id
-    ? withoutAuthorId(input)
-    : { ...input, authorId: session?.user.id ?? null };
+  const data = parsed.data;
+  const payload = data.id
+    ? withoutAuthorId(data)
+    : { ...data, authorId: session?.user.id ?? null };
   const saved = await upsertPost(payload);
   revalidatePosts();
   return { ok: true, data: { id: saved.id, slug: saved.slug } };

@@ -35,6 +35,11 @@ export function PackageEnquiryCard({
   data: PackageDetailData;
 } & EnquiryTargets) {
   const hasPrice = typeof data.price === "number";
+  // tel/wa hrefs are null when the site has no usable phone (unset or
+  // whitespace) — render those links only when the href actually exists, so the
+  // card never emits a broken `tel:+` / `wa.me/`.
+  const telHref = telLink(phone);
+  const waHref = whatsappLink(phone);
   return (
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -83,22 +88,26 @@ export function PackageEnquiryCard({
       </dl>
 
       <div className="mt-6 space-y-2.5">
-        <a
-          href={telLink(phone)}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <Phone className="size-4" aria-hidden="true" />
-          <span dir="ltr">{phone}</span>
-        </a>
-        <a
-          href={whatsappLink(phone)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-        >
-          <MessageCircle className="size-4 text-primary" aria-hidden="true" />
-          Chat on WhatsApp
-        </a>
+        {telHref ? (
+          <a
+            href={telHref}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Phone className="size-4" aria-hidden="true" />
+            <span dir="ltr">{phone}</span>
+          </a>
+        ) : null}
+        {waHref ? (
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+          >
+            <MessageCircle className="size-4 text-primary" aria-hidden="true" />
+            Chat on WhatsApp
+          </a>
+        ) : null}
         <a
           href={mailtoEnquiry(email, data.title)}
           className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
@@ -125,6 +134,8 @@ export function PackageMobileBar({
   data: PackageDetailData;
 } & EnquiryTargets) {
   const price = priceLine(data);
+  const telHref = telLink(phone);
+  const waHref = whatsappLink(phone);
   return (
     <div
       role="region"
@@ -149,22 +160,26 @@ export function PackageMobileBar({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <a
-            href={telLink(phone)}
-            aria-label={`Call ${phone}`}
-            className="inline-flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            <Phone className="size-5" aria-hidden="true" />
-          </a>
-          <a
-            href={whatsappLink(phone)}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Chat on WhatsApp"
-            className="inline-flex size-11 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-secondary"
-          >
-            <MessageCircle className="size-5 text-primary" aria-hidden="true" />
-          </a>
+          {telHref ? (
+            <a
+              href={telHref}
+              aria-label={`Call ${phone}`}
+              className="inline-flex size-11 items-center justify-center rounded-md bg-primary text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <Phone className="size-5" aria-hidden="true" />
+            </a>
+          ) : null}
+          {waHref ? (
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Chat on WhatsApp"
+              className="inline-flex size-11 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-secondary"
+            >
+              <MessageCircle className="size-5 text-primary" aria-hidden="true" />
+            </a>
+          ) : null}
           <a
             href={mailtoEnquiry(email, data.title)}
             aria-label="Enquire by email"

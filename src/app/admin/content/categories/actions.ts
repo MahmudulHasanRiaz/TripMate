@@ -28,13 +28,27 @@ function revalidatePosts(): void {
   updateTag(CACHE_TAGS.posts);
 }
 
-/** First failing schema issue, rendered as "path: message" for the form. */
-function firstIssueMessage(input: unknown): string {
+/**
+ * Parse the post-category body once and hand the COERCED result to the
+ * service. `input` as it arrives over the wire is the RAW form payload
+ * (untrimmed strings); only `parsed.data` has the schema's trim transforms
+ * applied. The first failing issue is rendered as "path: message" for the
+ * form.
+ */
+function parsePostCategory(
+  input: unknown,
+):
+  | { ok: true; data: PostCategoryInput }
+  | { ok: false; code: "VALIDATION"; error: string } {
   const parsed = postCategoryInput.safeParse(input);
-  if (parsed.success) return "";
+  if (parsed.success) return { ok: true, data: parsed.data };
   const issue = parsed.error.issues[0];
   const field = issue.path.join(".");
-  return field ? `${field}: ${issue.message}` : issue.message;
+  return {
+    ok: false,
+    code: "VALIDATION",
+    error: field ? `${field}: ${issue.message}` : issue.message,
+  };
 }
 
 /** Create or update a post category. Body re-parsed here as the trust boundary. */
@@ -42,9 +56,9 @@ export const savePostCategory = contentAction<
   PostCategoryInput,
   ContentActionResult<{ id: string }>
 >(async (input) => {
-  const message = firstIssueMessage(input);
-  if (message) return { ok: false, code: "VALIDATION", error: message };
-  const saved = await upsertPostCategory(input);
+  const parsed = parsePostCategory(input);
+  if (!parsed.ok) return parsed;
+  const saved = await upsertPostCategory(parsed.data);
   revalidatePosts();
   return { ok: true, data: { id: saved.id } };
 });

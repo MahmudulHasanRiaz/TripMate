@@ -51,8 +51,10 @@ export async function generateMetadata(
   const { slug } = await props.params;
   const data = await getServicePageData(slug);
   if (!data) return { title: "Service not found" };
+  // No inline "| TripMate" suffix: the root layout's title.template
+  // ("%s | TripMate") appends it — an inline suffix would double it.
   return {
-    title: `${data.name} | TripMate`,
+    title: data.name,
     description: descriptionFor(data),
   };
 }
@@ -311,6 +313,11 @@ type ContactProps = {
  * PackageEnquiryCard).
  */
 function ContactOptions({ name, phone, email }: ContactProps) {
+  // tel/wa hrefs are null when the site has no usable phone (unset or
+  // whitespace) — render those links only when the href actually exists, so the
+  // card never emits a broken `tel:+` / `wa.me/`.
+  const telHref = telLink(phone);
+  const waHref = whatsappLink(phone);
   return (
     <aside className="rounded-xl border border-border bg-card p-6 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -325,22 +332,26 @@ function ContactOptions({ name, phone, email }: ContactProps) {
       </p>
 
       <div className="mt-6 space-y-2.5">
-        <a
-          href={telLink(phone)}
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          <Phone className="size-4" aria-hidden="true" />
-          <span dir="ltr">{phone}</span>
-        </a>
-        <a
-          href={whatsappLink(phone)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
-        >
-          <MessageCircle className="size-4 text-primary" aria-hidden="true" />
-          Chat on WhatsApp
-        </a>
+        {telHref ? (
+          <a
+            href={telHref}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <Phone className="size-4" aria-hidden="true" />
+            <span dir="ltr">{phone}</span>
+          </a>
+        ) : null}
+        {waHref ? (
+          <a
+            href={waHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
+          >
+            <MessageCircle className="size-4 text-primary" aria-hidden="true" />
+            Chat on WhatsApp
+          </a>
+        ) : null}
         <a
           href={`mailto:${email}?subject=${encodeURIComponent(`Enquiry: ${name}`)}`}
           className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
