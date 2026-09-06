@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { CACHE_TAGS } from "@/lib/cache-tags";
-import { getEnv } from "@/lib/env";
+import { origin } from "@/lib/seo";
 import {
   listActiveCategoryRefs,
   listPublishedListingRefs,
@@ -44,8 +44,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   cacheTag(CACHE_TAGS.pages);
   cacheLife("hours");
 
-  const origin = getEnv().APP_URL.replace(/\/+$/, "");
-  const url = (path: string): string => `${origin}${path}`;
+  // The origin helper collapses any trailing slash on APP_URL so a URL string
+  // is always origin + "/" + path (never origin + "//" + path).
+  const url = (path: string): string => `${origin()}${path}`;
 
   const [categories, listings, posts, pages] = await Promise.all([
     listActiveCategoryRefs(),

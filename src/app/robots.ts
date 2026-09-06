@@ -1,14 +1,16 @@
 import type { MetadataRoute } from "next";
 
-import { getEnv } from "@/lib/env";
+import { origin } from "@/lib/seo";
 
 /**
  * Generated robots.txt.
  *
  * Public crawlable surface is allowed; the auth/account/admin/media/setup and
  * API namespaces are admin-only and never meant for a search index. The sitemap
- * line uses the absolute origin from APP_URL (same source the sitemap.ts route
- * reads) so the two files can never disagree about the base URL.
+ * line uses the shared trailing-slash-normalised origin helper (the same one
+ * sitemap.ts builds its URLs from) so the two files can never disagree about the
+ * base URL — and an `APP_URL` with a trailing slash can never yield a doubled
+ * `//` separator.
  *
  * Note: `robots.ts` (like `sitemap.ts`) is a special Route Handler cached by
  * default, and this function touches no request-time API, so Next serves it as
@@ -24,6 +26,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/admin", "/account", "/api", "/setup"],
     },
-    sitemap: `${getEnv().APP_URL}/sitemap.xml`,
+    sitemap: `${origin()}/sitemap.xml`,
   };
 }
