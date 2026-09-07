@@ -343,6 +343,13 @@ describe.skipIf(!integration)("site settings round-trip (integration — Postgre
       heroButtonLabel: null,
       heroButtonLink: null,
       heroImageAlt: null,
+      featuredKicker: null,
+      featuredTitle: null,
+      featuredLead: null,
+      ctaHeadline: null,
+      ctaSub: null,
+      stats: null,
+      testimonials: null,
     });
   });
 });

@@ -21,10 +21,14 @@ describe.skipIf(!integration)("dashboard service (integration — Postgres)", ()
 
     expect(Object.keys(kpis).sort()).toEqual(
       [
+        "costOfSalesThisMonth",
         "expensesThisMonth",
+        "grossMarginPercent",
+        "grossProfitThisMonth",
         "leadConversionRate",
         "leadsToday",
         "leadsTotal",
+        "netMarginPercent",
         "netThisMonth",
         "ordersByStatus",
         "pendingExpensesCount",
@@ -44,8 +48,15 @@ describe.skipIf(!integration)("dashboard service (integration — Postgres)", ()
       expect(Number.isInteger(kpis[key])).toBe(true);
       expect(kpis[key]).toBeGreaterThanOrEqual(0);
     }
-    for (const key of ["revenueThisMonth", "expensesThisMonth", "netThisMonth"] as const) {
+    for (const key of [
+      "revenueThisMonth",
+      "costOfSalesThisMonth",
+      "grossProfitThisMonth",
+      "expensesThisMonth",
+      "netThisMonth",
+    ] as const) {
       expect(Number.isFinite(kpis[key])).toBe(true);
+      expect(kpis[key]).toBeGreaterThanOrEqual(0);
     }
     expect(kpis.leadConversionRate).toBeGreaterThanOrEqual(0);
     expect(kpis.leadConversionRate).toBeLessThanOrEqual(100);
