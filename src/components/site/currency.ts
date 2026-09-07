@@ -20,8 +20,18 @@ export function formatTaka(amount: number): string {
  */
 const currencyFormatterCache = new Map<string, Intl.NumberFormat>();
 
-function formatterFor(currency: string): Intl.NumberFormat | null {
-  const cached = currencyFormatterCache.get(currency);
+/**
+ * Cached per-currency formatters. TWO shapes: a whole-amount one (no
+ * decimals — "$850,000", not "$850,000.00") and an exact one (always two
+ * decimals — "$850.50", never "$850.5": a dropped trailing zero silently
+ * changes a price). formatMoney picks per amount.
+ */
+function formatterFor(
+  currency: string,
+  exact: boolean,
+): Intl.NumberFormat | null {
+  const key = `${currency}:${exact ? "x" : "w"}`;
+  const cached = currencyFormatterCache.get(key);
   if (cached) return cached;
   let formatter: Intl.NumberFormat | null = null;
   try {
@@ -29,14 +39,16 @@ function formatterFor(currency: string): Intl.NumberFormat | null {
       style: "currency",
       currency,
       currencyDisplay: "narrowSymbol",
-      maximumFractionDigits: 2,
+      ...(exact
+        ? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+        : { minimumFractionDigits: 0, maximumFractionDigits: 0 }),
     });
     // Verify the code is real (the constructor accepts some junk silently).
     void formatter.format(0);
   } catch {
     formatter = null;
   }
-  if (formatter) currencyFormatterCache.set(currency, formatter);
+  if (formatter) currencyFormatterCache.set(key, formatter);
   return formatter;
 }
 
@@ -50,7 +62,8 @@ const groupedFormatter = new Intl.NumberFormat("en-US", { maximumFractionDigits:
  */
 export function formatMoney(amount: number, currency = "BDT"): string {
   if (currency === "BDT") return formatTaka(amount);
-  const formatter = formatterFor(currency);
+  const exact = !Number.isInteger(amount);
+  const formatter = formatterFor(currency, exact);
   if (formatter) return formatter.format(amount);
   return `${currency} ${groupedFormatter.format(amount)}`;
 }
