@@ -146,3 +146,44 @@ variables (advanced mode) — the same `${...}` substitutions run there; set
 `DATABASE_URL` with host `postgres` as above. Postgres data lives in the
 `tripmate_pgdata` volume and uploads in the `./storage` bind mount, so
 re-deploys keep both.
+
+## Deploy — Vercel (serverless + Supabase)
+
+Schema-on-deploy is wired into the repo: `package.json` defines
+`vercel-build`, so every Vercel build runs `scripts/vercel-migrate.mjs` first
+(applies the committed `drizzle/` migrations with the runtime migrator — no
+drizzle-kit needed) and only then `next build`. That order is required: with
+Cache Components, `next build` executes the public `'use cache'` data scopes,
+so the schema must already exist in `DATABASE_URL` or the build fails at
+export/prerender.
+
+1. **Create the Vercel project** (framework: Next.js). `vercel-build` is
+   picked up automatically; no `vercel.json` or Build Command override needed.
+2. **Project environment variables**:
+   - `DATABASE_URL` — Supabase **Session-pooler** connection string
+     (port 5432, `*.pooler.supabase.com`) or the direct connection. NOT the
+     transaction pooler (port 6543): deploy-time DDL over it can fail. The
+     role must own the schema.
+   - `APP_URL` — production URL, e.g. `https://tripmate.vercel.app`.
+   - `AUTH_SECRET` — 32+ chars (`openssl rand -base64 32`).
+   - Optional: `SMTP_*`, `STORAGE_DRIVER=r2` + `R2_*`, `UPSTASH_REDIS_*`.
+     With R2, also set `R2_PUBLIC_URL` (read at build time).
+   - `SKIP_DB_MIGRATE=1` — escape hatch to skip auto-migration for a deploy.
+3. **Deploy / re-deploy.** Pending migrations apply automatically first;
+   re-deploys are no-ops unless a new migration file was committed.
+4. **First deploy only:** open `<APP_URL>/setup` once to create the superadmin
+   and base site settings. Demo catalog rows are NOT seeded on Vercel — add
+   real packages under `/admin`.
+
+Notes:
+
+- Migrations are recorded in `__drizzle_migrations`, so re-runs are safe. If a
+  preview and a production deploy race, both apply the same files — acceptable
+  for a single-operator project; for a team, move the migrate step to CI on
+  `main` instead.
+- If the Supabase schema was created earlier with `drizzle-kit push` (no
+  migration journal), the first auto-migrate errors on existing tables — point
+  `DATABASE_URL` at a fresh database or baseline the journal first.
+- Previews share the production `DATABASE_URL`; only create schema changes in
+  branches after the matching migration file is committed, otherwise the
+  preview build cannot prerender pages that query the new tables.
