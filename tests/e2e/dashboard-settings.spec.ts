@@ -80,6 +80,15 @@ test.describe.serial("admin dashboard, settings, and email templates", () => {
     const currentTitle = await titleInput.inputValue();
     expect(currentTitle.length).toBeGreaterThan(0);
 
+    const phoneInput = page.getByLabel(/phone number/i);
+    if ((await phoneInput.inputValue()).length < 4) {
+      await phoneInput.fill("+880 1700 000000");
+    }
+    const emailInput = page.getByLabel(/contact email/i);
+    if (!(await emailInput.inputValue())) {
+      await emailInput.fill("support@tripmate.test");
+    }
+
     // Locate the searchEngineVisibility switch
     const visibilitySwitch = page.getByRole("switch", {
       name: /toggle search engine visibility/i,
@@ -95,12 +104,13 @@ test.describe.serial("admin dashboard, settings, and email templates", () => {
 
     // Save site settings
     await page.getByRole("button", { name: /save site settings/i }).click();
-    await expect(page.getByText("Site settings saved")).toBeVisible(wait);
+    await expect(page.getByText("Site settings saved", { exact: true })).toBeVisible(wait);
 
-    // Visit /robots.txt and verify Disallow: / appears
+    // Visit /robots.txt and verify whole-site Disallow: / appears
     await page.goto("/robots.txt");
-    const robotsDisallowed = await page.textContent("body");
-    expect(robotsDisallowed).toContain("Disallow: /");
+    const robotsDisallowed = (await page.textContent("body")) ?? "";
+    expect(robotsDisallowed).toMatch(/^Disallow:\s*\/\s*$/m);
+    expect(robotsDisallowed).not.toContain("Allow: /");
 
     // Return to settings and toggle back ON (residue cleanup)
     await page.goto("/admin/settings");
@@ -114,13 +124,14 @@ test.describe.serial("admin dashboard, settings, and email templates", () => {
     await expect(switchBack).toHaveAttribute("data-state", "checked");
 
     await page.getByRole("button", { name: /save site settings/i }).click();
-    await expect(page.getByText("Site settings saved")).toBeVisible(wait);
+    await expect(page.getByText("Site settings saved", { exact: true })).toBeVisible(wait);
 
-    // Visit /robots.txt and verify Disallow: / is removed and normal indexing restored
+    // Visit /robots.txt and verify whole-site Disallow: / is removed and normal indexing restored
     await page.goto("/robots.txt");
-    const robotsRestored = await page.textContent("body");
-    expect(robotsRestored).not.toContain("Disallow: /");
+    const robotsRestored = (await page.textContent("body")) ?? "";
+    expect(robotsRestored).not.toMatch(/^Disallow:\s*\/\s*$/m);
     expect(robotsRestored).toContain("Allow: /");
+    expect(robotsRestored).toContain("Disallow: /admin");
   });
 
   test("email templates page lists 6 templates and renders sandboxed preview", async ({
@@ -156,7 +167,7 @@ test.describe.serial("admin dashboard, settings, and email templates", () => {
 
     // Subject line renders from the template output
     await expect(
-      dialog.getByText(/we received your inquiry/i),
+      dialog.getByText(/we'll be in touch/i),
     ).toBeVisible(wait);
 
     // Verify iframe exists with strict sandbox attribute

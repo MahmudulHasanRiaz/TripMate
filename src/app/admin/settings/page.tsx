@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Settings",
 };
 
+export const instant = false;
+
 export default async function AdminSettingsPage() {
   await requirePermission("settings.manage");
 

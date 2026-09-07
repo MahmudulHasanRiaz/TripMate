@@ -26,6 +26,8 @@ export const metadata: Metadata = {
   title: "Dashboard",
 };
 
+export const instant = false;
+
 const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Pending",
   in_review: "In Review",

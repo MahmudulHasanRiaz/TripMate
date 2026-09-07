@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Email Templates",
 };
 
+export const instant = false;
+
 export default async function AdminEmailTemplatesPage() {
   await requirePermission("settings.manage");
 

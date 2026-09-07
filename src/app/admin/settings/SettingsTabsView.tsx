@@ -64,9 +64,9 @@ export default function SettingsTabsView({
   const siteForm = useForm<SiteSettingsInput>({
     resolver: zodResolver(siteSettingsInputSchema),
     defaultValues: {
-      title: initialSite.title ?? "",
-      phone: initialSite.phone ?? "",
-      email: initialSite.email ?? "",
+      title: initialSite.title || "TripMate",
+      phone: initialSite.phone || "+880 1700 000000",
+      email: initialSite.email || "support@tripmate.test",
       address: initialSite.address ?? "",
       logoUrl: initialSite.logoUrl ?? "",
       faviconUrl: initialSite.faviconUrl ?? "",

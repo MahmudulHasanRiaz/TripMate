@@ -162,7 +162,9 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
                   </span>
                 </div>
                 <CardTitle className="text-sm font-semibold tracking-tight text-foreground line-clamp-1">
-                  {template.name}
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground line-clamp-1">
+                    {template.name}
+                  </h2>
                 </CardTitle>
                 <CardDescription className="text-xs line-clamp-2 min-h-[32px]">
                   {template.description}
