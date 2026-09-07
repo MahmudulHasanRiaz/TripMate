@@ -65,8 +65,8 @@ export default function SettingsTabsView({
     resolver: zodResolver(siteSettingsInputSchema),
     defaultValues: {
       title: initialSite.title || "TripMate",
-      phone: initialSite.phone || "+880 1700 000000",
-      email: initialSite.email || "support@tripmate.test",
+      phone: initialSite.phone || "+8801000000000",
+      email: initialSite.email || "info@tripmate.example",
       address: initialSite.address ?? "",
       logoUrl: initialSite.logoUrl ?? "",
       faviconUrl: initialSite.faviconUrl ?? "",

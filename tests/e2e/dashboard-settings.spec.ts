@@ -81,12 +81,10 @@ test.describe.serial("admin dashboard, settings, and email templates", () => {
     expect(currentTitle.length).toBeGreaterThan(0);
 
     const phoneInput = page.getByLabel(/phone number/i);
-    if ((await phoneInput.inputValue()).length < 4) {
-      await phoneInput.fill("+880 1700 000000");
-    }
+    await phoneInput.fill("+8801000000000");
     const emailInput = page.getByLabel(/contact email/i);
     if (!(await emailInput.inputValue())) {
-      await emailInput.fill("support@tripmate.test");
+      await emailInput.fill("info@tripmate.example");
     }
 
     // Locate the searchEngineVisibility switch
