@@ -17,9 +17,9 @@
  *     back onto the matching form fields, and the server action re-parses the
  *     payload as the final trust boundary.
  *
- * Media note: image fields are URL text inputs in this task. Task 6 adds the
- * media library; Task 8 swaps these for the MediaPicker — until then alt text
- * is typed by hand here.
+ * Media note: image fields are MediaPickerFields (URL input + media-library
+ * browse dialog, Plan 7 T2) — manual URL typing still works; alt text for
+ * gallery images is typed by hand here.
  */
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,9 @@ import {
 } from "@/modules/catalog/validation";
 import type { ListingStatus } from "@/modules/catalog/validation";
 import { saveListing } from "./actions";
+import MediaPickerField, {
+  MediaPickerButton,
+} from "@/components/admin/MediaPickerField";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -635,20 +638,22 @@ export default function ListingForm({
               </FormItem>
             )}
           />
-          {/* Media note: URL text fields until Task 6's media library lands —
-              Task 8 swaps coverImage/gallery for the MediaPicker. */}
+          {/* Media: cover + gallery pick from the library (or paste a URL). */}
           <FormField
             control={form.control}
             name="coverImage"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Cover image URL</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://…" {...field} />
+                  <MediaPickerField
+                    label="Cover image"
+                    value={field.value}
+                    onChange={field.onChange}
+                    accept="image"
+                  />
                 </FormControl>
                 <FormDescription>
-                  URL text input for now — the media picker replaces this in an
-                  upcoming task.
+                  Pick from the media library or paste any image URL.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -664,12 +669,22 @@ export default function ListingForm({
                 <li key={field.id} className="rounded-md border border-border p-3">
                   <div className="flex items-start gap-2">
                     <div className="grid flex-1 gap-3 sm:grid-cols-3">
-                      <Input
-                        className="sm:col-span-2"
-                        placeholder="https://…/image.jpg"
-                        aria-label={`Gallery image ${index + 1} URL`}
-                        {...form.register(`gallery.${index}.url`)}
-                      />
+                      <div className="flex items-start gap-1 sm:col-span-2">
+                        <Input
+                          className="flex-1"
+                          placeholder="https://…/image.jpg"
+                          aria-label={`Gallery image ${index + 1} URL`}
+                          {...form.register(`gallery.${index}.url`)}
+                        />
+                        <MediaPickerButton
+                          label={`Browse media for gallery image ${index + 1}`}
+                          onPick={(url) =>
+                            form.setValue(`gallery.${index}.url`, url, {
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      </div>
                       <Input
                         placeholder="Alt text"
                         aria-label={`Gallery image ${index + 1} alt text`}

@@ -5,7 +5,10 @@ import postgres from "postgres";
 /** One-command onboarding: env check → DB reachability → migrate → seed. */
 function run(label: string, cmd: string): boolean {
   try {
-    execSync(cmd, { stdio: "inherit", shell: true, env: process.env });
+    // execSync already runs the command through the platform shell by
+    // default — no `shell` option needed (and @types/node types exec's
+    // `shell` as a string path, so `shell: true` fails typecheck).
+    execSync(cmd, { stdio: "inherit", env: process.env });
     return true;
   } catch {
     console.error(`\n[setup] FAILED at: ${label}`);

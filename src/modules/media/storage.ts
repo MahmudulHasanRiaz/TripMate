@@ -5,18 +5,26 @@ import { getStorageDriver } from "@/modules/media/driver";
 import { getSetting } from "@/modules/settings/service";
 
 /**
- * Shared storage-object writer for every media upload path (the admin library
- * action and the user-document service). Extracted from the admin uploadFile
- * action in Plan 5 T3 so both paths read the storage setting, dispatch the
- * driver and generate the storage key in exactly one place.
+ * Shared storage-object writer/ deleter for every media path (the admin
+ * library action, the user-document service, and the empty-trash pass).
+ * Extracted from the admin uploadFile action in Plan 5 T3 so every path reads
+ * the storage setting, dispatches the driver and generates the storage key in
+ * exactly one place.
  *
  * The storage KEY is server-generated from the validated mime
  * (`<uuid>.<ext>`) — never derived from a client filename — and re-checked
  * against the key shape before it reaches the driver. Driver failures
  * propagate raw; each caller decides how to relay them (the admin action
  * converts them to { code: "STORAGE" }, the user-doc service wraps them in a
- * typed UserDocError).
+ * typed UserDocError, the trash pass keeps the row and counts it failed).
+ *
+ * The path helpers (localUploadsRoot / resolveUnderRoot) are re-exported for
+ * the /uploads serving route, which must resolve request paths with the SAME
+ * traversal-safe logic the local driver uses. They live in paths.ts (not
+ * here) to avoid a storage → driver → local → storage import cycle.
  */
+
+export { localUploadsRoot, legacyUploadsRoot, resolveUnderRoot } from "./paths";
 
 export type StoredObject = {
   disk: "local" | "r2";
@@ -41,4 +49,23 @@ export async function putFileObject(
   }
   const stored = await driver.put(key, buffer, mime);
   return { disk, path: key, url: stored.url };
+}
+
+/**
+ * Delete a stored object through the driver that OWNS it. Unlike
+ * putFileObject (which dispatches on the LIVE storage setting — a new object
+ * goes wherever storage is configured NOW), deletion dispatches on the disk
+ * the media row recorded at upload time: the setting may have switched
+ * since, and the object still sits where it was written. Dispatching on the
+ * setting here would hard-delete the row while leaving the real object
+ * orphaned on disk (or count a still-reachable object as a failed delete).
+ * Driver failures propagate; the caller decides (the trash pass keeps the
+ * row and reports the count).
+ */
+export async function deleteFileObject(
+  disk: "local" | "r2",
+  path: string,
+): Promise<void> {
+  const driver = getStorageDriver(disk);
+  await driver.delete(path);
 }

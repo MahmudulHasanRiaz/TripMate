@@ -1,28 +1,31 @@
 import "server-only";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
+import { legacyUploadsRoot, localUploadsRoot, resolveUnderRoot } from "../paths";
 import type { StorageDriver } from "../driver-types";
 
 /**
  * Filesystem-backed storage driver (the dev / self-hosted default).
  *
- * With the DEFAULT root (`public/uploads`) the stored files land under Next's
- * public dir and are served statically by `next dev` / `next start` at the
- * returned `/uploads/<key>` URL, so no extra serving route is needed.
+ * The DEFAULT root is `storage/uploads` — deliberately OUTSIDE `public/` so
+ * uploaded objects are served only through the hardened route handler at
+ * src/app/uploads/[...path]/route.ts (SVG CSP sandbox + nosniff + immutable
+ * cache), never as same-origin-executable static files.
  *
- * NOTE: overriding STORAGE_LOCAL_DIR to a directory OUTSIDE `public/` requires
- * a dedicated serving route (streaming files from disk under a URL prefix).
- * That is deliberately deferred to Plan 7 polish — the default keeps uploads
- * static-served today.
+ * COMPAT: files uploaded before this default change live under `public/uploads`
+ * and keep serving statically from there — Next maps `public/*` onto the same
+ * `/uploads/<key>` URL, so old links keep working. Setting STORAGE_LOCAL_DIR
+ * back to `public/uploads` restores the old static-serve behavior (at the cost
+ * of the SVG hardening).
  */
 export class LocalDriver implements StorageDriver {
   private root() {
-    return resolve(process.cwd(), process.env.STORAGE_LOCAL_DIR ?? "public/uploads");
+    return localUploadsRoot();
   }
 
   private safe(key: string) {
-    const full = resolve(this.root(), key);
-    if (!full.startsWith(this.root() + "\\") && !full.startsWith(this.root() + "/")) {
+    const full = resolveUnderRoot(this.root(), key);
+    if (!full) {
       throw new Error("Invalid storage key");
     }
     return full;
@@ -37,7 +40,20 @@ export class LocalDriver implements StorageDriver {
   }
 
   async delete(key: string) {
-    await unlink(this.safe(key));
+    // The object normally lives under the configured root. Objects uploaded
+    // BEFORE the storage-root change live under the legacy public/uploads root
+    // (see the class docstring) — when the configured root doesn't hold the
+    // object, fall back to the legacy root (same fallback the /uploads serving
+    // route applies) so empty-trash reclaims pre-change rows instead of
+    // failing them on ENOENT forever.
+    try {
+      await unlink(this.safe(key));
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+      const legacy = resolveUnderRoot(legacyUploadsRoot(), key);
+      if (!legacy) throw e;
+      await unlink(legacy); // missing there too → throws → caller keeps the row
+    }
   }
 
   async testConnection() {

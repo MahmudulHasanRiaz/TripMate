@@ -18,9 +18,9 @@
  * AUTHOR IS NOT A FIELD: it is stamped server-side from the session on create
  * (see ./actions.ts) so an editor can never attribute a post to someone else.
  *
- * Media note: featuredImageUrl is a plain URL text input in this task. The
- * media library (Task 6) ships a picker that swaps this for an internal pick —
- * until then the URL is typed by hand and alt text is not captured here.
+ * Media note: the featured image + gallery rows are MediaPickerFields (URL
+ * input + media-library browse dialog, Plan 7 T2); manual URL typing still
+ * works. Gallery alt text is typed by hand here.
  */
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -39,6 +39,9 @@ import {
 } from "@/modules/content/validation";
 import type { ContentStatus } from "@/modules/content/validation";
 import { savePost } from "./actions";
+import MediaPickerField, {
+  MediaPickerButton,
+} from "@/components/admin/MediaPickerField";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -405,20 +408,22 @@ export default function PostForm({
               </FormItem>
             )}
           />
-          {/* Media note: URL text input until a media picker lands in a later
-              task; the alt text is not captured here. */}
+          {/* Media: featured image + gallery pick from the library (or paste a URL). */}
           <FormField
             control={form.control}
             name="featuredImageUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Featured image URL</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://…" {...field} />
+                  <MediaPickerField
+                    label="Featured image"
+                    value={field.value}
+                    onChange={field.onChange}
+                    accept="image"
+                  />
                 </FormControl>
                 <FormDescription>
-                  URL text input for now — the media picker replaces this in an
-                  upcoming task.
+                  Pick from the media library or paste any image URL.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -442,12 +447,22 @@ export default function PostForm({
                 <li key={field.id} className="rounded-md border border-border p-3">
                   <div className="flex items-start gap-2">
                     <div className="grid flex-1 gap-3 sm:grid-cols-3">
-                      <Input
-                        className="sm:col-span-2"
-                        placeholder="https://…/image.jpg"
-                        aria-label={`Gallery image ${index + 1} URL`}
-                        {...form.register(`gallery.${index}.url`)}
-                      />
+                      <div className="flex items-start gap-1 sm:col-span-2">
+                        <Input
+                          className="flex-1"
+                          placeholder="https://…/image.jpg"
+                          aria-label={`Gallery image ${index + 1} URL`}
+                          {...form.register(`gallery.${index}.url`)}
+                        />
+                        <MediaPickerButton
+                          label={`Browse media for gallery image ${index + 1}`}
+                          onPick={(url) =>
+                            form.setValue(`gallery.${index}.url`, url, {
+                              shouldDirty: true,
+                            })
+                          }
+                        />
+                      </div>
                       <Input
                         placeholder="Alt text"
                         aria-label={`Gallery image ${index + 1} alt text`}

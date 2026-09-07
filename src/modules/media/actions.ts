@@ -25,6 +25,15 @@
  * portal server components import it from user-docs.ts (server-only) and carry
  * their own route-level ownership — re-exporting an async service fn from this
  * 'use server' file would expose it as an unguarded client-callable endpoint.
+ *
+ * Plan 7 adds the READ + trash-reclamation actions for the media picker and
+ * the admin trash view: `listMediaAction` (the picker dialog's searchable page
+ * of the library), `listTrashedMediaAction` and `emptyTrashAction` (the trash
+ * tab — emptying hard-deletes each trashed object through its own driver then
+ * the row, keeping failed rows for a retry). All three run the same
+ * media.manage guard as every mutation; reads are actions (not service
+ * re-exports) precisely because a 'use server' export is a public endpoint —
+ * a guarded action is the only safe shape for them.
  */
 
 import {
@@ -34,10 +43,15 @@ import {
 import { putFileObject } from "@/modules/media/storage";
 import { uploadUserDocument, UserDocError } from "@/modules/media/user-docs";
 import {
+  emptyTrash,
   getFileById,
   insertMediaFile,
+  listFiles,
+  listTrashedFiles,
   softDeleteMediaFile,
   updateMediaFileAlt,
+  type EmptyTrashResult,
+  type MediaFile,
 } from "@/modules/media/service";
 import {
   mediaAction,
@@ -45,6 +59,7 @@ import {
   type MediaActionResult,
 } from "@/modules/media/action-utils";
 import { withGuard, GuardError } from "@/lib/guard";
+import { z } from "zod";
 
 const UPLOAD_RATE_LIMIT = { limit: 20, windowMs: 60_000 }; // 20 uploads/min
 
@@ -232,5 +247,79 @@ export const trashFile = mediaAction<{ id: string }, MediaActionResult>(
       return { ok: false, code: "NOT_FOUND", error: "File not found or already deleted." };
     }
     return { ok: true };
+  },
+);
+
+// ---- reads + trash reclamation (Plan 7) --------------------------------------
+
+export type MediaPage = { items: MediaFile[]; total: number };
+
+const listMediaInput = z
+  .object({
+    search: z.string().trim().max(200).optional(),
+    page: z.number().int().min(1).max(10_000).optional(),
+  })
+  .strict();
+
+/**
+ * One page of the media library for the admin MediaPicker dialog. Guarded like
+ * every other media action (reads included — a 'use server' export is a public
+ * endpoint), zod-boundaried, and shaped exactly like the service listFiles
+ * result (relayed). perPage is fixed at the library grid's 24 — the picker
+ * only ever asks for page 1 of a search.
+ */
+export const listMediaAction = mediaAction<
+  { search?: string; page?: number },
+  MediaActionResult<MediaPage>
+>({}, async (input) => {
+  const parsed = listMediaInput.safeParse(input ?? {});
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return { ok: false, code: "VALIDATION", error: issue?.message ?? "Invalid input" };
+  }
+  const { items, total } = await listFiles({
+    search: parsed.data.search || undefined,
+    page: parsed.data.page,
+    perPage: 24,
+  });
+  return { ok: true, data: { items, total } };
+});
+
+const listTrashedInput = z
+  .object({ page: z.number().int().min(1).max(10_000).optional() })
+  .strict();
+
+/** One page of the trash (soft-deleted rows, newest-trashed first) for the
+ *  admin media page's trash view. Same guard/relay contract as listMediaAction. */
+export const listTrashedMediaAction = mediaAction<
+  { page?: number },
+  MediaActionResult<MediaPage>
+>({}, async (input) => {
+  const parsed = listTrashedInput.safeParse(input ?? {});
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    return { ok: false, code: "VALIDATION", error: issue?.message ?? "Invalid input" };
+  }
+  const { items, total } = await listTrashedFiles({ page: parsed.data.page, perPage: 24 });
+  return { ok: true, data: { items, total } };
+});
+
+const emptyInput = z.object({}).strict();
+
+/**
+ * Empty the trash: hard-delete every trashed row's stored object (through the
+ * driver recorded on the row) and then the row. Files whose object deletion
+ * fails are KEPT (still restorable/retryable) and reported in `failed`.
+ * Returns the freed count so the UI can toast it.
+ */
+export const emptyTrashAction = mediaAction<object, MediaActionResult<EmptyTrashResult>>(
+  {},
+  async (input) => {
+    const parsed = emptyInput.safeParse(input ?? {});
+    if (!parsed.success) {
+      return { ok: false, code: "VALIDATION", error: "Invalid input" };
+    }
+    const result = await emptyTrash();
+    return { ok: true, data: result };
   },
 );

@@ -27,6 +27,7 @@ import {
   saveSiteSettingsAction,
 } from "@/modules/settings/site-settings-actions";
 import { useToast } from "@/hooks/use-toast";
+import MediaPickerField from "@/components/admin/MediaPickerField";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -228,14 +229,17 @@ export default function SettingsTabsView({
                           <FormItem>
                             <FormLabel className="text-xs font-medium">Logo URL / Path</FormLabel>
                             <FormControl>
-                              <Input
+                              <MediaPickerField
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                                accept="image"
                                 placeholder="/logo.svg or https://..."
                                 className="h-10 text-xs font-mono"
-                                {...field}
                               />
                             </FormControl>
                             <FormDescription className="text-[11px]">
-                              Internal path starting with / (e.g. /logo.svg) or full https:// URL.
+                              Internal path starting with / (e.g. /logo.svg) or full https:// URL —
+                              or pick from the media library.
                             </FormDescription>
                             <FormMessage className="text-xs" />
                           </FormItem>
@@ -249,14 +253,17 @@ export default function SettingsTabsView({
                           <FormItem>
                             <FormLabel className="text-xs font-medium">Favicon URL / Path</FormLabel>
                             <FormControl>
-                              <Input
+                              <MediaPickerField
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                                accept="image"
                                 placeholder="/favicon.svg or https://..."
                                 className="h-10 text-xs font-mono"
-                                {...field}
                               />
                             </FormControl>
                             <FormDescription className="text-[11px]">
-                              Browser tab icon. Internal path starting with / or full https:// URL.
+                              Browser tab icon. Internal path starting with / or full https:// URL —
+                              or pick from the media library.
                             </FormDescription>
                             <FormMessage className="text-xs" />
                           </FormItem>
@@ -556,7 +563,8 @@ export default function SettingsTabsView({
                       Hero Imagery
                     </h3>
 
-                    {/* MediaPicker note: URL text inputs v1 (MediaPicker swap is a later plan) */}
+                    {/* Media note: hero imagery stays a URL text input (the
+                        site-identity logo/favicon above use the MediaPicker). */}
                     <div className="grid gap-4 sm:grid-cols-2">
                       <FormField
                         control={homeForm.control}
