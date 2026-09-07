@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   AlertCircle,
-  CheckCircle2,
   Code2,
   Eye,
   Info,
   Loader2,
-  Mail,
   RefreshCw,
   RotateCcw,
   Sparkles,
@@ -29,7 +27,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 
 type EmailTemplatesViewProps = {
   templates: EmailTemplateSummary[];
