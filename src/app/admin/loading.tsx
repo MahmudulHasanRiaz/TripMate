@@ -3,7 +3,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function AdminLoading() {
   return (
-    <div className="space-y-6" aria-label="Loading dashboard...">
+    // role="status" announces the loading state; the shape is dashboard-styled
+    // (the heaviest admin page) but reads fine as a generic admin skeleton.
+    <div className="space-y-6" role="status" aria-label="Loading admin section...">
       {/* Header skeleton */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">

@@ -64,9 +64,12 @@ export default function SettingsTabsView({
   const siteForm = useForm<SiteSettingsInput>({
     resolver: zodResolver(siteSettingsInputSchema),
     defaultValues: {
-      title: initialSite.title || "TripMate",
-      phone: initialSite.phone || "+8801000000000",
-      email: initialSite.email || "info@tripmate.example",
+      // getSiteSettings() merges DB rows over DEFAULT_SITE_SETTINGS server-side,
+      // so these props are never blank in practice — empty string is the honest
+      // prefill, never a fabricated second source of contact data.
+      title: initialSite.title || "",
+      phone: initialSite.phone || "",
+      email: initialSite.email || "",
       address: initialSite.address ?? "",
       logoUrl: initialSite.logoUrl ?? "",
       faviconUrl: initialSite.faviconUrl ?? "",
@@ -389,12 +392,16 @@ export default function SettingsTabsView({
                             </FormDescription>
                           </div>
                           <FormControl>
-                            <Switch
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                              aria-label="Toggle search engine visibility"
-                              className="min-h-[24px]"
-                            />
+                            {/* Hit-slop wrapper keeps the switch visual at 24px
+                                while the touch target meets the 44px spec floor. */}
+                            <span className="inline-flex -m-2.5 p-2.5">
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                aria-label="Toggle search engine visibility"
+                                className="min-h-[24px]"
+                              />
+                            </span>
                           </FormControl>
                         </FormItem>
                       )}

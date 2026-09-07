@@ -196,7 +196,7 @@ export default function DashboardTrendView({ trend }: DashboardTrendViewProps) {
             {/* Visual Token-styled Daily Bar Chart */}
             <div
               className="relative h-56 w-full pt-4 pb-8 flex items-end gap-1 sm:gap-1.5 select-none overflow-x-auto"
-              role="img"
+              role="group"
               aria-label="30-day activity trend chart. Toggle Data Table for tabular view."
             >
               {trend.map((point, index) => {
