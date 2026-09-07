@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { getSiteSettings } from "@/lib/site-settings";
 import { getPublicSiteSettings } from "@/modules/settings/site-settings";
+import { buildThemeCssVariables } from "@/modules/settings/theme";
+import { getPublicThemeSettings } from "@/modules/settings/theme-service";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -42,10 +44,16 @@ export default async function PublicLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const site = await getSiteSettings();
+  const [site, theme] = await Promise.all([
+    getSiteSettings(),
+    getPublicThemeSettings(),
+  ]);
+
+  const themeCss = buildThemeCssVariables(theme);
 
   return (
     <>
+      <style id="tripmate-dynamic-theme">{themeCss}</style>
       <SkipLink />
       <SiteHeader title={site.title} logoUrl={site.logoUrl} />
       {/* tabIndex=-1 makes main a valid skip-link target; outline-none keeps

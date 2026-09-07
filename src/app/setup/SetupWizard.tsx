@@ -30,6 +30,7 @@ import {
   wizardComplete,
   wizardCreateSuperadmin,
   wizardRecheck,
+  wizardSeedData,
   wizardSetSetting,
   wizardTestR2,
   wizardTestSmtp,
@@ -167,6 +168,7 @@ function ExternalEnvBanner() {
 /* ------------------------------------------------------------------ */
 
 const STEP_LABELS = [
+  "Installation Mode",
   "Admin account",
   "Site identity",
   "Storage",
@@ -177,30 +179,45 @@ const STEP_LABELS = [
 
 type StepState = "done" | "active" | "needs" | "todo";
 
-function stepState(i: number, steps: WizardSteps, active: number): StepState {
+function stepState(
+  i: number,
+  steps: WizardSteps,
+  active: number,
+  modeConfigured: boolean,
+): StepState {
   if (i === active) return "active";
   const done =
     i === 0
-      ? steps.superadmin.configured
+      ? modeConfigured
       : i === 1
-        ? steps.site.configured
+        ? steps.superadmin.configured
         : i === 2
-          ? steps.storage.configured
+          ? steps.site.configured
           : i === 3
-            ? steps.smtp.configured
+            ? steps.storage.configured
             : i === 4
-              ? steps.meta.configured || steps.meta.skipped
-              : true;
+              ? steps.smtp.configured
+              : i === 5
+                ? steps.meta.configured || steps.meta.skipped
+                : true;
   if (done) return "done";
   return i < active ? "todo" : "todo";
 }
 
-function Rail({ steps, active }: { steps: WizardSteps; active: number }) {
+function Rail({
+  steps,
+  active,
+  modeConfigured,
+}: {
+  steps: WizardSteps;
+  active: number;
+  modeConfigured: boolean;
+}) {
   return (
     <nav aria-label="Setup progress" className="md:sticky md:top-8 md:self-start">
       <ol className="space-y-1">
         {STEP_LABELS.map((label, i) => {
-          const state = stepState(i, steps, active);
+          const state = stepState(i, steps, active, modeConfigured);
           const isActive = i === active;
           return (
             <li
@@ -257,6 +274,172 @@ function CardHead({ step, title, description }: { step: string; title: string; d
 
 const footer = "flex flex-wrap items-center justify-end gap-3 px-6 py-4 sm:px-8";
 
+/* ---------------- Installation Mode ---------------- */
+
+function ModePanel({
+  selectedMode,
+  onSelectMode,
+  onAdvance,
+}: {
+  selectedMode: "demo" | "production";
+  onSelectMode: (mode: "demo" | "production") => void;
+  onAdvance: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleContinue = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await wizardSeedData({ mode: selectedMode });
+      const err = resultError(res);
+      if (err) {
+        setError(err);
+        return;
+      }
+      onAdvance();
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHead
+        step="Step 1 of 7"
+        title="Choose installation mode"
+        description="Select whether to initialize a clean production baseline or explore the full commercial showcase."
+      />
+      <CardContent className="space-y-6 px-6 py-6 sm:px-8">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {/* Production Option */}
+          <div
+            onClick={() => onSelectMode("production")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectMode("production");
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            className={cn(
+              "relative cursor-pointer rounded-xl border-2 p-5 transition-all text-left flex flex-col justify-between",
+              selectedMode === "production"
+                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                : "border-border hover:border-border/80 bg-card",
+            )}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                {selectedMode === "production" && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                    <Check className="h-4 w-4" /> Selected
+                  </span>
+                )}
+              </div>
+              <h3 className="text-base font-semibold text-foreground">Production Mode</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Clean slate designed for live agency operations.
+              </p>
+              <ul className="mt-4 space-y-2 text-xs text-muted-foreground border-t border-border pt-3">
+                <li className="flex items-start gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>Core categories & operational expense taxonomy</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>Configured payment gateways & legal static pages</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span className="font-medium text-foreground">Zero sample packages or mock media</span>
+                </li>
+              </ul>
+            </div>
+            <div className="mt-4 pt-2">
+              <span className="inline-block text-[11px] font-medium text-primary bg-primary/10 rounded px-2 py-0.5">
+                Recommended for Live Agency
+              </span>
+            </div>
+          </div>
+
+          {/* Demo Option */}
+          <div
+            onClick={() => onSelectMode("demo")}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelectMode("demo");
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            className={cn(
+              "relative cursor-pointer rounded-xl border-2 p-5 transition-all text-left flex flex-col justify-between",
+              selectedMode === "demo"
+                ? "border-primary bg-primary/5 ring-1 ring-primary"
+                : "border-border hover:border-border/80 bg-card",
+            )}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
+                  <Cloud className="h-5 w-5" />
+                </div>
+                {selectedMode === "demo" && (
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                    <Check className="h-4 w-4" /> Selected
+                  </span>
+                )}
+              </div>
+              <h3 className="text-base font-semibold text-foreground">Demo & Showcase</h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Full-featured agency operating system with sample data.
+              </p>
+              <ul className="mt-4 space-y-2 text-xs text-muted-foreground border-t border-border pt-3">
+                <li className="flex items-start gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>6 Curated tour, Hajj & Umrah packages</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>5 Visa offerings & 4 e-Passport tiers</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <Check className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span>Assets downloaded directly into application storage</span>
+                </li>
+              </ul>
+            </div>
+            <div className="mt-4 pt-2">
+              <span className="inline-block text-[11px] font-medium text-secondary-foreground bg-secondary rounded px-2 py-0.5">
+                Recommended for Evaluation
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <ActionError message={error} />
+
+        <div className="flex justify-end pt-2">
+          <Button type="button" size="lg" onClick={handleContinue} disabled={busy}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            {busy ? "Initializing..." : "Continue"}
+            {!busy && <ArrowRight className="h-4 w-4 ml-2" aria-hidden="true" />}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ---------------- Admin account ---------------- */
 
 const accountSchema = z.object({
@@ -277,7 +460,7 @@ function AccountPanel({ steps, onAdvance, refresh }: PanelProps) {
   if (steps.superadmin.configured) {
     return (
       <Card>
-        <CardHead step="Step 1 of 6" title="Admin account" description="The first sign-in for your team." />
+        <CardHead step="Step 2 of 7" title="Admin account" description="The first sign-in for your team." />
         <CardContent className="flex items-center justify-between gap-4 px-6 py-6 sm:px-8">
           <div className="flex items-center gap-3">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-success text-success-foreground">
@@ -318,7 +501,7 @@ function AccountPanel({ steps, onAdvance, refresh }: PanelProps) {
   return (
     <Card>
       <CardHead
-        step="Step 1 of 6"
+        step="Step 2 of 7"
         title="Admin account"
         description="Create the super admin who owns the system. Password must be at least 10 characters."
       />
@@ -417,7 +600,7 @@ function SitePanel({ steps, siteRow, onSiteSaved, onAdvance, refresh }: PanelPro
   if (steps.site.configured && !editing) {
     return (
       <Card>
-        <CardHead step="Step 2 of 6" title="Site identity" description="Public name and branding." />
+        <CardHead step="Step 3 of 7" title="Site identity" description="Public name and branding." />
         <CardContent className="flex flex-wrap items-center justify-between gap-4 px-6 py-6 sm:px-8">
           <div>
             <p className="text-sm font-medium">{siteRow?.title ?? "Site configured"}</p>
@@ -471,7 +654,7 @@ function SitePanel({ steps, siteRow, onSiteSaved, onAdvance, refresh }: PanelPro
 
   return (
     <Card>
-      <CardHead step="Step 2 of 6" title="Site identity" description="Name and branding shown across the public site." />
+      <CardHead step="Step 3 of 7" title="Site identity" description="Name and branding shown across the public site." />
       <CardContent className="space-y-5 px-6 py-6 sm:px-8">
         <Form {...form}>
           <form onSubmit={submit} className="space-y-5" noValidate>
@@ -710,7 +893,7 @@ function StoragePanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
   return (
     <Card>
       <CardHead
-        step="Step 3 of 6"
+        step="Step 4 of 7"
         title="Storage"
         description={
           storage.configured && driver === "r2"
@@ -858,7 +1041,7 @@ function SmtpPanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
   if (smtp.configured && !editing) {
     return (
       <Card>
-        <CardHead step="Step 4 of 6" title="Email (SMTP)" description="Transactional mail like password resets." />
+        <CardHead step="Step 5 of 7" title="Email (SMTP)" description="Transactional mail like password resets." />
         <CardContent className="flex flex-wrap items-center justify-between gap-4 px-6 py-6 sm:px-8">
           <div>
             <p className="text-sm font-medium">SMTP configured</p>
@@ -950,7 +1133,7 @@ function SmtpPanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
   return (
     <Card>
       <CardHead
-        step="Step 4 of 6"
+        step="Step 5 of 7"
         title="Email (SMTP)"
         description="Used for password resets and notifications. Optional — you can skip and add it later."
       />
@@ -1117,7 +1300,7 @@ function MetaPanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
   if (meta.configured || meta.skipped) {
     return (
       <Card>
-        <CardHead step="Step 5 of 6" title="Meta Pixel & CAPI" description="Conversion tracking for the Meta ad account." />
+        <CardHead step="Step 6 of 7" title="Meta Pixel & CAPI" description="Conversion tracking for the Meta ad account." />
         <CardContent className="flex flex-wrap items-center justify-between gap-4 px-6 py-6 sm:px-8">
           <div>
             <p className="text-sm font-medium">{meta.configured ? "Meta Pixel configured" : "Step skipped"}</p>
@@ -1187,7 +1370,7 @@ function MetaPanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
   return (
     <Card>
       <CardHead
-        step="Step 5 of 6"
+        step="Step 6 of 7"
         title="Meta Pixel & CAPI"
         description="Conversion tracking for the Meta ad account. Optional."
       />
@@ -1261,8 +1444,24 @@ function MetaPanel({ steps, envWritable, onAdvance, refresh }: PanelProps) {
 
 /* ---------------- Finish ---------------- */
 
-function DonePanel({ steps, onFinish, finishBusy, error }: { steps: WizardSteps; onFinish: () => void; finishBusy: boolean; error: string | null }) {
+function DonePanel({
+  steps,
+  selectedMode,
+  onFinish,
+  finishBusy,
+  error,
+}: {
+  steps: WizardSteps;
+  selectedMode: "demo" | "production";
+  onFinish: () => void;
+  finishBusy: boolean;
+  error: string | null;
+}) {
   const rows = [
+    {
+      label: "Installation mode",
+      state: selectedMode === "demo" ? ("Demo Showcase" as const) : ("Production Clean" as const),
+    },
     { label: "Admin account", state: steps.superadmin.configured ? ("Configured" as const) : ("Not set" as const) },
     { label: "Site identity", state: steps.site.configured ? ("Configured" as const) : ("Not set" as const) },
     { label: "Storage", state: steps.storage.configured ? ("Configured" as const) : ("Not set" as const) },
@@ -1272,7 +1471,7 @@ function DonePanel({ steps, onFinish, finishBusy, error }: { steps: WizardSteps;
   return (
     <Card>
       <CardHead
-        step="Step 6 of 6"
+        step="Step 7 of 7"
         title="Almost done"
         description="Review what’s set up, then finish. Optional steps left blank can be added later in admin."
       />
@@ -1284,10 +1483,10 @@ function DonePanel({ steps, onFinish, finishBusy, error }: { steps: WizardSteps;
                 {r.label}
                 {r.optional ? <span className="ml-2 font-normal text-muted-foreground">(optional)</span> : null}
               </span>
-              {r.state === "Configured" ? (
+              {r.state === "Configured" || r.state === "Demo Showcase" || r.state === "Production Clean" ? (
                 <span className="flex items-center gap-1.5 text-sm font-medium text-success">
                   <Check className="h-4 w-4" aria-hidden="true" />
-                  Configured
+                  {r.state}
                 </span>
               ) : (
                 <span className="text-sm text-muted-foreground">{r.state}</span>
@@ -1342,7 +1541,16 @@ export default function SetupWizard({
   const [finished, setFinished] = useState(false);
   const [finishBusy, setFinishBusy] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
-  const [active, setActive] = useState(() => firstOpenStep(initialStatus.steps));
+  const [mode, setMode] = useState<"demo" | "production">("demo");
+  const [modeConfigured, setModeConfigured] = useState<boolean>(
+    initialStatus.steps.superadmin.configured && initialStatus.steps.site.configured,
+  );
+  const [active, setActive] = useState(() =>
+    firstOpenStep(
+      initialStatus.steps,
+      initialStatus.steps.superadmin.configured && initialStatus.steps.site.configured,
+    ),
+  );
 
   const steps = status.steps;
 
@@ -1364,7 +1572,7 @@ export default function SetupWizard({
     setFinishBusy(true);
     setFinishError(null);
     try {
-      const res = await wizardComplete();
+      const res = await wizardComplete({ mode });
       const err = resultError(res);
       if (err) {
         setFinishError(err);
@@ -1403,16 +1611,32 @@ export default function SetupWizard({
 
         <div className="flex flex-col gap-8 md:flex-row">
           <aside className="shrink-0 md:w-60">
-            <Rail steps={steps} active={active} />
+            <Rail steps={steps} active={active} modeConfigured={modeConfigured} />
           </aside>
           <section className="min-w-0 flex-1" aria-label="Active setup step">
-            {active === 0 ? <AccountPanel {...panelProps} /> : null}
-            {active === 1 ? <SitePanel {...panelProps} siteRow={siteRow} onSiteSaved={onSiteSaved} /> : null}
-            {active === 2 ? <StoragePanel {...panelProps} /> : null}
-            {active === 3 ? <SmtpPanel {...panelProps} /> : null}
-            {active === 4 ? <MetaPanel {...panelProps} /> : null}
-            {active === 5 ? (
-              <DonePanel steps={steps} onFinish={finish} finishBusy={finishBusy} error={finishError} />
+            {active === 0 ? (
+              <ModePanel
+                selectedMode={mode}
+                onSelectMode={setMode}
+                onAdvance={() => {
+                  setModeConfigured(true);
+                  advance();
+                }}
+              />
+            ) : null}
+            {active === 1 ? <AccountPanel {...panelProps} /> : null}
+            {active === 2 ? <SitePanel {...panelProps} siteRow={siteRow} onSiteSaved={onSiteSaved} /> : null}
+            {active === 3 ? <StoragePanel {...panelProps} /> : null}
+            {active === 4 ? <SmtpPanel {...panelProps} /> : null}
+            {active === 5 ? <MetaPanel {...panelProps} /> : null}
+            {active === 6 ? (
+              <DonePanel
+                steps={steps}
+                selectedMode={mode}
+                onFinish={finish}
+                finishBusy={finishBusy}
+                error={finishError}
+              />
             ) : null}
           </section>
         </div>
@@ -1421,11 +1645,12 @@ export default function SetupWizard({
   );
 }
 
-function firstOpenStep(steps: WizardSteps): number {
-  if (!steps.superadmin.configured) return 0;
-  if (!steps.site.configured) return 1;
-  if (!steps.storage.configured) return 2;
-  if (!steps.smtp.configured) return 3;
-  if (!steps.meta.configured && !steps.meta.skipped) return 4;
-  return 5;
+function firstOpenStep(steps: WizardSteps, modeConfigured: boolean): number {
+  if (!modeConfigured) return 0;
+  if (!steps.superadmin.configured) return 1;
+  if (!steps.site.configured) return 2;
+  if (!steps.storage.configured) return 3;
+  if (!steps.smtp.configured) return 4;
+  if (!steps.meta.configured && !steps.meta.skipped) return 5;
+  return 6;
 }

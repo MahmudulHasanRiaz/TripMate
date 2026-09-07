@@ -6,15 +6,19 @@ import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getPublicHomeSettings, getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { getSetting } from "@/modules/settings/service";
-import { listCategories, listPublishedListings } from "@/modules/catalog/service";
+import { listCategories, listPublishedListings, listDestinations } from "@/modules/catalog/service";
 import { listPublishedPosts } from "@/modules/content/service";
 import type { ServiceKind } from "@/modules/catalog/validation";
 
 import { HeroSection } from "@/components/site/HeroSection";
+import TravelActionPanel from "@/components/site/TravelActionPanel";
+import { TrustStrip } from "@/components/site/TrustStrip";
+import { PopularDestinations } from "@/components/site/PopularDestinations";
 import { ServiceGrid, type ServiceGridItem } from "@/components/site/ServiceGrid";
 import { StatsBand, type Stat } from "@/components/site/StatsBand";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { PackageCard } from "@/components/site/PackageCard";
+import { HumanConcierge } from "@/components/site/HumanConcierge";
 import { BlogCard } from "@/components/site/BlogCard";
 import { CTASection } from "@/components/site/CTASection";
 
@@ -30,11 +34,7 @@ import { CTASection } from "@/components/site/CTASection";
  *
  * Reads (all server-side, no user fetches): settings.home (hero copy, may be
  * partial/missing), settings.site (phone for the closing CTA), active service
- * categories, 3 published listings, 3 published posts. The seeded DB has no
- * posts, so the blog band renders a quiet empty state until content ships.
- *
- * Route-change chrome (header/footer/skip-link) lives in the (public) layout;
- * this page only renders the <main> content sections.
+ * categories, destinations, 3 published listings, 3 published posts.
  */
 export default async function Home() {
   "use cache";
@@ -43,10 +43,11 @@ export default async function Home() {
   cacheTag(CACHE_TAGS.posts);
   cacheLife("hours");
 
-  const [site, homeRaw, categories, published, blog] = await Promise.all([
+  const [site, homeRaw, categories, destinations, published, blog] = await Promise.all([
     getSiteSettings(),
     getSetting("home"),
     listCategories(true),
+    listDestinations(true),
     listPublishedListings({ perPage: 3 }),
     listPublishedPosts({ perPage: 3 }),
   ]);
@@ -64,21 +65,15 @@ export default async function Home() {
         imageAlt={home.imageAlt}
       />
 
-      {categories.length > 0 ? (
-        <section className="bg-secondary">
-          <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">
-            <SectionHeading
-              kicker="What we do"
-              title="Every journey, planned with care"
-              lead="Hajj and Umrah, holidays, medical travel, flights and visas — handled end to end by one trusted agency."
-              align="center"
-            />
-            <div className="mt-12 lg:mt-16">
-              <ServiceGrid items={categories.map(toServiceItem)} />
-            </div>
-          </div>
-        </section>
-      ) : null}
+      <TravelActionPanel
+        destinations={destinations}
+        categories={categories}
+        phone={site.phone}
+      />
+
+      <div className="mt-8 sm:mt-12">
+        <TrustStrip />
+      </div>
 
       {published.items.length > 0 ? (
         <section className="bg-background">
@@ -115,7 +110,27 @@ export default async function Home() {
         </section>
       ) : null}
 
+      <PopularDestinations destinations={destinations} />
+
+      {categories.length > 0 ? (
+        <section className="bg-secondary/60">
+          <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">
+            <SectionHeading
+              kicker="What we do"
+              title="Every journey, planned with care"
+              lead="Hajj and Umrah, holidays, medical travel, flights and visas — handled end to end by one trusted agency."
+              align="center"
+            />
+            <div className="mt-12 lg:mt-16">
+              <ServiceGrid items={categories.map(toServiceItem)} />
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <StatsBand stats={STATS} />
+
+      <HumanConcierge phone={site.phone} email={site.email} />
 
       <section className="bg-background">
         <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">

@@ -30,6 +30,7 @@ export type PublicNavItem = {
  */
 const NAV_ITEMS: PublicNavItem[] = [
   { label: "Packages", href: "/packages" as Route },
+  { label: "Visa Services", href: "/visa" as Route },
   { label: "Blog", href: "/blog" as Route },
   // About lands on the seeded about-us static page (Task 12) — the seeded page
   // set lives under /p/{slug}, so that's the canonical URL, not /about.

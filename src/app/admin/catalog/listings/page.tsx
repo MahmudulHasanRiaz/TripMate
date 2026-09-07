@@ -159,6 +159,8 @@ export default async function ListingsPage({
                             listingId={listing.id}
                             status={listing.status}
                             title={listing.title}
+                            slug={listing.slug}
+                            initialSeo={listing.seo}
                           />
                         </TableCell>
                       </TableRow>

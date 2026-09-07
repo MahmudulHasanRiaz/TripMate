@@ -7,7 +7,7 @@ import {
   Banknote,
   DollarSign,
   Receipt,
-  UserCheck,
+  TrendingUp,
   Users,
 } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
@@ -78,8 +78,8 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* KPI Cards Row (Compact 6-up / responsive grid) */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      {/* KPI Cards Row (Responsive financial & operational grid) */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         {/* Leads Today / Total */}
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-3 pb-1">
@@ -123,33 +123,11 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Unassigned Leads */}
+        {/* Total Revenue */}
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Unassigned Leads</span>
-              <UserCheck className="size-3.5 text-muted-foreground" aria-hidden="true" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-foreground">
-              {kpis.unassignedLeadsCount}
-            </p>
-            <Link
-              href={"/admin/leads" as Route}
-              className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
-            >
-              <span>Needs staff assign</span>
-              <ArrowRight className="size-2.5" aria-hidden="true" />
-            </Link>
-          </CardContent>
-        </Card>
-
-        {/* Revenue This Month */}
-        <Card className="shadow-xs border-border bg-card">
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Total Revenue</span>
+              <span>Revenue</span>
               <DollarSign className="size-3.5 text-primary" aria-hidden="true" />
             </CardTitle>
           </CardHeader>
@@ -158,16 +136,53 @@ export default async function AdminDashboardPage() {
               {formatMoney(kpis.revenueThisMonth, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              This month (verified)
+              Verified this month
             </p>
           </CardContent>
         </Card>
 
-        {/* Expenses This Month */}
+        {/* Cost of Sales (COGS) */}
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Total Expenses</span>
+              <span>Cost of Sales</span>
+              <Receipt className="size-3.5 text-muted-foreground" aria-hidden="true" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-1">
+            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate">
+              {formatMoney(kpis.costOfSalesThisMonth, "BDT")}
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Direct orders cost
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Gross Profit */}
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Gross Profit</span>
+              <TrendingUp className="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-1">
+            <p className="font-mono text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400 truncate">
+              {formatMoney(kpis.grossProfitThisMonth, "BDT")}
+            </p>
+            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>Margin:</span>
+              <span className="font-semibold text-foreground">{kpis.grossMarginPercent}%</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Operating Expenses */}
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Op. Expenses</span>
               <Receipt className="size-3.5 text-muted-foreground" aria-hidden="true" />
             </CardTitle>
           </CardHeader>
@@ -176,7 +191,7 @@ export default async function AdminDashboardPage() {
               {formatMoney(kpis.expensesThisMonth, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              This month (approved)
+              Approved this month
             </p>
           </CardContent>
         </Card>
@@ -202,14 +217,14 @@ export default async function AdminDashboardPage() {
             >
               {formatMoney(kpis.netThisMonth, "BDT")}
             </p>
-            <div className="mt-1 flex items-center gap-1.5">
+            <div className="mt-1 flex items-center justify-between text-[11px]">
               <Badge
                 variant={kpis.netThisMonth >= 0 ? "success" : "destructive"}
                 className="text-[10px] px-1 py-0"
               >
                 {kpis.netThisMonth >= 0 ? "Profitable" : "Deficit"}
               </Badge>
-              <span className="text-[11px] text-muted-foreground">This month</span>
+              <span className="text-muted-foreground font-mono">{kpis.netMarginPercent}% net</span>
             </div>
           </CardContent>
         </Card>

@@ -32,10 +32,34 @@ import type { Session } from "@/lib/auth-helpers";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { homeSettingsInputSchema, siteSettingsInputSchema } from "./site-settings-validation";
 import { updateHomeSettings, updateSiteSettings } from "./site-settings";
+import { updateThemeSettings } from "./theme-service";
+import { type ThemeColors, type ThemeTemplateKey } from "./theme";
 
 export type SettingsActionResult =
   | { ok: true }
   | { ok: false; code: string; error: string };
+
+const themeSettingsSchema = z.object({
+  template: z.enum(["signature", "ocean", "emerald", "royal", "sunset", "minimal"]),
+  colors: z.record(z.string()).optional(),
+});
+
+/** Save the brand theme settings (template + custom colors). */
+export const saveThemeSettingsAction = settingsAction<unknown>(
+  { permission: "settings.manage" },
+  async (input) => {
+    const parsed = themeSettingsSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
+    }
+    await updateThemeSettings({
+      template: parsed.data.template as ThemeTemplateKey,
+      colors: parsed.data.colors as Partial<ThemeColors> | undefined,
+    });
+    updateTag(CACHE_TAGS.settings);
+    return { ok: true };
+  },
+);
 
 /**
  * Guard + relay wrapper for both actions: withGuard({ permission }) +

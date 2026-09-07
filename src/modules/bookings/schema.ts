@@ -26,6 +26,13 @@ export const orderSourceEnum = pgEnum("order_source", [
   "manual",
 ]);
 
+export const orderPaymentStatusEnum = pgEnum("order_payment_status", [
+  "unpaid",
+  "partially_paid",
+  "paid",
+  "refunded",
+]);
+
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
   orderNo: text("order_no").notNull().unique(),
@@ -37,6 +44,10 @@ export const orders = pgTable("orders", {
   status: orderStatusEnum("status").notNull().default("pending"),
   quotedPrice: numeric("quoted_price", { precision: 14, scale: 2 }),
   finalPrice: numeric("final_price", { precision: 14, scale: 2 }),
+  costPrice: numeric("cost_price", { precision: 14, scale: 2 }),
+  grossProfit: numeric("gross_profit", { precision: 14, scale: 2 }),
+  paidAmount: numeric("paid_amount", { precision: 14, scale: 2 }).notNull().default("0"),
+  paymentStatus: orderPaymentStatusEnum("payment_status").notNull().default("unpaid"),
   currency: text("currency").notNull().default("BDT"),
   specialRequests: text("special_requests"),
   source: orderSourceEnum("source").notNull().default("website"),

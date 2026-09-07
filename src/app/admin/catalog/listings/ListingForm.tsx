@@ -27,7 +27,7 @@ import type { Route } from "next";
 import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Plus, RefreshCw, X } from "lucide-react";
+import { Globe, Loader2, Plus, RefreshCw, X } from "lucide-react";
 
 import {
   LISTING_STATUSES,
@@ -40,6 +40,7 @@ import { saveListing } from "./actions";
 import MediaPickerField, {
   MediaPickerButton,
 } from "@/components/admin/MediaPickerField";
+import SeoConfigDrawer from "@/components/admin/SeoConfigDrawer";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,7 +64,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
 /* Types                                                               */
@@ -303,6 +303,7 @@ export default function ListingForm({
 
   const [saving, setSaving] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [seoDrawerOpen, setSeoDrawerOpen] = useState(false);
   const slugEdited = useRef(Boolean(initial.slug));
 
   const title = useWatch({ control: form.control, name: "title" });
@@ -815,54 +816,57 @@ export default function ListingForm({
 
         <Separator />
 
-        {/* --- SEO --- */}
-        <section aria-labelledby="seo-heading" className="space-y-5">
-          <h3 id="seo-heading" className="text-base font-semibold tracking-tight">
-            Search engine listing
-          </h3>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="seoTitle"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>SEO title</FormLabel>
-                  <FormControl>
-                    <Input placeholder={`${initial.title || "Title"} — TripMate`} {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    <span className={cn(field.value.length > 60 && "font-medium text-warning")}>
-                      {field.value.length}/70
-                    </span>
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="seoDescription"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>SEO description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      rows={2}
-                      placeholder="Shown under the title in search results"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    <span className={cn(field.value.length > 140 && "font-medium text-warning")}>
-                      {field.value.length}/160
-                    </span>
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {/* --- SEO Configuration Drawer --- */}
+        <section aria-labelledby="seo-heading" className="space-y-4">
+          <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between shadow-xs">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
+                <Globe className="size-4" />
+                <span>Search Engine Visibility</span>
+              </div>
+              <h3 id="seo-heading" className="text-base font-semibold tracking-tight mt-0.5">
+                SEO & Google Search Snippet
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-xl">
+                Configure search engine previews, custom meta titles, and descriptions via dedicated drawer.
+              </p>
+            </div>
+            {editing && initial.id ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setSeoDrawerOpen(true)}
+                className="shrink-0 gap-2"
+              >
+                <Globe className="size-4" />
+                Configure SEO
+              </Button>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">
+                (Available after creating listing)
+              </span>
+            )}
           </div>
         </section>
+
+        {editing && initial.id ? (
+          <SeoConfigDrawer
+            entityType="listing"
+            entityId={initial.id}
+            entityTitle={form.getValues("title") || initial.title}
+            entitySlug={form.getValues("slug") || initial.slug}
+            initialSeo={{
+              title: form.getValues("seoTitle") || initial.seoTitle,
+              description: form.getValues("seoDescription") || initial.seoDescription,
+            }}
+            open={seoDrawerOpen}
+            onOpenChange={setSeoDrawerOpen}
+            onSaved={(saved) => {
+              form.setValue("seoTitle", saved.title);
+              form.setValue("seoDescription", saved.description);
+            }}
+          />
+        ) : null}
 
         <Separator />
 

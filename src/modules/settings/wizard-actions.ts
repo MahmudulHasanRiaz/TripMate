@@ -38,6 +38,8 @@ import { users } from "@/modules/users/schema";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { getWizardStatus } from "./wizard";
+import { seedDemoData } from "@/db/demo-seeder";
+import { seedProductionBaseline } from "@/db/production-seeder";
 
 const WIZARD_SETTING_KEYS = ["site", "storage", "meta"] as const;
 
@@ -276,10 +278,32 @@ export const wizardCreateSuperadmin = relay(
   ),
 );
 
+/** Run seed for chosen installation mode (demo vs production) during setup wizard */
+export const wizardSeedData = relay(
+  withGuard(
+    { public: true },
+    async (input: { mode: "demo" | "production" }) => {
+      await assertUnlocked();
+      if (input.mode === "demo") {
+        await seedDemoData();
+      } else {
+        await seedProductionBaseline();
+      }
+      updateTag(CACHE_TAGS.settings);
+      return { ok: true };
+    },
+  ),
+);
+
 /** Finish setup: persists setupComplete=true, locking every wizard action. */
 const completeSetup = relay(
-  withGuard({ public: true }, async () => {
+  withGuard({ public: true }, async (input?: { mode?: "demo" | "production" }) => {
     await assertUnlocked();
+    if (input?.mode === "demo") {
+      await seedDemoData();
+    } else if (input?.mode === "production") {
+      await seedProductionBaseline();
+    }
     await setSetting("setup", { setupComplete: true });
     // The setup row itself isn't read by public chrome, but completing the
     // wizard is the final settings mutation of the onboarding flow — expire the
@@ -290,9 +314,10 @@ const completeSetup = relay(
     return { ok: true };
   }),
 );
-export const wizardComplete = async () => completeSetup(undefined);
+export const wizardComplete = async (input?: { mode?: "demo" | "production" }) => completeSetup(input);
 
 /** Re-run status detection (used after external env edits on Vercel etc). */
 const recheckStatus = withGuard({ public: true }, async () => getWizardStatus());
 /** No-input alias so callers see a zero-arg action, not the guard's `input` slot. */
 export const wizardRecheck = async () => recheckStatus(undefined);
+

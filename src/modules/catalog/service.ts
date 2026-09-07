@@ -79,7 +79,10 @@ export type ListingWithRefs = {
   durationDays: number | null;
   rating: number | null;
   price: number | null;
+  costPrice: number | null;
+  startingPrice: number | null;
   currency: string;
+  isFeatured: boolean;
   itinerary: ItineraryItem[];
   inclusions: string[];
   exclusions: string[];
@@ -142,7 +145,10 @@ const listingCols = {
     durationDays: listings.durationDays,
     rating: listings.rating,
     price: listings.price,
+    costPrice: listings.costPrice,
+    startingPrice: listings.startingPrice,
     currency: listings.currency,
+    isFeatured: listings.isFeatured,
     itinerary: listings.itinerary,
     inclusions: listings.inclusions,
     exclusions: listings.exclusions,
@@ -181,7 +187,10 @@ type ListingRow = {
     durationDays: number | null;
     rating: string | null;
     price: string | null;
+    costPrice: string | null;
+    startingPrice: string | null;
     currency: string;
+    isFeatured: boolean;
     itinerary: unknown;
     inclusions: unknown;
     exclusions: unknown;
@@ -431,6 +440,15 @@ function toListingWrite(input: ListingInput): ListingWrite {
   }
   if (input.price !== undefined) {
     w.price = input.price === null ? null : input.price.toFixed(2);
+  }
+  if (input.costPrice !== undefined) {
+    w.costPrice = input.costPrice === null ? null : input.costPrice.toFixed(2);
+  }
+  if (input.startingPrice !== undefined) {
+    w.startingPrice = input.startingPrice === null ? null : input.startingPrice.toFixed(2);
+  }
+  if (input.isFeatured !== undefined) {
+    w.isFeatured = input.isFeatured;
   }
   if (input.currency !== undefined) w.currency = input.currency;
   if (input.itinerary !== undefined) w.itinerary = input.itinerary;
@@ -850,7 +868,10 @@ function toListing(row: ListingRow): ListingWithRefs {
     durationDays: l.durationDays,
     rating: l.rating === null ? null : Number(l.rating),
     price: l.price === null ? null : Number(l.price),
+    costPrice: l.costPrice === null ? null : Number(l.costPrice),
+    startingPrice: l.startingPrice === null ? null : Number(l.startingPrice),
     currency: l.currency,
+    isFeatured: Boolean(l.isFeatured),
     itinerary: toItinerary(l.itinerary),
     inclusions: toStrings(l.inclusions),
     exclusions: toStrings(l.exclusions),

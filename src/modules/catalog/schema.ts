@@ -41,7 +41,11 @@ export const destinations = pgTable("destinations", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   image: text("image"),
+  description: text("description"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isFeatured: boolean("is_featured").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
+  seo: jsonb("seo"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -62,6 +66,9 @@ export const listings = pgTable("listings", {
   durationDays: integer("duration_days"),
   rating: numeric("rating", { precision: 3, scale: 2 }),
   price: numeric("price", { precision: 12, scale: 2 }),
+  costPrice: numeric("cost_price", { precision: 12, scale: 2 }),
+  startingPrice: numeric("starting_price", { precision: 12, scale: 2 }),
+  isFeatured: boolean("is_featured").notNull().default(false),
   currency: text("currency").notNull().default("BDT"),
   itinerary: jsonb("itinerary"),
   inclusions: jsonb("inclusions"),
@@ -77,4 +84,5 @@ export const listings = pgTable("listings", {
   index("listings_category_id_idx").on(table.categoryId),
   index("listings_destination_id_idx").on(table.destinationId),
   index("listings_deleted_at_idx").on(table.deletedAt),
+  index("listings_is_featured_idx").on(table.isFeatured),
 ]);

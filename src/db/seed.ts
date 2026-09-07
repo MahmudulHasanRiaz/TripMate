@@ -1,205 +1,36 @@
 import "dotenv/config";
-import { db } from "./connection";
-import {
-  destinations,
-  expenseCategories,
-  listings,
-  paymentGateways,
-  serviceCategories,
-  settings,
-} from "./schema";
-import { seedStaticContent } from "@/modules/content/seed-static-pages";
-import { sql } from "drizzle-orm";
+import { seedDemoData } from "./demo-seeder";
+import { seedProductionBaseline } from "./production-seeder";
 
-// TripMate DB seed. Each block is independently idempotent (guarded by its own
-// presence check / unique slug), so `npm run db:seed` is safe to re-run against
-// a live database: the catalog/taxonomy/settings/payment seed ran once during
-// Plan 1 setup, and later plans add NEW seed blocks (content static pages +
-// post categories) that insert only when absent — they never touch admin edits
-// to the same rows.
+/**
+ * TripMate Database Seeder.
+ *
+ * Supports two distinct operational modes:
+ *  - `--production` / `--prod`: Clean agency baseline (settings, categories, static legal pages).
+ *    Strictly NO demo packages, dummy destinations, or sample media.
+ *  - `--demo` (default): Rich commercial demonstration with luxury packages,
+ *    destinations, visa types, passport services, expenses, guides, and stored assets.
+ */
+async function main() {
+  const isProduction =
+    process.argv.includes("--production") || process.argv.includes("--prod");
 
-async function seedCatalog() {
-  const [existing] = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(serviceCategories);
-  if (existing.count > 0) {
-    console.log("Catalog seed skipped: service categories already present.");
-    return;
+  if (isProduction) {
+    console.log("[seed] Mode: PRODUCTION (Clean start without demo catalog or sample media)");
+    await seedProductionBaseline();
+  } else {
+    console.log("[seed] Mode: DEMO / SHOWCASE (Full commercial operating system with stored assets)");
+    await seedDemoData();
   }
-
-  const cats = await db
-    .insert(serviceCategories)
-    .values([
-      { name: "Tour Packages", slug: "tour-packages", kind: "package", sortOrder: 1, icon: "compass" },
-      { name: "Hajj", slug: "hajj", kind: "package", sortOrder: 2, icon: "moon-star" },
-      { name: "Umrah", slug: "umrah", kind: "package", sortOrder: 3, icon: "moon" },
-      { name: "Medical Travel", slug: "medical-travel", kind: "package", sortOrder: 4, icon: "heart-pulse" },
-      { name: "Flight Tickets", slug: "flight-tickets", kind: "inquiry_based", sortOrder: 5, icon: "plane-takeoff" },
-      { name: "Visa & Passport", slug: "visa-passport", kind: "inquiry_based", sortOrder: 6, icon: "file-check" },
-    ])
-    .returning();
-
-  const dests = await db
-    .insert(destinations)
-    .values([
-      { name: "Makkah & Madinah", slug: "makkah-madinah" },
-      { name: "Malaysia & Singapore", slug: "malaysia-singapore" },
-      { name: "Dubai", slug: "dubai" },
-      { name: "Cox's Bazar & Sylhet", slug: "coxs-bazar-sylhet" },
-    ])
-    .returning();
-
-  const hajj = cats.find((c) => c.slug === "hajj")!;
-  const umrah = cats.find((c) => c.slug === "umrah")!;
-  const tour = cats.find((c) => c.slug === "tour-packages")!;
-  const mm = dests.find((d) => d.slug === "makkah-madinah")!;
-
-  await db.insert(listings).values([
-    {
-      categoryId: hajj.id,
-      destinationId: mm.id,
-      title: "Premium Hajj Package 2026",
-      slug: "premium-hajj-2026",
-      summary: "21 days, 5-star hotels near Haramain, scholar guidance.",
-      price: "850000",
-      durationDays: 21,
-      currency: "BDT",
-      status: "published",
-      itinerary: [
-        { day: "1-10", title: "Makkah", details: "Ibadah in Masjid al-Haram, 5-star stay." },
-        { day: "11-15", title: "Manasik", details: "Guided Mina, Arafat, Muzdalifah." },
-        { day: "16-20", title: "Madinah", details: "Ziyarat tours, hotel by Masjid an-Nabawi." },
-        { day: "21", title: "Departure", details: "Final prayer and departure." },
-      ],
-      inclusions: ["5-star hotels", "Visa processing", "Full board"],
-      exclusions: ["Flights", "Personal expenses"],
-    },
-    {
-      categoryId: umrah.id,
-      destinationId: mm.id,
-      title: "Economy Umrah Package",
-      slug: "economy-umrah",
-      summary: "10 days, clean 3-star hotels, group transport.",
-      price: "120000",
-      durationDays: 10,
-      currency: "BDT",
-      status: "published",
-    },
-    {
-      categoryId: tour.id,
-      title: "Malaysia-Singapore Family Tour",
-      slug: "malaysia-singapore-family-tour",
-      summary: "7 days, family-friendly, all transfers.",
-      price: "145000",
-      durationDays: 7,
-      currency: "BDT",
-      status: "published",
-    },
-  ]);
-  console.log("Catalog seed complete.");
 }
 
-async function seedSettings() {
-  const existing = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(settings)
-    .where(sql`key = 'site'`);
-  if (existing[0].count > 0) {
-    console.log("Settings seed skipped: already present.");
-    return;
-  }
-
-  await db.insert(settings).values([
-    {
-      key: "site",
-      value: {
-        title: "TripMate",
-        logoUrl: "/logo.svg",
-        faviconUrl: "/favicon.svg",
-        searchEngineVisibility: true,
-        phone: "+8801000000000",
-        email: "info@tripmate.example",
-        address: "Dhaka, Bangladesh",
-      },
-    },
-    { key: "home", value: { heroHeadline: "Your Journey Begins Here", heroSub: "Hajj, Umrah, tours, flights & visa — one trusted agency." } },
-    { key: "storage", value: { driver: "local" } },
-    { key: "setup", value: { setupComplete: false } },
-  ]);
-  console.log("Settings seed complete.");
-}
-
-async function seedPaymentGateways() {
-  const existing = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(paymentGateways);
-  if (existing[0].count > 0) {
-    console.log("Payment gateway seed skipped: already present.");
-    return;
-  }
-
-  await db.insert(paymentGateways).values([
-    {
-      name: "bKash (Manual)",
-      kind: "manual",
-      sortOrder: 1,
-      config: { accountType: "personal", number: "+8801000000000" },
-      instructions: "Send the amount to the bKash number, then submit the transaction ID below.",
-    },
-    {
-      name: "Nagad (Manual)",
-      kind: "manual",
-      sortOrder: 2,
-      config: { accountType: "personal", number: "+8801000000000" },
-      instructions: "Send the amount to the Nagad number, then submit the transaction ID below.",
-    },
-    {
-      name: "Bank Transfer",
-      kind: "manual",
-      sortOrder: 3,
-      config: { bankName: "Example Bank", accountName: "TripMate Travel", accountNo: "0000000000", branch: "Gulshan" },
-      instructions: "Transfer to the bank account, then submit the deposit slip.",
-    },
-  ]);
-  console.log("Payment gateway seed complete.");
-}
-
-async function seedExpenseCategories() {
-  const existing = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(expenseCategories);
-  if (existing[0].count > 0) {
-    console.log("Expense category seed skipped: already present.");
-    return;
-  }
-  await db.insert(expenseCategories).values([
-    { name: "Office & Utilities", kind: "operational", description: "Rent, electricity, internet, supplies." },
-    { name: "Marketing & Ads", kind: "operational", description: "Meta ads, boosts, creative costs." },
-    { name: "Salaries & Commission", kind: "operational", description: "Staff payroll and sales commission." },
-    { name: "Travel & Tickets", kind: "cost_of_sales", description: "Air tickets, hotel bookings tied to orders." },
-    { name: "Visa & Processing Fees", kind: "cost_of_sales", description: "Embassy/agent fees tied to orders." },
-    { name: "Transport & Logistics", kind: "cost_of_sales", description: "Ground transport, deliveries." },
-  ]);
-  console.log("Expense category seed complete.");
-}
-
-async function seed() {
-  await seedCatalog();
-  await seedSettings();
-  await seedPaymentGateways();
-  await seedExpenseCategories();
-  const { categoriesInserted, pagesInserted } = await seedStaticContent(db);
-  console.log(
-    pagesInserted === 0 && categoriesInserted === 0
-      ? "Content seed skipped: post categories + static pages already present."
-      : `Content seed complete (${categoriesInserted} category/categories, ${pagesInserted} page(s) inserted).`,
-  );
-  console.log("Seed complete.");
-}
-
-seed()
-  .then(() => process.exit(0))
+main()
+  .then(() => {
+    console.log("[seed] Seeding process completed successfully.");
+    process.exit(0);
+  })
   .catch((err) => {
-    console.error(err);
+    console.error("[seed] Seeding failed with error:", err);
     process.exit(1);
   });
+

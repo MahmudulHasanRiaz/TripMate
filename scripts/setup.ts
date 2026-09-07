@@ -52,11 +52,16 @@ async function main() {
     process.exit(1);
   }
 
+  const isProd =
+    process.argv.includes("--production") || process.argv.includes("--prod");
+  const seedCmd = isProd ? "npm run db:seed:prod" : "npm run db:seed:demo";
+
   if (!run("migrations (npm run db:migrate)", "npm run db:migrate")) process.exit(1);
-  if (!run("seed (npm run db:seed)", "npm run db:seed")) process.exit(1);
+  if (!run(`seed (${seedCmd})`, seedCmd)) process.exit(1);
 
   console.log(
     "\n=== Setup complete ===\n" +
+      `Mode:            ${isProd ? "PRODUCTION (Clean baseline)" : "DEMO / SHOWCASE (Full commercial OS)"}\n` +
       "Start the app:   npm run dev  →  http://localhost:3000\n" +
       "First run ever?  open http://localhost:3000/setup to create the superadmin\n" +
       "Gates:           npm run lint && npm run typecheck && npm test && npm run test:e2e",

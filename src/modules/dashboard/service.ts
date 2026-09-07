@@ -53,10 +53,18 @@ export type DashboardKpis = {
   unassignedLeadsCount: number;
   /** Sum of VERIFIED payments verified this month (updated_at in the current month). */
   revenueThisMonth: number;
+  /** Direct cost of sales / COGS for orders this month. */
+  costOfSalesThisMonth: number;
+  /** Gross profit = revenueThisMonth - costOfSalesThisMonth. */
+  grossProfitThisMonth: number;
+  /** Gross margin percentage. */
+  grossMarginPercent: number;
   /** Sum of APPROVED expenses whose business date falls in the current month. */
   expensesThisMonth: number;
-  /** revenueThisMonth - expensesThisMonth. */
+  /** Net profit = grossProfitThisMonth - expensesThisMonth. */
   netThisMonth: number;
+  /** Net margin percentage. */
+  netMarginPercent: number;
   /** Expenses awaiting approval (status 'pending'). */
   pendingExpensesCount: number;
 };
@@ -103,7 +111,7 @@ function clampDays(days: number | undefined): number {
  *     reused verbatim so the dashboard and the orders board can never disagree.
  */
 export async function getDashboardKpis(): Promise<DashboardKpis> {
-  const [leadRows, paymentRows, expenseRows, ordersByStatus] = await Promise.all([
+  const [leadRows, paymentRows, expenseRows, orderRows, ordersByStatus] = await Promise.all([
     db
       .select({
         total: sql<number>`count(*)::int`,
@@ -136,13 +144,31 @@ export async function getDashboardKpis(): Promise<DashboardKpis> {
         )`,
       })
       .from(expenses),
+    db
+      .select({
+        costOfSalesThisMonth: sql<string>`coalesce(
+          (sum(${orders.costPrice}) filter (
+            where ${orders.status} in ('confirmed', 'completed')
+              and date_trunc('month', ${orders.updatedAt}) = date_trunc('month', current_date)
+          )),
+          0
+        )`,
+      })
+      .from(orders),
     getOrderBoardCounts(),
   ]);
 
   const leadsTotal = leadRows[0]?.total ?? 0;
   const leadsConverted = leadRows[0]?.converted ?? 0;
   const revenueThisMonth = Number(paymentRows[0]?.revenueThisMonth ?? 0);
+  const costOfSalesThisMonth = Number(orderRows[0]?.costOfSalesThisMonth ?? 0);
+  const grossProfitThisMonth = Math.max(0, revenueThisMonth - costOfSalesThisMonth);
+  const grossMarginPercent =
+    revenueThisMonth > 0 ? Math.round((grossProfitThisMonth / revenueThisMonth) * 1000) / 10 : 0;
   const expensesThisMonth = Number(expenseRows[0]?.approvedThisMonth ?? 0);
+  const netThisMonth = grossProfitThisMonth - expensesThisMonth;
+  const netMarginPercent =
+    revenueThisMonth > 0 ? Math.round((netThisMonth / revenueThisMonth) * 1000) / 10 : 0;
 
   return {
     leadsToday: leadRows[0]?.today ?? 0,
@@ -153,8 +179,12 @@ export async function getDashboardKpis(): Promise<DashboardKpis> {
     pendingPaymentsCount: paymentRows[0]?.submitted ?? 0,
     unassignedLeadsCount: leadRows[0]?.unassigned ?? 0,
     revenueThisMonth,
+    costOfSalesThisMonth,
+    grossProfitThisMonth,
+    grossMarginPercent,
     expensesThisMonth,
-    netThisMonth: revenueThisMonth - expensesThisMonth,
+    netThisMonth,
+    netMarginPercent,
     pendingExpensesCount: expenseRows[0]?.pending ?? 0,
   };
 }

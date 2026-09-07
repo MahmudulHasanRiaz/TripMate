@@ -40,6 +40,7 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
       // Project-level ignores:
+      ".claude/**",
       "node_modules/**",
       "playwright-report/**",
     ],

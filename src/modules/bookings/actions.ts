@@ -67,6 +67,11 @@ import {
   setQuote,
   transitionOrder,
 } from "./service";
+import {
+  listGateways,
+  selectPayLater,
+  submitManualPayment,
+} from "@/modules/payments/service";
 
 // ==============================================================================
 // PUBLIC — package booking + inquiry submit
@@ -210,6 +215,31 @@ const runCreatePackageOrder = publicOrderRelay(
         console.error("[bookings] CAPI InitiateCheckout event failed", e);
       }
 
+      // Payment recording if selected at direct checkout
+      if (input.payment) {
+        try {
+          if (input.payment.method === "pay_later") {
+            await selectPayLater({
+              orderId: created.id,
+              actorUserId: session?.user.id ?? null,
+            });
+          } else if (input.payment.gatewayId && input.payment.trxId) {
+            await submitManualPayment({
+              orderId: created.id,
+              gatewayId: input.payment.gatewayId,
+              methodTxnId: input.payment.trxId,
+              senderNumber: input.payment.senderNumber,
+              screenshotUrl: input.payment.depositSlipUrl,
+              note: input.payment.notes,
+              actorUserId: session?.user.id ?? null,
+            });
+          }
+          updateTag(CACHE_TAGS.payments);
+        } catch (payErr) {
+          console.error("[bookings] Checkout payment recording failed:", payErr);
+        }
+      }
+
       // Customer order-received email — never throws, skips without an email.
       await sendOrderConfirmEmail({
         to: input.customer.email,
@@ -227,6 +257,15 @@ const runCreatePackageOrder = publicOrderRelay(
 export const createPackageOrderAction = async (
   input: PackageOrderInput,
 ): Promise<CreateOrderResult> => runCreatePackageOrder(input);
+
+/** Public fetch for active payment gateways (for public booking checkout modal). */
+const runGetPublicPaymentGateways = withGuard(
+  { public: true },
+  async () => {
+    return listGateways(true);
+  },
+);
+export const getPublicPaymentGatewaysAction = async () => runGetPublicPaymentGateways(undefined);
 
 /**
  * The public inquiry form's server endpoint (services listings). Same shape as

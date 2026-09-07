@@ -16,6 +16,7 @@ export async function getSetting(key: "storage"): Promise<StorageSetting | null>
 export async function getSetting(key: "setup"): Promise<SetupSetting | null>;
 export async function getSetting(key: "meta"): Promise<MetaSetting | null>;
 export async function getSetting(key: "home"): Promise<Record<string, unknown> | null>;
+export async function getSetting(key: "theme"): Promise<Record<string, unknown> | null>;
 export async function getSetting(key: string): Promise<unknown> {
   const rows = await db.select().from(settings).where(eq(settings.key, key)).limit(1);
   return rows[0]?.value ?? null;

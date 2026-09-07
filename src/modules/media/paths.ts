@@ -15,7 +15,7 @@ import { resolve } from "node:path";
 
 /** Absolute path of the local driver's storage root. */
 export function localUploadsRoot(): string {
-  return resolve(process.cwd(), process.env.STORAGE_LOCAL_DIR ?? "storage/uploads");
+  return resolve(/*turbopackIgnore: true*/ process.cwd(), process.env.STORAGE_LOCAL_DIR ?? "storage/uploads");
 }
 
 /** Absolute path of the PRE-storage-root-change root (public/uploads). Legacy

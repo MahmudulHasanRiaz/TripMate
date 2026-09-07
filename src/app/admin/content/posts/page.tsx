@@ -163,6 +163,8 @@ export default async function PostsPage({
                             postId={post.id}
                             status={post.status}
                             title={post.title}
+                            slug={post.slug}
+                            initialSeo={post.seo}
                           />
                         </TableCell>
                       </TableRow>

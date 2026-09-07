@@ -139,7 +139,17 @@ export const travelersSchema = z
   .min(TRAVELERS_MIN, "Add at least one traveler")
   .max(TRAVELERS_MAX, `Up to ${TRAVELERS_MAX} travelers per order`);
 
-/** The public package-booking form payload (listingId + contact + travelers). */
+export const packagePaymentSelectionSchema = z.object({
+  gatewayId: z.string().uuid("Invalid gateway ID").optional(),
+  method: z.enum(["manual", "pay_later"]).default("manual"),
+  senderNumber: optionalBoundedText(50, "Sender number must be 50 characters or fewer"),
+  trxId: optionalBoundedText(100, "Transaction ID must be 100 characters or fewer"),
+  depositSlipUrl: optionalBoundedText(1000, "Slip URL must be 1000 characters or fewer"),
+  notes: optionalBoundedText(500, "Notes must be 500 characters or fewer"),
+});
+export type PackagePaymentSelection = z.infer<typeof packagePaymentSelectionSchema>;
+
+/** The public package-booking form payload (listingId + contact + travelers + payment selection). */
 export const packageOrderInputSchema = z.object({
   listingId: uuidSchema,
   customer: customerInputSchema,
@@ -148,6 +158,7 @@ export const packageOrderInputSchema = z.object({
     2000,
     "Special requests must be 2000 characters or fewer",
   ),
+  payment: packagePaymentSelectionSchema.optional(),
 });
 export type PackageOrderInput = z.infer<typeof packageOrderInputSchema>;
 

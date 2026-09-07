@@ -630,6 +630,14 @@ export async function createPackageOrder(
         currency: listing.currency,
         durationDays: listing.durationDays,
       },
+      quotedPrice: listing.price !== null ? String(listing.price) : null,
+      costPrice: listing.costPrice !== null ? String(listing.costPrice) : null,
+      grossProfit:
+        listing.price !== null && listing.costPrice !== null
+          ? String(Number(listing.price) - Number(listing.costPrice))
+          : null,
+      paymentStatus: "unpaid",
+      paidAmount: "0.00",
       type: "package" as const,
       status: "in_review" as const,
       currency: listing.currency,

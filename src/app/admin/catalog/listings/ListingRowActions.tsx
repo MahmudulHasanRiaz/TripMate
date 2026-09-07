@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Trash2 } from "lucide-react";
+import { Globe, Loader2, Trash2 } from "lucide-react";
 import type { ListingStatus } from "@/modules/catalog/validation";
 import { setListingStatus, trashListing } from "./actions";
 import { Button } from "@/components/ui/button";
+import SeoConfigDrawer from "@/components/admin/SeoConfigDrawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,25 +19,24 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-/**
- * Per-row listing actions. Publish/Unpublish flips the row straight from the
- * table; Trash asks for confirmation first (soft delete — recoverable only by
- * re-creating under a suffixed slug). Both call a server action and then
- * router.refresh() so the freshly-revalidated list re-renders server-side.
- */
 export default function ListingRowActions({
   listingId,
   status,
   title,
+  slug = "",
+  initialSeo,
 }: {
   listingId: string;
   status: ListingStatus;
   title: string;
+  slug?: string;
+  initialSeo?: { title?: string | null; description?: string | null } | null;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<"publish" | "trash" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [seoOpen, setSeoOpen] = useState(false);
 
   const isPublished = status === "published";
   const targetStatus: ListingStatus = isPublished ? "draft" : "published";
@@ -74,6 +74,29 @@ export default function ListingRowActions({
         {busy === "publish" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
         {isPublished ? "Unpublish" : "Publish"}
       </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        disabled={busy !== null}
+        aria-label={`Configure SEO for ${title}`}
+        title="SEO Configuration"
+        onClick={() => setSeoOpen(true)}
+      >
+        <Globe className="size-4" />
+      </Button>
+
+      <SeoConfigDrawer
+        entityType="listing"
+        entityId={listingId}
+        entityTitle={title}
+        entitySlug={slug}
+        initialSeo={initialSeo}
+        open={seoOpen}
+        onOpenChange={setSeoOpen}
+        onSaved={() => router.refresh()}
+      />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogTrigger asChild>

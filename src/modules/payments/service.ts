@@ -675,6 +675,12 @@ export async function verifyPayment(
     console.error("[payments] CAPI Purchase event failed", e);
   }
 
+  try {
+    await syncOrderPaymentStatus(current.orderId);
+  } catch (e) {
+    console.error("[payments] Failed syncing order payment status", e);
+  }
+
   const view = await getPaymentById(paymentId);
   if (!view) throw new PaymentError("NOT_FOUND", `Payment ${paymentId} not found.`);
   return view;
@@ -706,7 +712,61 @@ export async function rejectPayment(
     .returning({ id: payments.id });
   if (!updated) throw new PaymentError("NOT_FOUND", `Payment ${paymentId} not found.`);
 
+  try {
+    await syncOrderPaymentStatus(current.orderId);
+  } catch (e) {
+    console.error("[payments] Failed syncing order payment status after rejection", e);
+  }
+
   const view = await getPaymentById(paymentId);
   if (!view) throw new PaymentError("NOT_FOUND", `Payment ${paymentId} not found.`);
   return view;
+}
+
+/**
+ * Recalculate and synchronize an order's paidAmount and paymentStatus based
+ * on its verified payments.
+ */
+export async function syncOrderPaymentStatus(orderId: string): Promise<void> {
+  const [totalRow] = await db
+    .select({ total: sql<string>`coalesce(sum(${payments.amount}), 0)::text` })
+    .from(payments)
+    .where(and(eq(payments.orderId, orderId), eq(payments.status, "verified")));
+
+  const totalPaid = Number(totalRow?.total || "0");
+
+  const [order] = await db
+    .select({
+      quotedPrice: orders.quotedPrice,
+      finalPrice: orders.finalPrice,
+    })
+    .from(orders)
+    .where(eq(orders.id, orderId))
+    .limit(1);
+
+  if (!order) return;
+
+  const targetAmount = order.finalPrice
+    ? Number(order.finalPrice)
+    : order.quotedPrice
+      ? Number(order.quotedPrice)
+      : 0;
+
+  let newPaymentStatus: "unpaid" | "partially_paid" | "paid" | "refunded" = "unpaid";
+  if (totalPaid <= 0) {
+    newPaymentStatus = "unpaid";
+  } else if (targetAmount > 0 && totalPaid >= targetAmount) {
+    newPaymentStatus = "paid";
+  } else {
+    newPaymentStatus = "partially_paid";
+  }
+
+  await db
+    .update(orders)
+    .set({
+      paidAmount: totalPaid.toFixed(2),
+      paymentStatus: newPaymentStatus,
+      updatedAt: new Date(),
+    })
+    .where(eq(orders.id, orderId));
 }

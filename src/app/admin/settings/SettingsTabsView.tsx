@@ -11,11 +11,14 @@ import {
   Globe,
   Home,
   Loader2,
+  Palette,
   RotateCcw,
   Search,
   Sliders,
 } from "lucide-react";
 import type { HomeSettings, SiteSettings } from "@/modules/settings/site-settings";
+import type { ThemeSettings } from "@/modules/settings/theme";
+import ThemeCustomizer from "@/components/admin/ThemeCustomizer";
 import {
   homeSettingsInputSchema,
   siteSettingsInputSchema,
@@ -48,11 +51,13 @@ import { Textarea } from "@/components/ui/textarea";
 type SettingsTabsViewProps = {
   initialSite: SiteSettings;
   initialHome: HomeSettings;
+  initialTheme: ThemeSettings;
 };
 
 export default function SettingsTabsView({
   initialSite,
   initialHome,
+  initialTheme,
 }: SettingsTabsViewProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -138,10 +143,14 @@ export default function SettingsTabsView({
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-xs h-10">
+        <TabsList className="grid w-full grid-cols-3 max-w-md h-10">
           <TabsTrigger value="site" className="text-xs font-semibold gap-2 min-h-[36px]">
             <Globe className="size-3.5" aria-hidden="true" />
             <span>Site Identity</span>
+          </TabsTrigger>
+          <TabsTrigger value="theme" className="text-xs font-semibold gap-2 min-h-[36px]">
+            <Palette className="size-3.5" aria-hidden="true" />
+            <span>Theme & Styling</span>
           </TabsTrigger>
           <TabsTrigger value="home" className="text-xs font-semibold gap-2 min-h-[36px]">
             <Home className="size-3.5" aria-hidden="true" />
@@ -456,6 +465,13 @@ export default function SettingsTabsView({
               </Form>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ==================================================================== */}
+        {/* THEME & STYLING TAB                                                 */}
+        {/* ==================================================================== */}
+        <TabsContent value="theme" className="mt-4 space-y-6">
+          <ThemeCustomizer initialTheme={initialTheme} />
         </TabsContent>
 
         {/* ==================================================================== */}
