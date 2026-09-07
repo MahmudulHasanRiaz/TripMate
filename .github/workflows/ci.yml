@@ -1,0 +1,140 @@
+# TripMate v2 CI (Plan 7, T6). Two jobs:
+#
+#   quality     — typegen + lint + typecheck + build + pure unit tests, on a
+#                 fresh migrated+seeded Postgres service. The DB is needed by
+#                 `next build` itself: with Cache Components the prerender of
+#                 PPR shells executes the 'use cache' data scopes (verified —
+#                 a build against an unreachable DB fails at export).
+#   integration — DB-backed vitest suites (RUN_DB_INTEGRATION=1) + Playwright
+#                 e2e on the same kind of service. Playwright boots
+#                 `npm run dev` itself (playwright.config.ts webServer), so no
+#                 `npm run build` here — the dev server compiles what it needs.
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+    branches: [main, "claude/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tripmate
+        ports:
+          - 5432:5432
+        # The actions/runner passes `options` as `docker create` FLAGS (before
+        # the image name), so Postgres server settings like `-c fsync=off`
+        # CANNOT be passed here — docker would parse `-c` as `--cpu-shares`
+        # and the job dies at service startup (exit 125). Health-check flags
+        # only, per GitHub's documented pattern.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tripmate
+      APP_URL: http://localhost:3000
+      AUTH_SECRET: ci-dummy-secret-not-used-at-runtime-000000
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Generates .next/types (typed routes) before lint/typecheck run.
+      - run: npx next typegen
+
+      - run: npm run lint
+      - run: npm run typecheck
+
+      # Fresh schema + seed before the build — the prerender reads seeded
+      # settings content (idempotent seed, same as the integration job).
+      - run: npm run db:migrate
+      - run: npm run db:seed
+
+      - run: npm run build
+
+      # Pure unit suites only — with RUN_DB_INTEGRATION unset, every
+      # *.integration.test.ts suite self-skips (describe.skipIf), so this
+      # stays a DB-less check even though the service is up.
+      - run: npm test
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: quality
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tripmate
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tripmate
+      APP_URL: http://localhost:3000
+      AUTH_SECRET: ci-integration-dummy-secret-0000000000000000
+      RUN_DB_INTEGRATION: "1"
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Browsers keyed on the lockfile hash (pins the Playwright version).
+      # `--with-deps` still installs OS libraries on a cache hit — cheap.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npx playwright install --with-deps chromium
+
+      # 00-setup.spec.ts expects a FRESH migrated+seeded DB (it creates
+      # admin@tripmate.test and locks /setup); workers:1 + sorted file order
+      # keep the e2e suite serial against this one shared database.
+      - run: npm run db:migrate
+      - run: npm run db:seed
+
+      # RUN_DB_INTEGRATION=1 (job env) activates the DB suites; vitest
+      # auto-serializes files in that mode (vitest.config.mts).
+      - run: npm test
+
+      - run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
