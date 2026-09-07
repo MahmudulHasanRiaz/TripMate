@@ -54,7 +54,12 @@ jobs:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      # Lockfile is maintained with npm 12 (latest); Node 24 bundles npm 11, so
+      # install the latest npm first. --allow-remote opts into npm 12 new
+      # tarball-dep default (Tailwind oxide pulls one).
+      - run: npm install -g npm@12
+
+      - run: npm ci --allow-remote=all
 
       # Generates .next/types (typed routes) before lint/typecheck run.
       - run: npx next typegen
@@ -105,7 +110,12 @@ jobs:
           node-version: 24
           cache: npm
 
-      - run: npm ci
+      # Lockfile is maintained with npm 12 (latest); Node 24 bundles npm 11, so
+      # install the latest npm first. --allow-remote opts into npm 12 new
+      # tarball-dep default (Tailwind oxide pulls one).
+      - run: npm install -g npm@12
+
+      - run: npm ci --allow-remote=all
 
       # Browsers keyed on the lockfile hash (pins the Playwright version).
       # `--with-deps` still installs OS libraries on a cache hit — cheap.
