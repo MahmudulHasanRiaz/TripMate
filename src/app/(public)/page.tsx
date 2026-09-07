@@ -1,9 +1,10 @@
-import type { Route } from "next";
+import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getSiteSettings } from "@/lib/site-settings";
+import { getPublicHomeSettings, getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { getSetting } from "@/modules/settings/service";
 import { listCategories, listPublishedListings } from "@/modules/catalog/service";
 import { listPublishedPosts } from "@/modules/content/service";
@@ -178,6 +179,30 @@ export default async function Home() {
 /** Pages the site nav + primary CTAs share (routes land in Tasks 11-12). */
 const PACKAGES_HREF = "/packages" as Route;
 const BLOG_HREF = "/blog" as Route;
+
+/**
+ * Home metadata (Plan 6 T3): the home page IS the brand page, so the title is
+ * the site's own brand verbatim (title.absolute replaces the root "| TripMate"
+ * template rather than appending to it), and the description is the hero
+ * sub-headline the visitor sees — falling back to the same site-sensible
+ * default the root layout carries when no hero copy is saved. Both reads go
+ * through the cached typed settings readers, so metadata stays a cache hit and
+ * an admin save lands in one hop; the page's own cached rendering below is
+ * untouched and shares the settings tag.
+ */
+const HOME_META_DESCRIPTION_FALLBACK =
+  "Hajj & Umrah packages, tours, flights and visa services.";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const [site, home] = await Promise.all([
+    getPublicSiteSettings(),
+    getPublicHomeSettings(),
+  ]);
+  return {
+    title: { absolute: site.title },
+    description: home.heroSub ?? HOME_META_DESCRIPTION_FALLBACK,
+  };
+}
 
 /**
  * settings.home is free-form jsonb that may be partial or entirely absent (the

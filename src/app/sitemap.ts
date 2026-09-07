@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { CACHE_TAGS } from "@/lib/cache-tags";
-import { origin } from "@/lib/seo";
+import { origin, seoVisibilityDecision } from "@/lib/seo";
 import {
   listActiveCategoryRefs,
   listPublishedListingRefs,
@@ -11,6 +11,7 @@ import {
   listPublishedPageRefs,
   listPublishedPostRefs,
 } from "@/modules/content/service";
+import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 
 /**
  * Generated sitemap.xml.
@@ -29,12 +30,21 @@ import {
  * `/services` skips redirect-kind landings: those pages exist mostly to bounce
  * to a partner site, so advertising them invites crawling thin doors.
  *
+ * VISIBILITY (Plan 6 T3): when settings.site searchEngineVisibility is false
+ * the sitemap is EMPTY — returned before any catalog/content query runs — in
+ * lockstep with robots.ts (`Disallow: /`) and the (public) layout metadata
+ * (noindex,nofollow). All three read the same cached settings row
+ * (getPublicSiteSettings), so they can never disagree.
+ *
  * NOTE: the docs describe `sitemap.ts` as a Route Handler cached by default,
  * but relying on that alone would leave the URL list stale after admin content
  * writes. Marking the handler itself a cached function reuses the same
  * tag/revalidation path the pages use, so a publish is live in the sitemap one
  * cache hop later — verified against node_modules/next/dist/docs (sitemap.md +
- * cacheComponents guides) before wiring.
+ * cacheComponents guides) before wiring. CACHE_TAGS.settings is tagged HERE as
+ * well: a nested `'use cache'` call's tags (getPublicSiteSettings's own) do
+ * not invalidate THIS entry, so the outer scope carries the tag itself for a
+ * visibility toggle to land in one cache hop.
  */
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -42,7 +52,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   cacheTag(CACHE_TAGS.listings);
   cacheTag(CACHE_TAGS.posts);
   cacheTag(CACHE_TAGS.pages);
+  cacheTag(CACHE_TAGS.settings);
   cacheLife("hours");
+
+  // Hidden site → empty sitemap, decided before any catalog/content query.
+  const site = await getPublicSiteSettings();
+  if (!seoVisibilityDecision(site.searchEngineVisibility).includeSitemapUrls) {
+    return [];
+  }
 
   // The origin helper collapses any trailing slash on APP_URL so a URL string
   // is always origin + "/" + path (never origin + "//" + path).

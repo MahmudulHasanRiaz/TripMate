@@ -213,3 +213,19 @@ export async function getPublicSiteSettings(): Promise<SiteSettings> {
 
   return getSiteSettings();
 }
+
+/**
+ * Cached read of the hero copy for the (public) home page's generateMetadata
+ * (description = heroSub) — the same contract as getPublicSiteSettings: 'use
+ * cache' + settings tag so an admin save lands in one cache hop, plain
+ * strings/null only. The home PAGE itself keeps reading the raw row through
+ * its own 'use cache' scope (readHomeSetting); this reader exists for the
+ * metadata path, which needs the typed heroSub with the same cache lifetime.
+ */
+export async function getPublicHomeSettings(): Promise<HomeSettings> {
+  "use cache";
+  cacheTag(CACHE_TAGS.settings);
+  cacheLife("hours");
+
+  return getHomeSettings();
+}
