@@ -554,20 +554,37 @@ export default function OrderDetailClient({
             </Card>
           ) : null}
 
-          {/* Listing Snapshot */}
+          {/* Listing / Service Option / Quotation Snapshot */}
           {order.listingSnapshot ? (
             <Card className="shadow-xs">
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                  <span>Package Snapshot at Booking</span>
-                  <Link
-                    href={`/packages/${order.listingSnapshot.slug}` as Route}
-                    target="_blank"
-                    className="text-xs text-primary hover:underline font-normal inline-flex items-center gap-1"
-                  >
-                    View Public Page
-                    <ExternalLink className="size-3" aria-hidden="true" />
-                  </Link>
+                  <span>
+                    {order.listingSnapshot.kind === "service_option"
+                      ? "Service Option at Booking"
+                      : order.listingSnapshot.lineItems
+                        ? "Quotation Items Snapshot"
+                        : "Package Snapshot at Booking"}
+                  </span>
+                  {order.listingSnapshot.kind === "service_option" ? (
+                    <Link
+                      href={`/services/${order.listingSnapshot.categorySlug || ""}` as Route}
+                      target="_blank"
+                      className="text-xs text-primary hover:underline font-normal inline-flex items-center gap-1"
+                    >
+                      View Service
+                      <ExternalLink className="size-3" aria-hidden="true" />
+                    </Link>
+                  ) : order.listingSnapshot.slug ? (
+                    <Link
+                      href={`/packages/${order.listingSnapshot.slug}` as Route}
+                      target="_blank"
+                      className="text-xs text-primary hover:underline font-normal inline-flex items-center gap-1"
+                    >
+                      View Public Page
+                      <ExternalLink className="size-3" aria-hidden="true" />
+                    </Link>
+                  ) : null}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -577,10 +594,12 @@ export default function OrderDetailClient({
                       {order.listingSnapshot.title}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Duration: {order.listingSnapshot.durationDays != null ? `${order.listingSnapshot.durationDays} days` : "Flexible"}
+                      {order.listingSnapshot.kind === "service_option"
+                        ? `${order.listingSnapshot.categoryName ? `Category: ${order.listingSnapshot.categoryName} · ` : ""}Duration: ${order.listingSnapshot.duration || "Standard"} · Delivery: ${order.listingSnapshot.deliveryTime || "Standard"}`
+                        : `Duration: ${order.listingSnapshot.durationDays != null ? `${order.listingSnapshot.durationDays} days` : "Flexible"}`}
                     </p>
                   </div>
-                  <div className="text-right sm:text-right">
+                  <div className="text-left sm:text-right">
                     <p className="text-xs text-muted-foreground">Catalog Base Price</p>
                     <p className="text-sm font-semibold font-mono text-foreground mt-0.5">
                       {order.listingSnapshot.price != null
@@ -589,6 +608,50 @@ export default function OrderDetailClient({
                     </p>
                   </div>
                 </div>
+
+                {order.listingSnapshot.requirements && order.listingSnapshot.requirements.length > 0 ? (
+                  <div className="border-t border-border pt-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      Required Documents
+                    </p>
+                    <ul className="space-y-1">
+                      {order.listingSnapshot.requirements.map((req, i) => (
+                        <li key={i} className="text-xs text-foreground flex items-center gap-2">
+                          <CheckCircle2 className="size-3 text-success shrink-0" aria-hidden="true" />
+                          <span>{req}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+
+                {order.listingSnapshot.lineItems && order.listingSnapshot.lineItems.length > 0 ? (
+                  <div className="border-t border-border pt-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                      Line Items
+                    </p>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs font-semibold">Description</TableHead>
+                          <TableHead className="text-xs font-semibold text-right">Qty</TableHead>
+                          <TableHead className="text-xs font-semibold text-right">Unit Price</TableHead>
+                          <TableHead className="text-xs font-semibold text-right">Total</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {order.listingSnapshot.lineItems.map((item, idx) => (
+                          <TableRow key={idx} className="text-xs">
+                            <TableCell className="font-medium text-foreground">{item.description}</TableCell>
+                            <TableCell className="text-right font-mono">{item.quantity}</TableCell>
+                            <TableCell className="text-right font-mono">{formatMoney(item.unitPrice, order.currency)}</TableCell>
+                            <TableCell className="text-right font-mono font-semibold">{formatMoney(item.totalPrice, order.currency)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           ) : null}

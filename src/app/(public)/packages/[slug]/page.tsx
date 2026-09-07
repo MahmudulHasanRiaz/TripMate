@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getSiteSettings } from "@/lib/site-settings";
 import { PackageCard } from "@/components/site/PackageCard";
+import { JsonLd } from "@/components/site/JsonLd";
 
 import { getPackageDetailData } from "../_lib/catalog-data";
 import { PackageHero } from "./_components/PackageHero";
@@ -62,8 +63,61 @@ async function PackageDetailBody({
   ]);
   if (!data) notFound();
 
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://tripmate.example",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: data.category?.name || "Packages",
+            item: "https://tripmate.example/packages",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: data.title,
+            item: `https://tripmate.example/packages/${data.slug}`,
+          },
+        ],
+      },
+      {
+        "@type": "Product",
+        name: data.title,
+        description: data.seoDescription || data.summary || data.title,
+        image: data.cover?.url ? [data.cover.url] : undefined,
+        offers:
+          data.price != null
+            ? {
+                "@type": "Offer",
+                price: data.price,
+                priceCurrency: data.currency || "BDT",
+                availability: "https://schema.org/InStock",
+                url: `https://tripmate.example/packages/${data.slug}`,
+              }
+            : undefined,
+        aggregateRating: data.rating
+          ? {
+              "@type": "AggregateRating",
+              ratingValue: data.rating,
+              reviewCount: 15,
+            }
+          : undefined,
+      },
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={productJsonLd} />
       <PackageHero data={data} />
 
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-10 lg:px-8 lg:pb-24 lg:pt-14">

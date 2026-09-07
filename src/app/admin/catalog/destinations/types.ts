@@ -8,5 +8,9 @@ export type DestinationRow = {
   name: string;
   slug: string;
   image: string | null;
+  description?: string | null;
+  sortOrder?: number;
+  isFeatured?: boolean;
   isActive: boolean;
+  seo?: { title?: string | null; description?: string | null } | null;
 };

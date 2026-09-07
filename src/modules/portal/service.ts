@@ -1,4 +1,7 @@
-import "server-only";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { db } from "@/db/client";
+import { paymentGateways, payments } from "@/modules/payments/schema";
+import { users } from "@/modules/users/schema";
 import {
   getMyOrderDetail as bookingsGetMyOrderDetail,
   myOrders as bookingsMyOrders,
@@ -79,4 +82,134 @@ export async function myDocuments(
   query: { page?: number; perPage?: number } = {},
 ): Promise<Paginated<MediaFile>> {
   return listUserDocuments(userId, query);
+}
+
+// ---- portal dashboard -------------------------------------------------------------
+
+export type PortalDashboardData = {
+  stats: {
+    totalBookings: number;
+    activeTrips: number;
+    totalQuoted: number;
+    totalPaid: number;
+    outstandingBalance: number;
+  };
+  recentOrders: OrderListItem[];
+  recentPayments: Array<{
+    id: string;
+    orderId: string;
+    amount: number;
+    currency: string;
+    status: string;
+    method: string;
+    senderNumber: string | null;
+    trxId: string | null;
+    createdAt: Date;
+  }>;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    role: string;
+    createdAt: Date;
+  } | null;
+};
+
+export async function getPortalDashboardData(
+  userId: string,
+): Promise<PortalDashboardData> {
+  const [ordersResult, userRow] = await Promise.all([
+    bookingsMyOrders(userId, { perPage: 50 }),
+    db.select().from(users).where(eq(users.id, userId)).limit(1),
+  ]);
+
+  const userOrders = ordersResult.items;
+  const totalBookings = ordersResult.total;
+
+  const activeTrips = userOrders.filter(
+    (o) =>
+      o.status === "pending" ||
+      o.status === "in_review" ||
+      o.status === "quoted" ||
+      o.status === "confirmed",
+  ).length;
+
+  const totalQuoted = userOrders.reduce(
+    (sum, o) => sum + (o.status !== "cancelled" ? (o.quotedPrice ?? 0) : 0),
+    0,
+  );
+
+  let totalPaid = 0;
+  let recentPaymentsList: PortalDashboardData["recentPayments"] = [];
+
+  const orderIds = userOrders.map((o) => o.id);
+  if (orderIds.length > 0) {
+    const [paidRows, pRows] = await Promise.all([
+      db
+        .select({ total: sql<string>`coalesce(sum(${payments.amount}), 0)` })
+        .from(payments)
+        .where(
+          and(
+            inArray(payments.orderId, orderIds),
+            eq(payments.status, "verified"),
+          ),
+        ),
+      db
+        .select({
+          id: payments.id,
+          orderId: payments.orderId,
+          amount: payments.amount,
+          currency: payments.currency,
+          status: payments.status,
+          methodTxnId: payments.methodTxnId,
+          senderNumber: payments.senderNumber,
+          gatewayName: paymentGateways.name,
+          gatewayKind: paymentGateways.kind,
+          createdAt: payments.createdAt,
+        })
+        .from(payments)
+        .leftJoin(paymentGateways, eq(payments.gatewayId, paymentGateways.id))
+        .where(inArray(payments.orderId, orderIds))
+        .orderBy(desc(payments.createdAt))
+        .limit(5),
+    ]);
+
+    totalPaid = Number(paidRows[0]?.total ?? 0);
+    recentPaymentsList = pRows.map((p) => ({
+      id: p.id,
+      orderId: p.orderId,
+      amount: Number(p.amount) || 0,
+      currency: p.currency,
+      status: p.status,
+      method: p.gatewayName || p.gatewayKind || "Payment",
+      senderNumber: p.senderNumber,
+      trxId: p.methodTxnId,
+      createdAt: p.createdAt,
+    }));
+  }
+
+  const outstandingBalance = Math.max(0, totalQuoted - totalPaid);
+
+  return {
+    stats: {
+      totalBookings,
+      activeTrips,
+      totalQuoted,
+      totalPaid,
+      outstandingBalance,
+    },
+    recentOrders: userOrders.slice(0, 5),
+    recentPayments: recentPaymentsList,
+    user: userRow[0]
+      ? {
+          id: userRow[0].id,
+          name: userRow[0].name,
+          email: userRow[0].email,
+          phone: userRow[0].phone,
+          role: userRow[0].role,
+          createdAt: userRow[0].createdAt,
+        }
+      : null,
+  };
 }

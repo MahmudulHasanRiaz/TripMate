@@ -247,9 +247,10 @@ export default function PortalOrderDetailClient({
                 <div>
                   <span className="text-muted-foreground">Duration</span>
                   <p className="font-semibold text-foreground mt-0.5">
-                    {order.listingSnapshot?.durationDays != null
-                      ? `${order.listingSnapshot.durationDays} days`
-                      : "Custom"}
+                    {order.listingSnapshot?.duration ||
+                      (order.listingSnapshot?.durationDays != null
+                        ? `${order.listingSnapshot.durationDays} days`
+                        : "Standard")}
                   </p>
                 </div>
                 <div>
@@ -258,13 +259,47 @@ export default function PortalOrderDetailClient({
                 </div>
               </div>
 
+              {order.listingSnapshot?.deliveryTime ? (
+                <div className="text-xs">
+                  <span className="text-muted-foreground">Estimated Processing Time: </span>
+                  <span className="font-semibold text-foreground">{order.listingSnapshot.deliveryTime}</span>
+                </div>
+              ) : null}
+
+              {order.listingSnapshot?.requirements && order.listingSnapshot.requirements.length > 0 ? (
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                    Required Documents Checklist
+                  </p>
+                  <ul className="space-y-1">
+                    {order.listingSnapshot.requirements.map((req, i) => (
+                      <li key={i} className="text-xs text-foreground flex items-center gap-2">
+                        <CheckCircle2 className="size-3 text-success shrink-0" aria-hidden="true" />
+                        <span>{req}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
               {order.listingSnapshot ? (
                 <div className="pt-2">
                   <Button asChild variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-                    <Link href={`/packages/${order.listingSnapshot.slug}`} target="_blank">
-                      View Package Overview
-                      <ExternalLink className="size-3" aria-hidden="true" />
-                    </Link>
+                    {order.listingSnapshot.kind === "service_option" ? (
+                      <Link href={`/services/${order.listingSnapshot.categorySlug || ""}`}>
+                        View Service Information
+                        <ExternalLink className="size-3" aria-hidden="true" />
+                      </Link>
+                    ) : order.listingSnapshot.slug ? (
+                      <Link href={`/packages/${order.listingSnapshot.slug}`} target="_blank">
+                        View Package Overview
+                        <ExternalLink className="size-3" aria-hidden="true" />
+                      </Link>
+                    ) : (
+                      <Link href="/account/orders">
+                        Back to Orders
+                      </Link>
+                    )}
                   </Button>
                 </div>
               ) : null}

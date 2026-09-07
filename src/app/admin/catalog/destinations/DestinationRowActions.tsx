@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { Globe, Loader2, Pencil, Trash2 } from "lucide-react";
 import { trashDestination } from "./actions";
 import type { DestinationRow } from "./types";
 import { Button } from "@/components/ui/button";
+import SeoConfigDrawer from "@/components/admin/SeoConfigDrawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +35,7 @@ export default function DestinationRowActions({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [seoOpen, setSeoOpen] = useState(false);
 
   const run = async () => {
     setBusy(true);
@@ -55,9 +57,31 @@ export default function DestinationRowActions({
 
   return (
     <div className="flex items-center justify-end gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => setSeoOpen(true)}
+        aria-label={`Configure SEO for ${row.name}`}
+        title="SEO Configuration"
+      >
+        <Globe className="h-4 w-4" aria-hidden="true" />
+      </Button>
+
       <Button type="button" variant="ghost" size="icon" onClick={onEdit} aria-label={`Edit ${row.name}`}>
         <Pencil className="h-4 w-4" aria-hidden="true" />
       </Button>
+
+      <SeoConfigDrawer
+        entityType="destination"
+        entityId={row.id}
+        entityTitle={row.name}
+        entitySlug={row.slug}
+        initialSeo={row.seo}
+        open={seoOpen}
+        onOpenChange={setSeoOpen}
+        onSaved={() => router.refresh()}
+      />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogTrigger asChild>

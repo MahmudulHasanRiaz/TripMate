@@ -7,6 +7,7 @@ import {
   listPublishedListings,
   type ListingWithRefs,
 } from "@/modules/catalog/service";
+import { listServiceOptions } from "@/modules/catalog/visa-service";
 import { formConfigSchema, type FormConfig } from "@/modules/landing-pages/section-types";
 import type { ServiceKind } from "@/modules/catalog/validation";
 
@@ -53,6 +54,19 @@ export type ServiceListingCard = {
 };
 
 
+/** Serializable slice of an active service option. */
+export type ServiceOptionCardData = {
+  id: string;
+  title: string;
+  slug: string;
+  duration: string | null;
+  price: number;
+  deliveryTime: string | null;
+  requirements: string[];
+  description: string | null;
+  sortOrder: number;
+};
+
 /** Serializable slice of a service category that renders the landing page. */
 export type ServicePageData = {
   id: string;
@@ -68,6 +82,8 @@ export type ServicePageData = {
     title: string;
     formConfig: FormConfig | null;
   } | null;
+  /** Active service options for inquiry_based categories (e.g. Passport 5-Year, 10-Year). */
+  serviceOptions: ServiceOptionCardData[];
 };
 
 function toCardData(listing: ListingWithRefs): ServiceListingCard {
@@ -94,17 +110,33 @@ export async function getServicePageData(slug: string): Promise<ServicePageData 
   const category = await getCategoryBySlug(slug);
   if (!category) return null;
 
-  const listings =
+  const [listings, rawOptions] = await Promise.all([
     category.kind === "package"
-      ? await listPublishedListings({ categorySlug: category.slug })
+      ? listPublishedListings({ categorySlug: category.slug })
       : category.kind === "inquiry_based"
-        ? await listPublishedListings({ categorySlug: category.slug, perPage: 1 })
-        : { items: [] };
+        ? listPublishedListings({ categorySlug: category.slug, perPage: 1 })
+        : Promise.resolve({ items: [] }),
+    category.kind === "inquiry_based"
+      ? listServiceOptions({ categoryId: category.id, activeOnly: true })
+      : Promise.resolve([]),
+  ]);
 
   const firstInquiryListing =
     category.kind === "inquiry_based" && listings.items.length > 0
       ? listings.items[0]
       : null;
+
+  const serviceOptions: ServiceOptionCardData[] = rawOptions.map((opt) => ({
+    id: opt.id,
+    title: opt.title,
+    slug: opt.slug,
+    duration: opt.duration,
+    price: opt.price,
+    deliveryTime: opt.deliveryTime,
+    requirements: opt.requirements,
+    description: opt.description,
+    sortOrder: opt.sortOrder,
+  }));
 
   return {
     id: category.id,
@@ -121,6 +153,7 @@ export async function getServicePageData(slug: string): Promise<ServicePageData 
           formConfig: toFormConfig(firstInquiryListing.formConfig),
         }
       : null,
+    serviceOptions,
   };
 }
 

@@ -8,7 +8,9 @@ import type { DestinationRow } from "./types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import MediaPickerField from "@/components/admin/MediaPickerField";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type FieldKey = "name" | "slug" | "image";
+type FieldKey = "name" | "slug" | "image" | "description" | "sortOrder";
 type FieldErrors = Partial<Record<FieldKey, string>>;
 
 /**
@@ -43,6 +45,9 @@ export default function DestinationFormDialog({
   const [slug, setSlug] = useState(row?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(editing);
   const [image, setImage] = useState(row?.image ?? "");
+  const [description, setDescription] = useState(row?.description ?? "");
+  const [sortOrder, setSortOrder] = useState<number>(row?.sortOrder ?? 0);
+  const [isFeatured, setIsFeatured] = useState<boolean>(row?.isFeatured ?? false);
   const [isActive, setIsActive] = useState(row?.isActive ?? true);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [rootError, setRootError] = useState<string | null>(null);
@@ -66,6 +71,9 @@ export default function DestinationFormDialog({
         name,
         slug,
         image: image.trim() || null,
+        description: description.trim() || null,
+        sortOrder,
+        isFeatured,
         isActive,
       };
       const parsed = destinationInput.safeParse(payload);
@@ -74,7 +82,7 @@ export default function DestinationFormDialog({
         let root = "";
         for (const issue of parsed.error.issues) {
           const field = issue.path[0];
-          if (field === "name" || field === "slug" || field === "image") {
+          if (field === "name" || field === "slug" || field === "image" || field === "description" || field === "sortOrder") {
             if (!next[field]) next[field] = issue.message;
           } else if (!root) {
             root = issue.message;
@@ -143,20 +151,56 @@ export default function DestinationFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="destination-image">Image URL (optional)</Label>
-            <Input
-              id="destination-image"
+            <MediaPickerField
+              label="Destination Image"
               value={image}
-              onChange={(e) => setImage(e.target.value)}
-              placeholder="https://…"
+              onChange={setImage}
+              placeholder="/media/..."
             />
             {errors.image ? (
               <p className="text-sm font-medium text-destructive">{errors.image}</p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                URL text field for now — the media picker replaces this later.
-              </p>
-            )}
+            ) : null}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="destination-desc">Editorial Description</Label>
+            <Textarea
+              id="destination-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Overview of this travel destination, attractions, and cultural highlights..."
+              rows={3}
+              className="resize-none"
+            />
+            {errors.description ? (
+              <p className="text-sm font-medium text-destructive">{errors.description}</p>
+            ) : null}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="destination-order">Sort Order</Label>
+              <Input
+                id="destination-order"
+                type="number"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
+                min={0}
+              />
+              {errors.sortOrder ? (
+                <p className="text-sm font-medium text-destructive">{errors.sortOrder}</p>
+              ) : null}
+            </div>
+
+            <div className="flex flex-col justify-end">
+              <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">
+                <div>
+                  <p className="text-sm font-medium leading-none">Featured</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Homepage highlight</p>
+                </div>
+                <Switch checked={isFeatured} onCheckedChange={setIsFeatured} aria-label="Featured destination" />
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">

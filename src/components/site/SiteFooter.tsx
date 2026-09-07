@@ -11,7 +11,9 @@ import Logo from "@/components/icons/Logo";
  */
 const QUICK_LINKS: { label: string; href: Route }[] = [
   { label: "Packages", href: "/packages" as Route },
+  { label: "Visa Services", href: "/visa" as Route },
   { label: "Blog", href: "/blog" as Route },
+  { label: "Customer Portal", href: "/account" as Route },
   { label: "About", href: "/p/about-us" as Route },
 ];
 
@@ -132,7 +134,7 @@ export function SiteFooter({ title, logoUrl, phone, email, address }: SiteFooter
           </ul>
         </div>
 
-        {/* Newsletter placeholder — Plan 6 wires the real form action. */}
+        {/* Newsletter subscription */}
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
             Stay in touch

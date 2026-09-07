@@ -1,14 +1,20 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Route } from "next";
 import { ArrowRight, MapPin } from "lucide-react";
-import type { Destination } from "@/modules/catalog/service";
+import type { DestinationWithStats } from "@/modules/catalog/service";
+import { formatMoney } from "@/components/site/currency";
 
 export type PopularDestinationsProps = {
-  destinations: Destination[];
+  destinations: DestinationWithStats[];
 };
 
 export function PopularDestinations({ destinations }: PopularDestinationsProps) {
   if (destinations.length === 0) return null;
+
+  // Prioritize featured destinations, fallback to active ordered by sortOrder
+  const featured = destinations.filter((d) => d.isFeatured);
+  const displayDestinations = (featured.length > 0 ? featured : destinations).slice(0, 6);
 
   return (
     <section className="bg-background py-16 lg:py-24">
@@ -29,16 +35,16 @@ export function PopularDestinations({ destinations }: PopularDestinationsProps) 
             href="/packages"
             className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
           >
-            <span>All 40+ destinations</span>
+            <span>Explore all destinations</span>
             <ArrowRight className="size-4" />
           </Link>
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {destinations.slice(0, 6).map((dest) => (
+          {displayDestinations.map((dest) => (
             <Link
               key={dest.id}
-              href={`/packages?destination=${dest.slug}`}
+              href={`/destinations/${dest.slug}` as Route}
               className="group relative overflow-hidden rounded-3xl border border-border bg-card shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl"
             >
               <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted">
@@ -67,7 +73,13 @@ export function PopularDestinations({ destinations }: PopularDestinationsProps) 
                     {dest.name}
                   </h3>
                   <div className="mt-2 flex items-center justify-between text-xs text-white/90">
-                    <span className="font-medium">Curated Packages &amp; Visas</span>
+                    <span className="font-medium">
+                      {dest.packageCount > 0
+                        ? `${dest.packageCount} ${dest.packageCount === 1 ? "Package" : "Packages"}${
+                            dest.startingPrice ? ` · From ${formatMoney(dest.startingPrice)}` : ""
+                          }`
+                        : "Explore Destination"}
+                    </span>
                     <span className="flex items-center gap-1 text-primary group-hover:translate-x-1 transition-transform">
                       Explore <ArrowRight className="size-3" />
                     </span>

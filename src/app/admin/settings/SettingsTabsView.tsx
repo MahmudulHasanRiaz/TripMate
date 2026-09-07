@@ -54,6 +54,18 @@ type SettingsTabsViewProps = {
   initialTheme: ThemeSettings;
 };
 
+/** Parse a JSON array string from the homepage settings editor. Returns [] for a
+ *  blank field (clears the stored list) and null when the JSON is invalid. */
+function parseHomeJsonArray<T>(text: string): T[] | null {
+  if (!text.trim()) return [];
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    return Array.isArray(parsed) ? (parsed as T[]) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function SettingsTabsView({
   initialSite,
   initialHome,
@@ -107,6 +119,16 @@ export default function SettingsTabsView({
   // --- Home Settings Form ---
   const [homeSaving, startHomeTransition] = useTransition();
   const [homeError, setHomeError] = useState<string | null>(null);
+  const [statsText, setStatsText] = useState(() =>
+    Array.isArray(initialHome.stats) && initialHome.stats.length > 0
+      ? JSON.stringify(initialHome.stats, null, 2)
+      : "",
+  );
+  const [testimonialsText, setTestimonialsText] = useState(() =>
+    Array.isArray(initialHome.testimonials) && initialHome.testimonials.length > 0
+      ? JSON.stringify(initialHome.testimonials, null, 2)
+      : "",
+  );
 
   const homeForm = useForm<HomeSettingsInput>({
     resolver: zodResolver(homeSettingsInputSchema),
@@ -117,14 +139,33 @@ export default function SettingsTabsView({
       heroImageAlt: initialHome.heroImageAlt ?? "",
       heroButtonLabel: initialHome.heroButtonLabel ?? "",
       heroButtonLink: initialHome.heroButtonLink ?? "",
+      featuredKicker: initialHome.featuredKicker ?? "",
+      featuredTitle: initialHome.featuredTitle ?? "",
+      featuredLead: initialHome.featuredLead ?? "",
+      ctaHeadline: initialHome.ctaHeadline ?? "",
+      ctaSub: initialHome.ctaSub ?? "",
     },
   });
 
   const onHomeSubmit = homeForm.handleSubmit((values) => {
     setHomeError(null);
+    const stats = parseHomeJsonArray<{ value: string; label: string }>(statsText);
+    const testimonials = parseHomeJsonArray<{
+      quote: string;
+      name: string;
+      trip?: string | null;
+    }>(testimonialsText);
+    if (stats === null || testimonials === null) {
+      setHomeError("Stats and testimonials must be valid JSON arrays.");
+      return;
+    }
     startHomeTransition(async () => {
       try {
-        const res = await saveHomeSettingsAction(values);
+        const res = await saveHomeSettingsAction({
+          ...values,
+          stats,
+          testimonials,
+        });
         if (res.ok) {
           toast({
             title: "Home settings saved",
@@ -424,6 +465,155 @@ export default function SettingsTabsView({
                     />
                   </div>
 
+                  {/* Featured Packages Section (homepage) */}
+                  <div className="space-y-4 pt-2 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Featured Packages Section
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={homeForm.control}
+                        name="featuredKicker"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Kicker</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Featured packages"
+                                className="h-10 text-xs"
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-[11px]">
+                              Small label above the featured section title.
+                            </FormDescription>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={homeForm.control}
+                        name="featuredTitle"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Section Title</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Hand-picked journeys"
+                                className="h-10 text-xs"
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={homeForm.control}
+                      name="featuredLead"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-medium">Lead Paragraph</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="A short line under the section title"
+                              className="h-10 text-xs"
+                              value={field.value ?? ""}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Closing CTA Section (homepage) */}
+                  <div className="space-y-4 pt-2 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Closing Call-to-Action Section
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={homeForm.control}
+                        name="ctaHeadline"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Headline</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Let's plan your next journey"
+                                className="h-10 text-xs"
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={homeForm.control}
+                      name="ctaSub"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-medium">Sub-headline</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="From Hajj and Umrah to family holidays and medical travel..."
+                              className="min-h-20 text-xs"
+                              value={field.value ?? ""}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Trust Stats (JSON) */}
+                  <div className="space-y-4 pt-2 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Trust Stats Band
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      JSON array shown on the homepage stats band. Leave blank to clear and use live
+                      aggregates. Example: {`[{"value":"12+","label":"Years of service"}]`}
+                    </p>
+                    <Textarea
+                      aria-label="Trust stats JSON"
+                      value={statsText}
+                      onChange={(e) => setStatsText(e.target.value)}
+                      rows={4}
+                      className="min-h-24 font-mono text-xs"
+                      placeholder={'[{"value":"12+","label":"Years of service"}]'}
+                    />
+                  </div>
+
+                  {/* Testimonials (JSON) */}
+                  <div className="space-y-4 pt-2 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Testimonials
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      JSON array of {`{ "quote", "name", "trip" }`} objects shown on the homepage.
+                      Leave blank to hide the section.
+                    </p>
+                    <Textarea
+                      aria-label="Testimonials JSON"
+                      value={testimonialsText}
+                      onChange={(e) => setTestimonialsText(e.target.value)}
+                      rows={5}
+                      className="min-h-28 font-mono text-xs"
+                      placeholder={'[{"quote":"...","name":"...","trip":"..."}]'}
+                    />
+                  </div>
+
                   {/* Submit actions */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border/60">
                     <p className="text-[11px] text-muted-foreground font-mono">
@@ -679,6 +869,155 @@ export default function SettingsTabsView({
                         )}
                       />
                     </div>
+                  </div>
+
+                  {/* Featured Packages Section (homepage) */}
+                  <div className="space-y-4 pt-2 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Featured Packages Section
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={homeForm.control}
+                        name="featuredKicker"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Kicker</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Featured packages"
+                                className="h-10 text-xs"
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-[11px]">
+                              Small label above the featured section title.
+                            </FormDescription>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={homeForm.control}
+                        name="featuredTitle"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Section Title</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Hand-picked journeys"
+                                className="h-10 text-xs"
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={homeForm.control}
+                      name="featuredLead"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-medium">Lead Paragraph</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="A short line under the section title"
+                              className="h-10 text-xs"
+                              value={field.value ?? ""}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Closing CTA Section (homepage) */}
+                  <div className="space-y-4 pt-2 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Closing Call-to-Action Section
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <FormField
+                        control={homeForm.control}
+                        name="ctaHeadline"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Headline</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Let's plan your next journey"
+                                className="h-10 text-xs"
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <FormField
+                      control={homeForm.control}
+                      name="ctaSub"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs font-medium">Sub-headline</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="From Hajj and Umrah to family holidays and medical travel..."
+                              className="min-h-20 text-xs"
+                              value={field.value ?? ""}
+                              onChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  {/* Trust Stats (JSON) */}
+                  <div className="space-y-4 pt-2 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Trust Stats Band
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      JSON array shown on the homepage stats band. Leave blank to clear and use live
+                      aggregates. Example: {`[{"value":"12+","label":"Years of service"}]`}
+                    </p>
+                    <Textarea
+                      aria-label="Trust stats JSON"
+                      value={statsText}
+                      onChange={(e) => setStatsText(e.target.value)}
+                      rows={4}
+                      className="min-h-24 font-mono text-xs"
+                      placeholder={'[{"value":"12+","label":"Years of service"}]'}
+                    />
+                  </div>
+
+                  {/* Testimonials (JSON) */}
+                  <div className="space-y-4 pt-2 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Testimonials
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground">
+                      JSON array of {`{ "quote", "name", "trip" }`} objects shown on the homepage.
+                      Leave blank to hide the section.
+                    </p>
+                    <Textarea
+                      aria-label="Testimonials JSON"
+                      value={testimonialsText}
+                      onChange={(e) => setTestimonialsText(e.target.value)}
+                      rows={5}
+                      className="min-h-28 font-mono text-xs"
+                      placeholder={'[{"quote":"...","name":"...","trip":"..."}]'}
+                    />
                   </div>
 
                   {/* Submit actions */}

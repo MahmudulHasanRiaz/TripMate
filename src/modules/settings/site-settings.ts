@@ -144,6 +144,9 @@ export async function updateSiteSettings(input: SiteSettingsInput): Promise<Site
 
 // ---- home row -----------------------------------------------------------------------
 
+export type HomeStat = { value: string; label: string };
+export type HomeTestimonial = { quote: string; name: string; trip?: string | null };
+
 export type HomeSettings = {
   heroHeadline: string | null;
   heroSub: string | null;
@@ -151,6 +154,13 @@ export type HomeSettings = {
   heroButtonLabel: string | null;
   heroButtonLink: string | null;
   heroImageAlt: string | null;
+  featuredKicker: string | null;
+  featuredTitle: string | null;
+  featuredLead: string | null;
+  ctaHeadline: string | null;
+  ctaSub: string | null;
+  stats: HomeStat[] | null;
+  testimonials: HomeTestimonial[] | null;
 };
 
 /**
@@ -165,6 +175,10 @@ export async function getHomeSettings(): Promise<HomeSettings> {
     const value = row[key];
     return typeof value === "string" && value !== "" ? value : null;
   };
+  const arrayOf = (key: string): unknown[] | null => {
+    const value = row[key];
+    return Array.isArray(value) && value.length > 0 ? (value as unknown[]) : null;
+  };
   return {
     heroHeadline: text("heroHeadline"),
     heroSub: text("heroSub"),
@@ -172,6 +186,13 @@ export async function getHomeSettings(): Promise<HomeSettings> {
     heroButtonLabel: text("heroButtonLabel"),
     heroButtonLink: text("heroButtonLink"),
     heroImageAlt: text("heroImageAlt"),
+    featuredKicker: text("featuredKicker"),
+    featuredTitle: text("featuredTitle"),
+    featuredLead: text("featuredLead"),
+    ctaHeadline: text("ctaHeadline"),
+    ctaSub: text("ctaSub"),
+    stats: (arrayOf("stats") as HomeStat[] | null) ?? null,
+    testimonials: (arrayOf("testimonials") as HomeTestimonial[] | null) ?? null,
   };
 }
 
@@ -182,6 +203,7 @@ export async function getHomeSettings(): Promise<HomeSettings> {
  */
 export async function updateHomeSettings(input: HomeSettingsInput): Promise<HomeSettings> {
   const current = await getHomeSettings();
+  const raw = asRow(await getSetting("home"));
   const next: HomeSettings = {
     heroHeadline: mergedText(current.heroHeadline, input.heroHeadline),
     heroSub: mergedText(current.heroSub, input.heroSub),
@@ -189,8 +211,18 @@ export async function updateHomeSettings(input: HomeSettingsInput): Promise<Home
     heroButtonLabel: mergedText(current.heroButtonLabel, input.heroButtonLabel),
     heroButtonLink: mergedText(current.heroButtonLink, input.heroButtonLink),
     heroImageAlt: mergedText(current.heroImageAlt, input.heroImageAlt),
+    featuredKicker: mergedText(current.featuredKicker, input.featuredKicker),
+    featuredTitle: mergedText(current.featuredTitle, input.featuredTitle),
+    featuredLead: mergedText(current.featuredLead, input.featuredLead),
+    ctaHeadline: mergedText(current.ctaHeadline, input.ctaHeadline),
+    ctaSub: mergedText(current.ctaSub, input.ctaSub),
+    stats: input.stats !== undefined ? input.stats : current.stats,
+    testimonials:
+      input.testimonials !== undefined ? input.testimonials : current.testimonials,
   };
-  await setSetting("home", next);
+  // Preserve any future/unknown keys already stored in the home row so an
+  // admin save never silently drops data this form does not edit yet.
+  await setSetting("home", { ...raw, ...next });
   return next;
 }
 

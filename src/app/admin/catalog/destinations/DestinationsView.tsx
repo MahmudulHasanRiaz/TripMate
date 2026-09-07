@@ -61,6 +61,8 @@ export default function DestinationsView({ rows }: { rows: DestinationRow[] }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Destination</TableHead>
+                  <TableHead>Order</TableHead>
+                  <TableHead>Featured</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">
                     <span className="sr-only">Actions</span>
@@ -70,7 +72,7 @@ export default function DestinationsView({ rows }: { rows: DestinationRow[] }) {
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3} className="h-32 text-center">
+                    <TableCell colSpan={5} className="h-32 text-center">
                       <p className="font-medium text-muted-foreground">No destinations yet.</p>
                       <Button variant="link" className="mt-1" onClick={openCreate}>
                         Create your first destination
@@ -81,8 +83,36 @@ export default function DestinationsView({ rows }: { rows: DestinationRow[] }) {
                   rows.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell>
-                        <span className="font-medium">{row.name}</span>
-                        <p className="text-xs text-muted-foreground">{row.slug}</p>
+                        <div className="flex items-center gap-3">
+                          {row.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- admin thumbnail may be any configured host
+                            <img
+                              src={row.image}
+                              alt={row.name}
+                              className="size-10 rounded-md object-cover border border-border shrink-0"
+                            />
+                          ) : (
+                            <div className="size-10 rounded-md bg-muted border border-border flex items-center justify-center text-xs text-muted-foreground shrink-0">
+                              No img
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-medium text-foreground">{row.name}</span>
+                            <p className="text-xs text-muted-foreground">{row.slug}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        #{row.sortOrder ?? 0}
+                      </TableCell>
+                      <TableCell>
+                        {row.isFeatured ? (
+                          <Badge variant="secondary" className="text-[10px] font-semibold bg-primary/10 text-primary">
+                            Featured
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={row.isActive ? "success" : "outline"}>

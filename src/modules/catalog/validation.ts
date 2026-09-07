@@ -182,12 +182,31 @@ export const categoryInput = z
     isActive: z.boolean().default(true),
   })
   .superRefine((data, ctx) => {
-    if (data.kind === "redirect" && !data.redirectUrl?.trim()) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ["redirectUrl"],
-        message: "redirectUrl is required when kind is 'redirect'",
-      });
+    if (data.kind === "redirect") {
+      if (!data.redirectUrl?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["redirectUrl"],
+          message: "redirectUrl is required when kind is 'redirect'",
+        });
+      } else {
+        try {
+          const parsed = new URL(data.redirectUrl);
+          if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ["redirectUrl"],
+              message: "redirectUrl must start with https:// or http://",
+            });
+          }
+        } catch {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ["redirectUrl"],
+            message: "redirectUrl must be a valid URL",
+          });
+        }
+      }
     }
   });
 export type CategoryInput = z.infer<typeof categoryInput>;
@@ -197,6 +216,10 @@ export const destinationInput = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
   slug: slugSchema,
   image: z.string().trim().max(2048).nullable().optional(),
+  description: z.string().trim().max(10000).nullable().optional(),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+  isFeatured: z.boolean().default(false),
   isActive: z.boolean().default(true),
+  seo: z.record(z.string(), z.unknown()).nullable().optional(),
 });
 export type DestinationInput = z.infer<typeof destinationInput>;

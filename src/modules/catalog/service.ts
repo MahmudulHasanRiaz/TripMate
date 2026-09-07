@@ -54,7 +54,16 @@ export type Destination = {
   name: string;
   slug: string;
   image: string | null;
+  description?: string | null;
+  sortOrder?: number;
+  isFeatured?: boolean;
   isActive: boolean;
+  seo?: Record<string, unknown> | null;
+};
+
+export type DestinationWithStats = Destination & {
+  packageCount: number;
+  startingPrice: number | null;
 };
 
 export type ListingCategory = {
@@ -119,6 +128,7 @@ export type PublishedListingsQuery = {
   destinationSlug?: string;
   minPrice?: number;
   maxPrice?: number;
+  isFeatured?: boolean;
   page?: number;
   perPage?: number;
 };
@@ -247,6 +257,7 @@ export async function listPublishedListings(
   if (search) conditions.push(listingSearchCondition(search));
   if (query.categorySlug) conditions.push(eq(serviceCategories.slug, query.categorySlug));
   if (query.destinationSlug) conditions.push(eq(destinations.slug, query.destinationSlug));
+  if (query.isFeatured !== undefined) conditions.push(eq(listings.isFeatured, query.isFeatured));
   if (query.minPrice !== undefined) conditions.push(gte(listings.price, query.minPrice.toFixed(2)));
   if (query.maxPrice !== undefined) conditions.push(lte(listings.price, query.maxPrice.toFixed(2)));
 
@@ -256,7 +267,7 @@ export async function listPublishedListings(
   const [countRow] = await listingCountQuery().where(where);
   const rows = await listingQuery()
     .where(where)
-    .orderBy(desc(listings.createdAt), desc(listings.id))
+    .orderBy(desc(listings.isFeatured), desc(listings.createdAt), desc(listings.id))
     .limit(perPage)
     .offset(offset);
 
@@ -400,17 +411,118 @@ export async function getCategoryBySlug(
 }
 
 export async function listDestinations(activeOnly = true): Promise<Destination[]> {
-  return db
+  const rows = await db
     .select({
       id: destinations.id,
       name: destinations.name,
       slug: destinations.slug,
       image: destinations.image,
+      description: destinations.description,
+      sortOrder: destinations.sortOrder,
+      isFeatured: destinations.isFeatured,
       isActive: destinations.isActive,
+      seo: destinations.seo,
     })
     .from(destinations)
     .where(activeOnly ? eq(destinations.isActive, true) : undefined)
-    .orderBy(asc(destinations.name));
+    .orderBy(asc(destinations.sortOrder), asc(destinations.name));
+
+  return rows.map((r) => ({
+    ...r,
+    seo: (r.seo ?? null) as Record<string, unknown> | null,
+  }));
+}
+
+export async function listDestinationsWithStats(
+  activeOnly = true,
+): Promise<DestinationWithStats[]> {
+  const destList = await listDestinations(activeOnly);
+  if (destList.length === 0) return [];
+
+  const stats = await db
+    .select({
+      destinationId: listings.destinationId,
+      packageCount: sql<number>`count(${listings.id})::int`,
+      minPrice: sql<string | null>`min(coalesce(${listings.startingPrice}, ${listings.price}))`,
+    })
+    .from(listings)
+    .where(and(eq(listings.status, "published"), isNull(listings.deletedAt)))
+    .groupBy(listings.destinationId);
+
+  const statsMap = new Map(
+    stats
+      .filter((s): s is typeof s & { destinationId: string } => Boolean(s.destinationId))
+      .map((s) => [
+        s.destinationId,
+        {
+          packageCount: Number(s.packageCount) || 0,
+          startingPrice: s.minPrice ? Number(s.minPrice) : null,
+        },
+      ]),
+  );
+
+  return destList.map((d) => {
+    const stat = statsMap.get(d.id);
+    return {
+      ...d,
+      packageCount: stat?.packageCount ?? 0,
+      startingPrice: stat?.startingPrice ?? null,
+    };
+  });
+}
+
+export async function getDestinationBySlug(
+  slug: string,
+  activeOnly = true,
+): Promise<Destination | null> {
+  const conditions = [eq(destinations.slug, slug)];
+  if (activeOnly) conditions.push(eq(destinations.isActive, true));
+
+  const [row] = await db
+    .select({
+      id: destinations.id,
+      name: destinations.name,
+      slug: destinations.slug,
+      image: destinations.image,
+      description: destinations.description,
+      sortOrder: destinations.sortOrder,
+      isFeatured: destinations.isFeatured,
+      isActive: destinations.isActive,
+      seo: destinations.seo,
+    })
+    .from(destinations)
+    .where(and(...conditions))
+    .limit(1);
+
+  if (!row) return null;
+  return {
+    ...row,
+    seo: (row.seo ?? null) as Record<string, unknown> | null,
+  };
+}
+
+export async function getDestinationById(id: string): Promise<Destination | null> {
+  const [row] = await db
+    .select({
+      id: destinations.id,
+      name: destinations.name,
+      slug: destinations.slug,
+      image: destinations.image,
+      description: destinations.description,
+      sortOrder: destinations.sortOrder,
+      isFeatured: destinations.isFeatured,
+      isActive: destinations.isActive,
+      seo: destinations.seo,
+    })
+    .from(destinations)
+    .where(eq(destinations.id, id))
+    .limit(1);
+
+  if (!row) return null;
+  return {
+    ...row,
+    seo: (row.seo ?? null) as Record<string, unknown> | null,
+  };
 }
 
 // ---- listing writes -----------------------------------------------------------
@@ -713,7 +825,11 @@ function toDestination(row: DestinationsRow): Destination {
     name: row.name,
     slug: row.slug,
     image: row.image,
+    description: row.description,
+    sortOrder: row.sortOrder,
+    isFeatured: row.isFeatured,
     isActive: row.isActive,
+    seo: (row.seo ?? null) as Record<string, unknown> | null,
   };
 }
 
@@ -722,7 +838,11 @@ function toDestinationWrite(input: DestinationInput): DestinationWrite {
     name: input.name,
     slug: input.slug,
     image: input.image || null,
+    description: input.description || null,
+    sortOrder: input.sortOrder ?? 0,
+    isFeatured: input.isFeatured ?? false,
     isActive: input.isActive,
+    seo: input.seo || null,
   };
 }
 

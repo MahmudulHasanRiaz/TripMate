@@ -141,5 +141,23 @@ export const homeSettingsInputSchema = z.object({
   heroButtonLabel: clearableOptionalText(40, "Button label must be 40 characters or fewer"),
   heroButtonLink: optionalUrlOrEmpty(200, "Button link must be 200 characters or fewer"),
   heroImageAlt: clearableOptionalText(160, "Image alt text must be 160 characters or fewer"),
+  featuredKicker: clearableOptionalText(80, "Featured kicker must be 80 characters or fewer"),
+  featuredTitle: clearableOptionalText(100, "Featured title must be 100 characters or fewer"),
+  featuredLead: clearableOptionalText(240, "Featured lead must be 240 characters or fewer"),
+  ctaHeadline: clearableOptionalText(140, "CTA headline must be 140 characters or fewer"),
+  ctaSub: clearableOptionalText(300, "CTA sub-headline must be 300 characters or fewer"),
+  stats: z.array(
+    z.object({
+      value: z.string().trim().min(1, "Stat value is required").max(24),
+      label: z.string().trim().min(1, "Stat label is required").max(80),
+    }),
+  ).max(6).optional(),
+  testimonials: z.array(
+    z.object({
+      quote: z.string().trim().min(1, "Testimonial quote is required").max(500),
+      name: z.string().trim().min(1, "Testimonial name is required").max(140),
+      trip: z.string().trim().max(200).nullable().optional(),
+    }),
+  ).max(12).optional(),
 });
 export type HomeSettingsInput = z.infer<typeof homeSettingsInputSchema>;

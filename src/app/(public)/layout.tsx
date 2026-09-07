@@ -7,6 +7,7 @@ import { getPublicThemeSettings } from "@/modules/settings/theme-service";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { JsonLd } from "@/components/site/JsonLd";
 
 /**
  * Metadata for every public marketing page (Plan 6 T3): when the
@@ -51,8 +52,25 @@ export default async function PublicLayout({
 
   const themeCss = buildThemeCssVariables(theme);
 
+  const orgJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TravelAgency",
+    name: site.title,
+    telephone: site.phone || undefined,
+    email: site.email || undefined,
+    address: site.address
+      ? {
+          "@type": "PostalAddress",
+          streetAddress: site.address,
+          addressCountry: "BD",
+        }
+      : undefined,
+    logo: site.logoUrl || undefined,
+  };
+
   return (
     <>
+      <JsonLd data={orgJsonLd} />
       <style id="tripmate-dynamic-theme">{themeCss}</style>
       <SkipLink />
       <SiteHeader title={site.title} logoUrl={site.logoUrl} />

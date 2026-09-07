@@ -2,13 +2,18 @@ import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { cacheLife, cacheTag } from "next/cache";
 
+import { sql } from "drizzle-orm";
+import { db } from "@/db/client";
+import { orders } from "@/modules/bookings/schema";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getPublicHomeSettings, getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { getSetting } from "@/modules/settings/service";
-import { listCategories, listPublishedListings, listDestinations } from "@/modules/catalog/service";
+import { listCategories, listPublishedListings, listDestinationsWithStats } from "@/modules/catalog/service";
 import { listPublishedPosts } from "@/modules/content/service";
 import type { ServiceKind } from "@/modules/catalog/validation";
+import { TestimonialsSection } from "@/components/landing/sections/TestimonialsSection";
+import type { TestimonialItem } from "@/modules/landing-pages/section-types";
 
 import { HeroSection } from "@/components/site/HeroSection";
 import TravelActionPanel from "@/components/site/TravelActionPanel";
@@ -41,18 +46,60 @@ export default async function Home() {
   cacheTag(CACHE_TAGS.settings);
   cacheTag(CACHE_TAGS.listings);
   cacheTag(CACHE_TAGS.posts);
+  cacheTag(CACHE_TAGS.orders);
   cacheLife("hours");
 
-  const [site, homeRaw, categories, destinations, published, blog] = await Promise.all([
+  const [
+    site,
+    homeRaw,
+    categories,
+    destinations,
+    featuredPublished,
+    allPublished,
+    blog,
+    ordersCountRow,
+  ] = await Promise.all([
     getSiteSettings(),
     getSetting("home"),
     listCategories(true),
-    listDestinations(true),
+    listDestinationsWithStats(true),
+    listPublishedListings({ isFeatured: true, perPage: 3 }),
     listPublishedListings({ perPage: 3 }),
     listPublishedPosts({ perPage: 3 }),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(orders)
+      .catch(() => [{ count: 0 }]),
   ]);
 
   const home = readHomeSetting(homeRaw);
+
+  const displayPackages =
+    featuredPublished.items.length > 0
+      ? featuredPublished.items
+      : allPublished.items;
+
+  const totalOrders = Number(ordersCountRow[0]?.count ?? 0);
+  // Trust figures are admin-configured (settings.home.stats) when present;
+  // otherwise they are honest live aggregates - never invented claims.
+  const realStats: Stat[] =
+    home.stats && home.stats.length > 0
+      ? home.stats
+      : [
+          ...(destinations.length > 0
+            ? [{ value: `${destinations.length}+`, label: "Destinations served" }]
+            : []),
+          ...(totalOrders > 0
+            ? [{ value: `${totalOrders}+`, label: "Journeys booked" }]
+            : []),
+        ];
+
+  const flightCategory = categories.find(
+    (c) => c.slug === "flight-tickets" || c.slug.includes("flight") || c.name.toLowerCase().includes("flight")
+  );
+  const hotelCategory = categories.find(
+    (c) => c.slug === "hotel-reservations" || c.slug.includes("hotel") || c.name.toLowerCase().includes("hotel")
+  );
 
   return (
     <>
@@ -68,6 +115,10 @@ export default async function Home() {
       <TravelActionPanel
         destinations={destinations}
         categories={categories}
+        flightRedirectUrl={flightCategory?.redirectUrl}
+        flightSlug={flightCategory?.slug ?? "flights"}
+        hotelRedirectUrl={hotelCategory?.redirectUrl}
+        hotelSlug={hotelCategory?.slug ?? "hotels"}
         phone={site.phone}
       />
 
@@ -75,14 +126,14 @@ export default async function Home() {
         <TrustStrip />
       </div>
 
-      {published.items.length > 0 ? (
+      {displayPackages.length > 0 ? (
         <section className="bg-background">
           <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
               <SectionHeading
-                kicker="Featured packages"
-                title="Hand-picked journeys"
-                lead="A few of the trips travellers book with us most — fixed itineraries, transparent pricing."
+                kicker={home.featuredKicker}
+                title={home.featuredTitle}
+                lead={home.featuredLead}
               />
               <Link
                 href={PACKAGES_HREF}
@@ -92,7 +143,7 @@ export default async function Home() {
               </Link>
             </div>
             <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-              {published.items.slice(0, 3).map((pkg) => (
+              {displayPackages.slice(0, 3).map((pkg) => (
                 <PackageCard
                   key={pkg.id}
                   href={`/packages/${pkg.slug}`}
@@ -128,7 +179,9 @@ export default async function Home() {
         </section>
       ) : null}
 
-      <StatsBand stats={STATS} />
+      {realStats.length > 0 ? <StatsBand stats={realStats} /> : null}
+
+      <TestimonialsSection config={{ items: home.testimonials }} />
 
       <HumanConcierge phone={site.phone} email={site.email} />
 
@@ -181,8 +234,8 @@ export default async function Home() {
       </section>
 
       <CTASection
-        headline="Let's plan your next journey"
-        sub="From Hajj and Umrah to family holidays and medical travel — talk to a TripMate advisor today."
+        headline={home.ctaHeadline}
+        sub={home.ctaSub}
         ctaLabel="Explore packages"
         ctaHref={PACKAGES_HREF}
         phone={site.phone}
@@ -236,6 +289,13 @@ function readHomeSetting(raw: Record<string, unknown> | null): {
   ctaHref: string;
   imageUrl: string | null;
   imageAlt: string;
+  featuredKicker: string;
+  featuredTitle: string;
+  featuredLead: string;
+  ctaHeadline: string;
+  ctaSub: string;
+  stats?: Stat[];
+  testimonials: TestimonialItem[];
 } {
   const pick = (key: string): string | undefined =>
     typeof raw?.[key] === "string" && (raw[key] as string).trim()
@@ -243,10 +303,22 @@ function readHomeSetting(raw: Record<string, unknown> | null): {
       : undefined;
 
   // CTA link is honoured only when it points at an internal path; otherwise the
-  // hero keeps its single primary action on /packages (Task 10 scope).
+  // hero keeps its single primary action on /packages.
   const link = pick("heroButtonLink");
   const internalLink =
     link && link.startsWith("/") && !link.startsWith("//") ? link : undefined;
+
+  const rawTestimonials = Array.isArray(raw?.testimonials)
+    ? (raw.testimonials as TestimonialItem[]).filter(
+        (t) => t && typeof t.quote === "string" && typeof t.name === "string",
+      )
+    : null;
+
+  const rawStats = Array.isArray(raw?.stats)
+    ? (raw.stats as Stat[]).filter(
+        (s) => s && typeof s.value === "string" && typeof s.label === "string",
+      )
+    : undefined;
 
   return {
     headline: pick("heroHeadline") ?? DEFAULT_HEADLINE,
@@ -255,10 +327,21 @@ function readHomeSetting(raw: Record<string, unknown> | null): {
     ctaHref: (internalLink ?? PACKAGES_HREF) as Route,
     imageUrl: pick("heroImage") ?? null,
     imageAlt: pick("heroImageAlt") ?? "",
+    featuredKicker: pick("featuredKicker") ?? "Featured packages",
+    featuredTitle: pick("featuredTitle") ?? "Hand-picked journeys",
+    featuredLead:
+      pick("featuredLead") ??
+      "A few of the trips travellers book with us most — fixed itineraries, transparent pricing.",
+    ctaHeadline: pick("ctaHeadline") ?? "Let's plan your next journey",
+    ctaSub:
+      pick("ctaSub") ??
+      "From Hajj and Umrah to family holidays and medical travel — talk to a TripMate advisor today.",
+    stats: rawStats,
+    testimonials: rawTestimonials ?? [],
   };
 }
 
-/** One-line customer-facing promise per category kind (v1 label stand-in). */
+/** One-line customer-facing promise per category kind. */
 const SERVICE_KIND_BLURB: Record<ServiceKind, string> = {
   package: "Curated packages with transparent, published pricing.",
   inquiry_based: "Tell us your plan — we'll craft a personalised quote.",
@@ -272,9 +355,6 @@ function toServiceItem(category: {
   redirectUrl: string | null;
   icon: string | null;
 }): ServiceGridItem {
-  // Only a redirect-kind category WITH a destination URL is an external link.
-  // A redirect row whose URL is missing/unset renders as a plain internal link
-  // to /services/{slug} instead (no external marker, no blank-target escape).
   const external = category.kind === "redirect" && Boolean(category.redirectUrl);
   return {
     href: external
@@ -287,15 +367,3 @@ function toServiceItem(category: {
     blurb: SERVICE_KIND_BLURB[category.kind],
   };
 }
-
-/**
- * V1 placeholder trust figures — deliberately static copy so the band renders
- * pre-launch. A later plan replaces these with real aggregates (years in
- * business, orders served, destinations covered, average rating).
- */
-const STATS: Stat[] = [
-  { value: "12+", label: "Years of service" },
-  { value: "25,000+", label: "Happy travellers" },
-  { value: "30+", label: "Destinations served" },
-  { value: "4.9/5", label: "Average rating" },
-];

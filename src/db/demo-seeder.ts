@@ -8,6 +8,8 @@ import {
   paymentGateways,
   postCategories,
   posts,
+  quotations,
+  quotationItems,
   serviceCategories,
   serviceOptions,
   settings,
@@ -181,6 +183,39 @@ export async function seedDemoData() {
           heroButtonLink: "/packages",
           heroImage: storedUrls.hero || null,
           heroImageAlt: "Scenic luxury travel journey by TripMate",
+          featuredKicker: "Signature Journeys",
+          featuredTitle: "Hand-picked trips for every traveller",
+          featuredLead:
+            "Fixed itineraries, transparent all-inclusive pricing, and 24/7 on-ground support.",
+          ctaHeadline: "Let's plan your next journey",
+          ctaSub:
+            "From Hajj and Umrah to family holidays and medical travel — talk to a TripMate advisor today.",
+          stats: [
+            { value: "12+", label: "Years of service" },
+            { value: "25,000+", label: "Happy travellers" },
+            { value: "30+", label: "Destinations served" },
+            { value: "4.9/5", label: "Average rating" },
+          ],
+          testimonials: [
+            {
+              quote:
+                "TripMate made our family Umrah completely effortless. From private VIP transport in Makkah to 5-star hotels right in front of the Haram, everything exceeded expectations.",
+              name: "Dr. Tariqul Islam",
+              trip: "Executive Umrah Package 2026",
+            },
+            {
+              quote:
+                "Our Dubai holiday was smoothly arranged. Desert safari, Burj Khalifa tickets, and airport transfers were on time with a dedicated concierge on WhatsApp.",
+              name: "Nusrat Jahan & Family",
+              trip: "Dubai Luxury Discovery",
+            },
+            {
+              quote:
+                "Secured our Malaysia medical screening and family tour in record time. Professional documentation and transparent pricing with no hidden charges.",
+              name: "Engr. Mahbubur Rahman",
+              trip: "Malaysia Health & Wellness Tour",
+            },
+          ],
         },
       },
       {
@@ -331,6 +366,10 @@ export async function seedDemoData() {
           sortOrder: 4,
           isFeatured: true,
           isActive: true,
+          seo: {
+            title: "Maldives Honeymoon & Luxury Packages | TripMate",
+            description: "Luxury water villa packages and resort holidays in Maldives with direct flights and speed boat transfers.",
+          },
         },
         {
           name: "Cox's Bazar & Sylhet",
@@ -340,6 +379,10 @@ export async function seedDemoData() {
           sortOrder: 5,
           isFeatured: true,
           isActive: true,
+          seo: {
+            title: "Cox's Bazar & Sylhet Tour Packages | TripMate",
+            description: "Discover Bangladesh with luxury 5-star beachfront stays in Cox's Bazar and tranquil tea estate resorts in Sylhet.",
+          },
         },
         {
           name: "Turkey & Europe",
@@ -349,6 +392,10 @@ export async function seedDemoData() {
           sortOrder: 6,
           isFeatured: false,
           isActive: true,
+          seo: {
+            title: "Turkey & Europe Holiday Packages | TripMate",
+            description: "Istanbul historical tours, Cappadocia hot air balloons, and Schengen visa assistance.",
+          },
         },
       ])
       .returning();
@@ -610,7 +657,7 @@ export async function seedDemoData() {
           { url: storedUrls.pkgHajjCover || "", alt: "Kaaba Grand Mosque" },
           { url: storedUrls.destMakkah || "", alt: "Clock Tower luxury hotel room view" },
         ],
-        videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        videoUrl: null,
         durationDays: 21,
         rating: "4.95",
         price: "850000",
@@ -1031,7 +1078,113 @@ export async function seedDemoData() {
   }
 
   // --------------------------------------------------------------------------
-  // 11. Static Pages (About, FAQ, Terms, Privacy)
+  // 11. Demo Quotations & Line Items
+  // --------------------------------------------------------------------------
+  console.log("[demo-seed] Seeding demo custom quotations...");
+  const existingQuotes = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(quotations);
+
+  if (existingQuotes[0]?.count === 0) {
+    const [q1] = await db
+      .insert(quotations)
+      .values({
+        quoteNo: "QT-2026-0001",
+        customerName: "Farhan Ahmed (Apex Holdings)",
+        customerPhone: "01711998877",
+        customerEmail: "farhan@apexholdings.example.com",
+        totalPrice: "2310000.00",
+        totalCost: "1920000.00",
+        grossProfit: "390000.00",
+        notes: "Executive Umrah Delegation for 10 C-level executives. Includes Swissôtel Clock Tower 5-star suites, private GMC Yukon airport transfers, and private scholar.",
+        validUntil: new Date(Date.now() + 30 * 24 * 3600 * 1000),
+        status: "accepted",
+      })
+      .returning();
+
+    if (q1) {
+      await db.insert(quotationItems).values([
+        {
+          quotationId: q1.id,
+          description: "Executive Umrah Package (Clock Tower 5-star Suite, 10 Persons)",
+          quantity: 10,
+          unitPrice: "220000.00",
+          unitCost: "185000.00",
+          totalPrice: "2200000.00",
+          totalCost: "1850000.00",
+        },
+        {
+          quotationId: q1.id,
+          description: "VIP Airport Meet & Assist + Private GMC Yukon Chauffeur Transfers",
+          quantity: 1,
+          unitPrice: "75000.00",
+          unitCost: "50000.00",
+          totalPrice: "75000.00",
+          totalCost: "50000.00",
+        },
+        {
+          quotationId: q1.id,
+          description: "Exclusive Historical Guided Ziyarat with Senior Islamic Scholar",
+          quantity: 1,
+          unitPrice: "35000.00",
+          unitCost: "20000.00",
+          totalPrice: "35000.00",
+          totalCost: "20000.00",
+        },
+      ]);
+    }
+
+    const [q2] = await db
+      .insert(quotations)
+      .values({
+        quoteNo: "QT-2026-0002",
+        customerName: "Dr. Tariqul Islam",
+        customerPhone: "01819223344",
+        customerEmail: "tariqul@example.com",
+        totalPrice: "276000.00",
+        totalCost: "220000.00",
+        grossProfit: "56000.00",
+        notes: "Custom 5-Day Luxury Family Vacation in Dubai. 4 Guests.",
+        validUntil: new Date(Date.now() + 14 * 24 * 3600 * 1000),
+        status: "draft",
+      })
+      .returning();
+
+    if (q2) {
+      await db.insert(quotationItems).values([
+        {
+          quotationId: q2.id,
+          description: "Atlantis The Palm Ocean View Deluxe Room (4 Nights)",
+          quantity: 1,
+          unitPrice: "180000.00",
+          unitCost: "150000.00",
+          totalPrice: "180000.00",
+          totalCost: "150000.00",
+        },
+        {
+          quotationId: q2.id,
+          description: "VIP Desert Safari with Private Majlis Barbecue Dinner",
+          quantity: 4,
+          unitPrice: "9500.00",
+          unitCost: "6500.00",
+          totalPrice: "38000.00",
+          totalCost: "26000.00",
+        },
+        {
+          quotationId: q2.id,
+          description: "Express UAE Tourist Visas & Document Clearance",
+          quantity: 4,
+          unitPrice: "14500.00",
+          unitCost: "11000.00",
+          totalPrice: "58000.00",
+          totalCost: "44000.00",
+        },
+      ]);
+    }
+  }
+
+  // --------------------------------------------------------------------------
+  // 12. Static Pages (About, FAQ, Terms, Privacy)
   // --------------------------------------------------------------------------
   console.log("[demo-seed] Seeding static legal and information pages...");
   await seedStaticContent(db);

@@ -17,6 +17,7 @@ const TABS: { href: string; label: string }[] = [
   { href: "/admin/catalog/categories", label: "Categories" },
   { href: "/admin/catalog/destinations", label: "Destinations" },
   { href: "/admin/catalog/visa-services", label: "Visa Services" },
+  { href: "/admin/catalog/visa-types", label: "Visa Types" },
   { href: "/admin/catalog/service-options", label: "Service Options" },
 ];
 

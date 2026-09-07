@@ -22,16 +22,20 @@ type ActionTab = "packages" | "umrah" | "visa" | "flights" | "hotels";
 export type TravelActionPanelProps = {
   destinations: { id: string; name: string; slug: string }[];
   categories?: { id: string; name: string; slug: string; kind: string }[];
-  flightRedirectUrl?: string;
-  hotelRedirectUrl?: string;
-  phone?: string;
+  flightRedirectUrl?: string | null;
+  flightSlug?: string;
+  hotelRedirectUrl?: string | null;
+  hotelSlug?: string;
+  phone?: string | null;
 };
 
 export default function TravelActionPanel({
   destinations,
-  flightRedirectUrl = "https://www.google.com/travel/flights",
-  hotelRedirectUrl = "https://www.booking.com",
-  phone = "+880 1700-000000",
+  flightRedirectUrl,
+  flightSlug = "flights",
+  hotelRedirectUrl,
+  hotelSlug = "hotels",
+  phone,
 }: TravelActionPanelProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActionTab>("packages");
@@ -197,6 +201,7 @@ export default function TravelActionPanel({
           )}
 
           {/* TAB 2: Hajj & Umrah */}
+          {/* TAB 2: Umrah Packages */}
           {activeTab === "umrah" && (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2">
               <div>
@@ -209,10 +214,10 @@ export default function TravelActionPanel({
               </div>
               <div className="flex gap-2 shrink-0">
                 <Button asChild variant="outline" className="rounded-xl h-11">
-                  <Link href={`tel:${phone}`}>
+                  <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
                     <Headphones className="mr-2 size-4" />
-                    Call Hajj Specialist
-                  </Link>
+                    {phone?.trim() ? "Call Hajj Specialist" : "Contact Hajj Specialist"}
+                  </a>
                 </Button>
                 <Button asChild className="rounded-xl h-11">
                   <Link href="/packages?category=hajj-umrah">
@@ -251,7 +256,7 @@ export default function TravelActionPanel({
             </form>
           )}
 
-          {/* TAB 4: Flights - External Redirect Notice */}
+          {/* TAB 4: Flights - External Redirect or Internal Service */}
           {activeTab === "flights" && (
             <div className="flex flex-col gap-4 rounded-2xl bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
@@ -263,28 +268,36 @@ export default function TravelActionPanel({
                   Compare 500+ Airlines or Book with Human Concierge
                 </h4>
                 <p className="text-xs text-muted-foreground max-w-2xl">
-                  For real-time seat availability and instant e-tickets, we route you to our global flight search engine. For complex group bookings, UMRAH flights, or special corporate fares, contact our flight desk directly.
+                  For real-time seat availability and instant e-tickets, we route you to our partner flight search engine. For complex group bookings, UMRAH flights, or special corporate fares, contact our flight desk directly.
                 </p>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button asChild variant="outline" size="sm" className="rounded-xl h-10">
-                  <Link href={`tel:${phone}`}>
+                  <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
                     <Headphones className="mr-1.5 size-4" />
                     Offline Airline Desk
-                  </Link>
-                </Button>
-                <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
-                  <a href={flightRedirectUrl} target="_blank" rel="noopener noreferrer">
-                    <span>Search Global Flights</span>
-                    <ExternalLink className="size-3.5" />
                   </a>
                 </Button>
+                {flightRedirectUrl?.trim() ? (
+                  <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
+                    <a href={flightRedirectUrl.trim()} target="_blank" rel="noopener noreferrer">
+                      <span>Search Global Flights</span>
+                      <ExternalLink className="size-3.5" />
+                    </a>
+                  </Button>
+                ) : (
+                  <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
+                    <Link href={`/services/${flightSlug}` as Route}>
+                      <span>Flight Desk Services</span>
+                    </Link>
+                  </Button>
+                )}
               </div>
             </div>
           )}
 
-          {/* TAB 5: Hotels - External Redirect Notice */}
+          {/* TAB 5: Hotels - External Redirect or Internal Service */}
           {activeTab === "hotels" && (
             <div className="flex flex-col gap-4 rounded-2xl bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
@@ -302,17 +315,25 @@ export default function TravelActionPanel({
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button asChild variant="outline" size="sm" className="rounded-xl h-10">
-                  <Link href={`tel:${phone}`}>
+                  <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
                     <Headphones className="mr-1.5 size-4" />
                     Concierge Hotel Desk
-                  </Link>
-                </Button>
-                <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
-                  <a href={hotelRedirectUrl} target="_blank" rel="noopener noreferrer">
-                    <span>Search Worldwide Hotels</span>
-                    <ExternalLink className="size-3.5" />
                   </a>
                 </Button>
+                {hotelRedirectUrl?.trim() ? (
+                  <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
+                    <a href={hotelRedirectUrl.trim()} target="_blank" rel="noopener noreferrer">
+                      <span>Search Worldwide Hotels</span>
+                      <ExternalLink className="size-3.5" />
+                    </a>
+                  </Button>
+                ) : (
+                  <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
+                    <Link href={`/services/${hotelSlug}` as Route}>
+                      <span>Hotel Desk Services</span>
+                    </Link>
+                  </Button>
+                )}
               </div>
             </div>
           )}

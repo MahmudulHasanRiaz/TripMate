@@ -8,6 +8,7 @@ import {
   Banknote,
   BookCopy,
   ExternalLink,
+  FileSpreadsheet,
   FileText,
   Image as ImageIcon,
   LayoutDashboard,
@@ -42,6 +43,8 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -60,6 +63,7 @@ import {
 const MENU_ICONS: Record<string, LucideIcon> = {
   "layout-dashboard": LayoutDashboard,
   mail: Mail,
+  "file-spreadsheet": FileSpreadsheet,
   "book-copy": BookCopy,
   banknote: Banknote,
   receipt: Receipt,
@@ -95,9 +99,7 @@ export default function AdminShell({
           <SidebarBrand />
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarNav menu={menu} />
-          </SidebarGroup>
+          <SidebarNav menu={menu} />
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
@@ -145,32 +147,53 @@ function SidebarNav({ menu }: { menu: AdminMenuItem[] }) {
 
   const go = () => setOpenMobile(false);
 
+  // Group items by section per spec §50 while preserving group order
+  const groups: { name: string; items: AdminMenuItem[] }[] = [];
+  for (const item of menu) {
+    const groupName = item.group || "General";
+    let grp = groups.find((g) => g.name === groupName);
+    if (!grp) {
+      grp = { name: groupName, items: [] };
+      groups.push(grp);
+    }
+    grp.items.push(item);
+  }
+
   return (
-    <SidebarMenu>
-      {menu.map((item) => {
-        const Icon = MENU_ICONS[item.icon] ?? LayoutDashboard;
-        const active = isActive(item.href);
-        return (
-          <SidebarMenuItem key={item.href}>
-            <SidebarMenuButton
-              asChild
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                active &&
-                  "bg-sidebar-primary font-medium text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
-              )}
-            >
-              {/* Route cast: future module routes are valid targets once built
-                  (Plans 3-6) but not yet part of the generated typed-routes set. */}
-              <Link href={item.href as Route} onClick={go}>
-                <Icon aria-hidden="true" />
-                <span>{item.label}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        );
-      })}
-    </SidebarMenu>
+    <>
+      {groups.map((group) => (
+        <SidebarGroup key={group.name} className="py-1">
+          <SidebarGroupLabel className="px-2 text-[11px] font-bold uppercase tracking-wider text-sidebar-foreground/60">
+            {group.name}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {group.items.map((item) => {
+                const Icon = MENU_ICONS[item.icon] ?? LayoutDashboard;
+                const active = isActive(item.href);
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      asChild
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        active &&
+                          "bg-sidebar-primary font-medium text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
+                      )}
+                    >
+                      <Link href={item.href as Route} onClick={go}>
+                        <Icon aria-hidden="true" />
+                        <span>{item.label}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      ))}
+    </>
   );
 }
 

@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { ArrowLeft, CalendarDays, PenLine } from "lucide-react";
 
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
+import { JsonLd } from "@/components/site/JsonLd";
 
 import { getBlogPostData } from "../_lib/blog-data";
 
@@ -47,8 +48,52 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
   const post = await getBlogPostData(slug);
   if (!post) notFound();
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://tripmate.example",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Blog",
+            item: "https://tripmate.example/blog",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: post.title,
+            item: `https://tripmate.example/blog/${post.slug}`,
+          },
+        ],
+      },
+      {
+        "@type": "BlogPosting",
+        headline: post.title,
+        description: post.seoDescription || post.excerpt || post.title,
+        image: post.image?.url ? [post.image.url] : undefined,
+        datePublished: post.publishedAt
+          ? new Date(post.publishedAt).toISOString()
+          : undefined,
+        author: {
+          "@type": "Person",
+          name: post.author || "TripMate Team",
+        },
+      },
+    ],
+  };
+
   return (
-    <article className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-8 lg:px-8 lg:pb-28 lg:pt-12">
+    <>
+      <JsonLd data={articleJsonLd} />
+      <article className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-8 lg:px-8 lg:pb-28 lg:pt-12">
       <Link
         href="/blog"
         className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground"
@@ -99,6 +144,7 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
         ) : null}
       </div>
     </article>
+  </>
   );
 }
 

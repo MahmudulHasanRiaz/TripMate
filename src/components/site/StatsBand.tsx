@@ -6,9 +6,9 @@ export type Stat = {
 
 /**
  * The 4-up trust band on the secondary background (spec §3 StatsBand). Runs the
- * full width of the page between content sections. Static v1 copy for now —
- * the values are placeholder proof-of-life numbers and will be driven by real
- * reporting (orders/leads aggregates) in a later plan. Server-rendered.
+ * full width of the page between content sections. Values come from the admin
+ * settings.home "stats" config or from real DB aggregates (see (public)/page.tsx).
+ * Server-rendered.
  */
 export function StatsBand({ stats }: { stats: Stat[] }) {
   return (

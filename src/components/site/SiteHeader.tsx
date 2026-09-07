@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { Menu } from "lucide-react";
+import { LogIn, Menu, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import Logo from "@/components/icons/Logo";
+import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "./ThemeToggle";
 import {
   Sheet,
@@ -52,6 +53,7 @@ type SiteHeaderProps = {
 export function SiteHeader({ title, logoUrl, overHero = false }: SiteHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { data: session } = authClient.useSession();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -96,7 +98,7 @@ export function SiteHeader({ title, logoUrl, overHero = false }: SiteHeaderProps
           </span>
         </Link>
 
-        <div className="ml-auto flex items-center gap-1 md:gap-2">
+        <div className="ml-auto flex items-center gap-1.5 md:gap-2">
           <nav aria-label="Main" className="hidden items-center md:flex">
             {NAV_ITEMS.map((item) => (
               <Link
@@ -108,6 +110,26 @@ export function SiteHeader({ title, logoUrl, overHero = false }: SiteHeaderProps
               </Link>
             ))}
           </nav>
+
+          <div className="hidden sm:flex items-center">
+            {session?.user ? (
+              <Link
+                href={"/account" as Route}
+                className="flex min-h-9 items-center gap-1.5 rounded-full border border-border bg-secondary/70 px-3.5 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-secondary hover:border-primary/50"
+              >
+                <User className="size-3.5 text-primary" />
+                <span>My Bookings</span>
+              </Link>
+            ) : (
+              <Link
+                href={"/login" as Route}
+                className="flex min-h-9 items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <LogIn className="size-3.5" />
+                <span>Sign in</span>
+              </Link>
+            )}
+          </div>
 
           <ThemeToggle />
 
@@ -137,6 +159,28 @@ export function SiteHeader({ title, logoUrl, overHero = false }: SiteHeaderProps
                     {item.label}
                   </Link>
                 ))}
+
+                <div className="mt-4 pt-4 border-t border-border">
+                  {session?.user ? (
+                    <Link
+                      href={"/account" as Route}
+                      onClick={() => setMenuOpen(false)}
+                      className="flex min-h-12 items-center gap-2.5 rounded-md px-3 text-base font-semibold text-primary transition-colors hover:bg-secondary"
+                    >
+                      <User className="size-4" />
+                      <span>My Bookings</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      href={"/login" as Route}
+                      onClick={() => setMenuOpen(false)}
+                      className="flex min-h-12 items-center gap-2.5 rounded-md px-3 text-base font-medium text-foreground/85 transition-colors hover:bg-secondary"
+                    >
+                      <LogIn className="size-4" />
+                      <span>Sign in</span>
+                    </Link>
+                  )}
+                </div>
               </nav>
             </SheetContent>
           </Sheet>

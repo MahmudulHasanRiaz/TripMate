@@ -54,15 +54,18 @@ import {
   inquiryOrderInputSchema,
   orderStatusSchema,
   packageOrderInputSchema,
+  serviceOptionOrderInputSchema,
   uuidSchema,
   validateInquiryExtraFields,
   type InquiryOrderInput,
   type PackageOrderInput,
+  type ServiceOptionOrderInput,
 } from "./validation";
 import {
   convertLeadToOrder,
   createInquiryOrder,
   createPackageOrder,
+  createServiceOptionOrder,
   OrderError,
   setQuote,
   transitionOrder,
@@ -257,6 +260,73 @@ const runCreatePackageOrder = publicOrderRelay(
 export const createPackageOrderAction = async (
   input: PackageOrderInput,
 ): Promise<CreateOrderResult> => runCreatePackageOrder(input);
+
+/**
+ * Public endpoint for booking a service option (e.g. Passport 5-Year, 10-Year).
+ */
+const runCreateServiceOptionOrder = publicOrderRelay(
+  withGuard(
+    { public: true, rateLimit: { limit: 10, windowMs: 60_000 } },
+    async (
+      raw: ServiceOptionOrderInput,
+      session: Session | null,
+    ): Promise<CreateOrderResult> => {
+      const parsed = serviceOptionOrderInputSchema.safeParse(raw);
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: "validation",
+          fieldErrors: inquiryFieldErrors(parsed.error.issues),
+        };
+      }
+      const input = parsed.data;
+
+      const created = await createServiceOptionOrder(input, {
+        userId: session?.user.id ?? null,
+      });
+
+      updateTag(CACHE_TAGS.orders);
+      updateTag(CACHE_TAGS.order(created.id));
+
+      if (input.payment) {
+        try {
+          if (input.payment.method === "pay_later") {
+            await selectPayLater({
+              orderId: created.id,
+              actorUserId: session?.user.id ?? null,
+            });
+          } else if (input.payment.gatewayId && input.payment.trxId) {
+            await submitManualPayment({
+              orderId: created.id,
+              gatewayId: input.payment.gatewayId,
+              methodTxnId: input.payment.trxId,
+              senderNumber: input.payment.senderNumber,
+              screenshotUrl: input.payment.depositSlipUrl,
+              note: input.payment.notes,
+              actorUserId: session?.user.id ?? null,
+            });
+          }
+          updateTag(CACHE_TAGS.payments);
+        } catch (payErr) {
+          console.error("[bookings] Service option payment recording failed:", payErr);
+        }
+      }
+
+      await sendOrderConfirmEmail({
+        to: input.customer.email,
+        orderNo: created.orderNo,
+        customerName: input.customer.name,
+        listingTitle: `Service Order ${created.orderNo}`,
+      });
+
+      return { ok: true, orderId: created.id, orderNo: created.orderNo };
+    },
+  ),
+);
+
+export const createServiceOptionOrderAction = async (
+  input: ServiceOptionOrderInput,
+): Promise<CreateOrderResult> => runCreateServiceOptionOrder(input);
 
 /** Public fetch for active payment gateways (for public booking checkout modal). */
 const runGetPublicPaymentGateways = withGuard(

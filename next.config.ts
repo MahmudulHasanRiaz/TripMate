@@ -55,9 +55,8 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "images.pexels.com", pathname: "/**" },
-      { protocol: "https", hostname: "placehold.co", pathname: "/**" },
       // R2-backed imagery when R2_PUBLIC_URL is configured (see top of file).
+      // Zero third-party runtime image domains permitted on public site.
       ...(r2Hostname
         ? [{ protocol: "https" as const, hostname: r2Hostname, pathname: "/**" }]
         : []),

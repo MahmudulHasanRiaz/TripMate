@@ -19,6 +19,7 @@ import { telLink, whatsappLink } from "@/components/site/currency";
 
 import { getServicePageData, type ServicePageData } from "../_lib/service-data";
 import { ServiceHero } from "./_components/ServiceHero";
+import { ServiceOptionsSelector } from "./_components/ServiceOptionsSelector";
 import { InquiryForm } from "@/components/site/InquiryForm";
 
 /**
@@ -80,7 +81,16 @@ async function ServicePageBody({ params }: { params: Promise<{ slug: string }> }
       {data.kind === "package" ? (
         <PackageListing data={data} />
       ) : data.kind === "inquiry_based" ? (
-        <InquirySection data={data} site={site} />
+        data.serviceOptions.length > 0 ? (
+          <ServiceOptionsSelector
+            categoryName={data.name}
+            categorySlug={data.slug}
+            options={data.serviceOptions}
+            site={site}
+          />
+        ) : (
+          <InquirySection data={data} site={site} />
+        )
       ) : (
         <RedirectSection data={data} site={site} />
       )}

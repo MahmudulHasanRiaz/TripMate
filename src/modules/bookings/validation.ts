@@ -162,6 +162,19 @@ export const packageOrderInputSchema = z.object({
 });
 export type PackageOrderInput = z.infer<typeof packageOrderInputSchema>;
 
+/** The public service-option booking form payload (optionId + contact + optional travelers + payment selection). */
+export const serviceOptionOrderInputSchema = z.object({
+  optionId: uuidSchema,
+  customer: customerInputSchema,
+  travelers: z.array(travelerInputSchema).max(TRAVELERS_MAX).default([]),
+  specialRequests: optionalBoundedText(
+    2000,
+    "Special requests must be 2000 characters or fewer",
+  ),
+  payment: packagePaymentSelectionSchema.optional(),
+});
+export type ServiceOptionOrderInput = z.infer<typeof serviceOptionOrderInputSchema>;
+
 // ---- inquiry order input ------------------------------------------------------
 
 /** Cap on how many extra formConfig-driven answers an inquiry may carry (a

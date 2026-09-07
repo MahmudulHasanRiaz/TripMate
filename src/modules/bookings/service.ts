@@ -16,7 +16,8 @@ import { orderStatusEvents, orders, travelers } from "./schema";
 // The order rows carry listing snapshots read from the catalog tables; the
 // listing join for the admin list view reads listings directly — the same
 // cross-module-table convention modules/leads uses for landing_pages/users.
-import { listings } from "@/modules/catalog/schema";
+import { listings, serviceCategories } from "@/modules/catalog/schema";
+import { serviceOptions } from "@/modules/catalog/service-options-schema";
 import { users } from "@/modules/users/schema";
 import { getListingById } from "@/modules/catalog/service";
 import { getLeadDetail, markLeadConverted } from "@/modules/leads/service";
@@ -29,6 +30,7 @@ import {
   type OrderStatus,
   type OrderType,
   type PackageOrderInput,
+  type ServiceOptionOrderInput,
 } from "./validation";
 
 // All DB queries for the bookings (orders) module. Server-only — importing it
@@ -60,6 +62,20 @@ export type ListingSnapshotView = {
   price: number | null;
   currency: string;
   durationDays: number | null;
+  kind?: string | null;
+  optionId?: string | null;
+  duration?: string | null;
+  deliveryTime?: string | null;
+  requirements?: string[] | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  categorySlug?: string | null;
+  lineItems?: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }> | null;
 };
 
 /** The projected customer_snapshot cell (covers both order types). */
@@ -232,6 +248,24 @@ function projectListingSnapshot(value: unknown): ListingSnapshotView | null {
     price: typeof obj.price === "number" ? obj.price : null,
     currency: typeof obj.currency === "string" ? obj.currency : "BDT",
     durationDays: typeof obj.durationDays === "number" ? obj.durationDays : null,
+    kind: typeof obj.kind === "string" ? obj.kind : null,
+    optionId: typeof obj.optionId === "string" ? obj.optionId : null,
+    duration: typeof obj.duration === "string" ? obj.duration : null,
+    deliveryTime: typeof obj.deliveryTime === "string" ? obj.deliveryTime : null,
+    requirements: Array.isArray(obj.requirements)
+      ? (obj.requirements.filter((x) => typeof x === "string") as string[])
+      : null,
+    categoryId: typeof obj.categoryId === "string" ? obj.categoryId : null,
+    categoryName: typeof obj.categoryName === "string" ? obj.categoryName : null,
+    categorySlug: typeof obj.categorySlug === "string" ? obj.categorySlug : null,
+    lineItems: Array.isArray(obj.lineItems)
+      ? (obj.lineItems as Array<{
+          description: string;
+          quantity: number;
+          unitPrice: number;
+          totalPrice: number;
+        }>)
+      : null,
   };
 }
 
@@ -342,6 +376,7 @@ const orderListCols = {
   status: orders.status,
   source: orders.source,
   customerSnapshot: orders.customerSnapshot,
+  listingSnapshot: orders.listingSnapshot,
   quotedPrice: orders.quotedPrice,
   currency: orders.currency,
   createdAt: orders.createdAt,
@@ -356,6 +391,7 @@ type OrderListRow = {
   status: OrderStatus;
   source: OrderSource;
   customerSnapshot: unknown;
+  listingSnapshot: unknown;
   quotedPrice: string | null;
   currency: string;
   createdAt: Date;
@@ -365,6 +401,8 @@ type OrderListRow = {
 
 function toOrderListItem(row: OrderListRow): OrderListItem {
   const customer = projectCustomer(row.customerSnapshot);
+  const snapshot = asObject(row.listingSnapshot);
+  const fallbackTitle = typeof snapshot?.title === "string" && snapshot.title ? snapshot.title : null;
   return {
     id: row.id,
     orderNo: row.orderNo,
@@ -374,7 +412,7 @@ function toOrderListItem(row: OrderListRow): OrderListItem {
     customerName: customer.name,
     customerPhone: customer.phone,
     customerEmail: customer.email,
-    listingTitle: row.listingTitle,
+    listingTitle: row.listingTitle ?? fallbackTitle,
     userName: row.userName,
     quotedPrice: row.quotedPrice === null ? null : Number(row.quotedPrice),
     currency: row.currency,
@@ -731,6 +769,116 @@ export async function createInquiryOrder(
   );
 
   return { id: created.id, orderNo: created.orderNo, currency, price: null };
+}
+
+/**
+ * Service Option Booking: customer selects an active service option (e.g. Passport 5-Year / 10-Year).
+ * Creates a real order with type "inquiry", status "in_review", quotedPrice & costPrice set to option prices,
+ * frozen option snapshot, traveler manifest, and an audit trail event.
+ */
+async function resolveServiceOption(optionId: string) {
+  const [row] = await db
+    .select({
+      opt: serviceOptions,
+      cat: {
+        id: serviceCategories.id,
+        name: serviceCategories.name,
+        slug: serviceCategories.slug,
+      },
+    })
+    .from(serviceOptions)
+    .innerJoin(serviceCategories, eq(serviceOptions.categoryId, serviceCategories.id))
+    .where(eq(serviceOptions.id, optionId))
+    .limit(1);
+
+  if (!row) {
+    throw new OrderError("NOT_FOUND", `Service option ${optionId} does not exist.`);
+  }
+  return row;
+}
+
+export async function createServiceOptionOrder(
+  input: ServiceOptionOrderInput,
+  opts: CreateOrderOptions = {},
+): Promise<CreatedOrderRef> {
+  const row = await resolveServiceOption(input.optionId);
+  if (!row.opt.isActive) {
+    throw new OrderError("NOT_FOUND", "Service option is not currently active.");
+  }
+
+  const priceNum = Number(row.opt.price);
+  const costNum = row.opt.costPrice ? Number(row.opt.costPrice) : null;
+  const grossProfit = costNum !== null ? priceNum - costNum : null;
+
+  const reqs = Array.isArray(row.opt.requirements)
+    ? (row.opt.requirements.filter((item) => typeof item === "string") as string[])
+    : [];
+
+  const created = await insertOrderWithEvents(
+    (orderNo) => ({
+      orderNo,
+      userId: opts.userId ?? null,
+      customerSnapshot: {
+        name: input.customer.name,
+        email: input.customer.email ?? null,
+        phone: input.customer.phone,
+      },
+      listingId: null,
+      listingSnapshot: {
+        kind: "service_option",
+        optionId: row.opt.id,
+        title: row.opt.title,
+        slug: row.opt.slug,
+        price: priceNum,
+        costPrice: costNum,
+        duration: row.opt.duration,
+        deliveryTime: row.opt.deliveryTime,
+        requirements: reqs,
+        categoryId: row.cat.id,
+        categoryName: row.cat.name,
+        categorySlug: row.cat.slug,
+        currency: "BDT",
+      },
+      quotedPrice: String(priceNum),
+      finalPrice: String(priceNum),
+      costPrice: costNum !== null ? String(costNum) : null,
+      grossProfit: grossProfit !== null ? String(grossProfit) : null,
+      paymentStatus: "unpaid",
+      paidAmount: "0.00",
+      type: "inquiry" as const,
+      status: "in_review" as const,
+      currency: "BDT",
+      specialRequests: input.specialRequests ?? null,
+      source: opts.source ?? "website",
+      leadId: opts.leadId ?? null,
+      createdBy: opts.actorId ?? null,
+    }),
+    async (tx, orderId) => {
+      if (input.travelers && input.travelers.length > 0) {
+        await tx.insert(travelers).values(
+          input.travelers.map((traveler) => ({
+            orderId,
+            name: traveler.name,
+            passportNo: traveler.passportNo ?? null,
+            dob: traveler.dob ?? null,
+            relation: traveler.relation ?? null,
+          })),
+        );
+      }
+      await addOrderEventOn(tx, orderId, {
+        toStatus: "in_review",
+        note: creationNote(opts.source),
+        actorId: opts.actorId ?? null,
+      });
+    },
+  );
+
+  return {
+    id: created.id,
+    orderNo: created.orderNo,
+    currency: "BDT",
+    price: priceNum,
+  };
 }
 
 // ---- status machine ----------------------------------------------------------------
