@@ -6,6 +6,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { PackageCard } from "@/components/site/PackageCard";
 import { JsonLd } from "@/components/site/JsonLd";
 
+import { listPublishedListingRefs } from "@/modules/catalog/service";
 import { getPackageDetailData } from "../_lib/catalog-data";
 import { PackageHero } from "./_components/PackageHero";
 import { PackageContent } from "./_components/PackageContent";
@@ -29,6 +30,15 @@ import { PackageEnquiryCard, PackageMobileBar } from "./_components/PackageSideb
  * `'use cache'` hit. Booking form is Plan 5 — see PackageSidebar's
  * enquiry-only CTAs.
  */
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  const refs = await listPublishedListingRefs();
+  const slugs = refs.map((ref) => ref.slug);
+  return slugs.length > 0
+    ? slugs.map((slug) => ({ slug }))
+    : [{ slug: "__empty__" }];
+}
+
 export async function generateMetadata(
   props: PageProps<"/packages/[slug]">,
 ): Promise<Metadata> {

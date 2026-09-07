@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import { FaqAccordion } from "@/components/site/FaqAccordion";
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
 
+import { listPublishedPageRefs } from "@/modules/content/service";
 import { getStaticPageData, type StaticPageData } from "../_lib/page-data";
 import { tryParseFaqSections } from "../_lib/faq-parse";
 
@@ -30,6 +31,15 @@ import { tryParseFaqSections } from "../_lib/faq-parse";
  * generic "looks like a Q&A" heuristic, so an ordinary page whose sections
  * happen to start with `##` is never mistaken for an FAQ.)
  */
+
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  const refs = await listPublishedPageRefs();
+  const slugs = refs.map((ref) => ref.slug);
+  return slugs.length > 0
+    ? slugs.map((slug) => ({ slug }))
+    : [{ slug: "__empty__" }];
+}
 
 export async function generateMetadata(
   props: PageProps<"/p/[slug]">,

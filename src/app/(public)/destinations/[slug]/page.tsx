@@ -17,6 +17,7 @@ import { CACHE_TAGS } from "@/lib/cache-tags";
 import { getSiteSettings } from "@/lib/site-settings";
 import {
   getDestinationBySlug,
+  listDestinations,
   listPublishedListings,
 } from "@/modules/catalog/service";
 import { listVisaServices } from "@/modules/catalog/visa-service";
@@ -30,9 +31,22 @@ type DestinationPageProps = {
   params: Promise<{ slug: string }>;
 };
 
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  const refs = await listDestinations.bind(null, true)();
+  const slugs = refs.map((ref) => ref.slug);
+  return slugs.length > 0
+    ? slugs.map((slug) => ({ slug }))
+    : [{ slug: "__empty__" }];
+}
+
 export async function generateMetadata(
   props: DestinationPageProps,
 ): Promise<Metadata> {
+  "use cache";
+  cacheTag(CACHE_TAGS.listings);
+  cacheLife("hours");
+
   const { slug } = await props.params;
   const destination = await getDestinationBySlug(slug, true);
   if (!destination) return { title: "Destination Not Found" };

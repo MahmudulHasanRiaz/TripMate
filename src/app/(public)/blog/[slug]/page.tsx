@@ -8,6 +8,7 @@ import { ArrowLeft, CalendarDays, PenLine } from "lucide-react";
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
 import { JsonLd } from "@/components/site/JsonLd";
 
+import { listPublishedPostRefs } from "@/modules/content/service";
 import { getBlogPostData } from "../_lib/blog-data";
 
 /**
@@ -20,6 +21,15 @@ import { getBlogPostData } from "../_lib/blog-data";
  * freeze whatever posts exist in the build DB; on-demand render + the tag
  * contract keeps a just-published edit one cache hop away.
  */
+
+
+export async function generateStaticParams(): Promise<{ slug: string }[]> {
+  const refs = await listPublishedPostRefs();
+  const slugs = refs.map((ref) => ref.slug);
+  return slugs.length > 0
+    ? slugs.map((slug) => ({ slug }))
+    : [{ slug: "__empty__" }];
+}
 
 export async function generateMetadata(
   props: PageProps<"/blog/[slug]">,
