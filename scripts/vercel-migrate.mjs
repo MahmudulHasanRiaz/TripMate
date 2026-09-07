@@ -4,8 +4,7 @@
 // `build`, so this script runs before `next build` on every production and
 // preview deploy. That ordering is required: with Next 16 Cache Components,
 // `next build` executes the public 'use cache' data scopes, so the schema must
-// already exist in the database pointed at by DATABASE_URL or the build fails
-// at export/prerender.
+// already exist in the database before the build can prerender pages.
 //
 // Behaviour:
 //   - Applies every committed drizzle migration under /drizzle that has not
@@ -15,23 +14,27 @@
 //   - Uses the RUNTIME migrator (drizzle-orm + postgres, both production
 //     dependencies) instead of the dev-only drizzle-kit CLI, so the deploy
 //     never depends on devDependencies being installed.
-//   - Set SKIP_DB_MIGRATE=1 in the Vercel project env to opt out.
+//   - Migrates over DATABASE_URL_MIGRATE when set, falling back to
+//     DATABASE_URL. Set SKIP_DB_MIGRATE=1 to opt out entirely.
 //
-// Supabase notes:
-//   - DATABASE_URL must be the Session pooler (port 5432, pooler.supabase.com)
-//     or the direct connection string. Do NOT use the Transaction pooler
-//     (port 6543) here — DDL over the transaction pool can fail.
-//   - The role in DATABASE_URL must own the schema (CREATE/ALTER rights). Use
-//     the project's postgres role or an owner role, not a read-only/anonym key.
+// Supabase notes (two URLs, two jobs):
+//   - DATABASE_URL            = TRANSACTION pooler (port 6543). Used by the
+//     app/build at runtime; many short-lived serverless connections, no
+//     session cap. NOT for DDL.
+//   - DATABASE_URL_MIGRATE    = SESSION pooler (port 5432) or direct
+//     connection. Used ONLY by this migrate step, because DDL needs a real
+//     backend session. If unset, this script falls back to DATABASE_URL.
+//   - The role must own the schema (CREATE/ALTER rights). Use the project's
+//     postgres role or an owner role, not a read-only/anonym key.
 //   - If the schema was previously created with `drizzle-kit push` (no
 //     migration journal), the first migrate errors on existing tables. Point
-//     DATABASE_URL at a fresh database or baseline the journal first.
+//     the migrate URL at a fresh database or baseline the journal first.
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import path from "node:path";
 
-const url = process.env.DATABASE_URL;
+const url = process.env.DATABASE_URL_MIGRATE || process.env.DATABASE_URL;
 const skip = process.env.SKIP_DB_MIGRATE === "1";
 
 if (skip) {
@@ -41,10 +44,10 @@ if (skip) {
 
 if (!url) {
   console.error(
-    "[vercel-migrate] DATABASE_URL is not set.\n" +
-      "Add it to the Vercel project environment (Supabase Session-pooler " +
-      "connection string), otherwise the following `next build` cannot " +
-      "prerender the public pages.",
+    "[vercel-migrate] Neither DATABASE_URL_MIGRATE nor DATABASE_URL is set.\n" +
+      "Add DATABASE_URL_MIGRATE (Supabase Session-pooler/direct string) and " +
+      "DATABASE_URL (Transaction-pooler string) to the Vercel project " +
+      "environment, otherwise the following `next build` cannot prerender.",
   );
   process.exit(1);
 }
