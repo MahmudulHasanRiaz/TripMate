@@ -31,11 +31,12 @@ function readR2Hostname(): string | null {
 const nextConfig: NextConfig = {
   typedRoutes: true,
   // Emit a self-contained .next/standalone bundle (server.js + traced
-  // node_modules) in addition to the normal build output. `next dev` and
-  // `next start` are unaffected — this only ADDS the folder the Docker image
-  // copies into its runner stage (see Dockerfile). Without it the standalone
-  // server.js is never produced and the image has nothing to run.
-  output: "standalone",
+  // node_modules) for the Docker image, which copies it into its runner
+  // stage (see Dockerfile). On Vercel the standalone folder is ignored AND
+  // enabling it crashes Turbopack NFT tracing under the Vercel adapter
+  // (ENOENT .next/next-server.js.nft.json — the generator skips that file
+  // when an adapter is configured), so it is disabled there via VERCEL.
+  ...(process.env.VERCEL ? {} : { output: "standalone" as const }),
   // Next 16 Cache Components: single unified flag that turns on the
   // `use cache` directive, cacheTag/cacheLife, and Partial Prerendering (PPR)
   // as the App Router default. See node_modules/next/dist/docs/.../cacheComponents.md
