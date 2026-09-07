@@ -10,6 +10,8 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db } from "@/db/client";
+import { escapeLike, isUniqueViolation, paginate } from "@/lib/db-utils";
+import { insertWithSlugRecovery, type SlugContext } from "@/lib/slug";
 // landing_pages is co-located with the leads schema (the leads FK points at it
 // and both ship together) — this module's service consumes that table.
 import { landingPages } from "@/modules/leads/schema";
@@ -121,20 +123,6 @@ export class LandingError extends Error {
     super(message);
     this.name = "LandingError";
   }
-}
-
-/** drizzle wraps driver errors in DrizzleQueryError; the pg error code
- *  (e.g. 23505) lives on the underlying cause, so walk the cause chain. */
-function isUniqueViolation(err: unknown): boolean {
-  let current: unknown = err;
-  for (let depth = 0; depth < 5 && current !== null && current !== undefined; depth++) {
-    if (typeof current === "object" && (current as { code?: string }).code === "23505") {
-      return true;
-    }
-    current =
-      typeof current === "object" ? (current as { cause?: unknown }).cause : undefined;
-  }
-  return false;
 }
 
 // ---- jsonb projection helpers -------------------------------------------------
@@ -293,17 +281,6 @@ export type AdminLandingPagesQuery = {
   perPage?: number;
 };
 
-/** Escape LIKE wildcards so user search input is treated literally. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
-}
-
-function pagination(page?: number, perPage?: number, defaultPerPage = 12) {
-  const safePage = Math.max(1, Math.floor(page ?? 1));
-  const safePerPage = Math.min(50, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
-  return { page: safePage, perPage: safePerPage, offset: (safePage - 1) * safePerPage };
-}
-
 const landingSummaryCols = {
   id: landingPages.id,
   title: landingPages.title,
@@ -325,7 +302,7 @@ export async function listLandingPages(
   if (query.status) conditions.push(eq(landingPages.status, query.status));
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 20);
+  const { offset, perPage } = paginate({ page: query.page, perPage: query.perPage, defaultPerPage: 20 });
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })
@@ -414,55 +391,34 @@ async function landingSlugExists(slug: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** First free `base-2`, `base-3`, … slug not already used (live OR trashed). */
-async function nextFreeLandingSlug(base: string): Promise<string> {
-  for (let n = 2; n < 1000; n++) {
-    const candidate = `${base}-${n}`;
-    if (!(await landingSlugExists(candidate))) return candidate;
-  }
-  throw new LandingError("SLUG_CONFLICT", `No free slug available for "${base}".`);
-}
-
-/**
- * Insert with admin-friendly slug recovery. When the insert collides with a row
- * that was soft-deleted (the classic "recreate after trash" flow), we re-try
- * under the next free `-2`/`-3`/… suffixed slug instead of failing. A collision
- * with a LIVE row is a genuine conflict and stays a typed SLUG_CONFLICT error.
- */
-async function insertLandingPageWithSlugRecovery(
-  write: LandingWrite,
-  slug: string,
-): Promise<string> {
-  try {
-    const [created] = await db
-      .insert(landingPages)
-      .values(write)
-      .returning({ id: landingPages.id });
-    return created.id;
-  } catch (err) {
-    if (!isUniqueViolation(err)) throw err;
+/** Landing pages' bindings for the shared slug-recovery core (src/lib/slug.ts):
+ *  probes against the landing_pages table + the typed SLUG_CONFLICT error. */
+const landingSlugContext: SlugContext = {
+  noun: "landing page",
+  exists: landingSlugExists,
+  isDeleted: async (slug) => {
     const [blocker] = await db
       .select({ deletedAt: landingPages.deletedAt })
       .from(landingPages)
       .where(eq(landingPages.slug, slug))
       .limit(1);
-    if (!blocker || blocker.deletedAt === null) {
-      throw new LandingError("SLUG_CONFLICT", `A landing page with slug "${slug}" already exists.`);
-    }
-    const free = await nextFreeLandingSlug(slug);
-    try {
-      const [created] = await db
-        .insert(landingPages)
-        .values({ ...write, slug: free })
-        .returning({ id: landingPages.id });
-      return created.id;
-    } catch (retryErr) {
-      if (isUniqueViolation(retryErr)) {
-        throw new LandingError("SLUG_CONFLICT", `A landing page with slug "${free}" already exists.`);
-      }
-      throw retryErr;
-    }
-  }
+    return blocker !== undefined && blocker.deletedAt !== null;
+  },
+  conflict: (message) => new LandingError("SLUG_CONFLICT", message),
+};
+
+/** Insert with admin-friendly slug recovery (semantics in insertWithSlugRecovery). */
+async function insertLandingPageWithSlugRecovery(
+  write: LandingWrite,
+  slug: string,
+): Promise<string> {
+  return insertWithSlugRecovery(slug, landingSlugContext, async (candidate) => {
+    const [created] = await db
+      .insert(landingPages)
+      .values({ ...write, slug: candidate })
+      .returning({ id: landingPages.id });
+    return created.id;
+  });
 }
 
 export async function upsertLandingPage(input: LandingPageInput): Promise<LandingPage> {

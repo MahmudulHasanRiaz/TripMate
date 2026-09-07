@@ -1,6 +1,7 @@
 import "server-only";
 import { and, desc, eq, gte, ilike, lte, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/client";
+import { escapeLike, paginate } from "@/lib/db-utils";
 import { expenseCategories, expenses } from "./schema";
 // Cross-module-table reads follow the established convention (bookings reads
 // catalog listings; payments reads bookings orders): the expense list/detail
@@ -164,17 +165,6 @@ export class ExpenseError extends Error {
 }
 
 // ---- row helpers ----------------------------------------------------------------
-
-/** Escape LIKE wildcards so user search input is treated literally. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
-}
-
-function pagination(page?: number, perPage?: number, defaultPerPage = 20, maxPerPage = 50) {
-  const safePage = Math.max(1, Math.floor(page ?? 1));
-  const safePerPage = Math.min(maxPerPage, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
-  return { page: safePage, perPage: safePerPage, offset: (safePage - 1) * safePerPage };
-}
 
 type CategoriesRow = typeof expenseCategories.$inferSelect;
 
@@ -465,7 +455,7 @@ export async function listExpenses(
   }
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 20, 50);
+  const { offset, perPage } = paginate({ page: query.page, perPage: query.perPage, defaultPerPage: 20 });
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })

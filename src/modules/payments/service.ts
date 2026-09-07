@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "@/db/client";
+import { paginate } from "@/lib/db-utils";
 import { paymentGateways, payments } from "./schema";
 // The queue/list reads join orders for orderNo + customer name — the same
 // cross-module-table convention modules/bookings uses for listings/users.
@@ -122,12 +123,6 @@ export class PaymentError extends Error {
 }
 
 // ---- row helpers ----------------------------------------------------------------
-
-function pagination(page?: number, perPage?: number, defaultPerPage = 20, maxPerPage = 50) {
-  const safePage = Math.max(1, Math.floor(page ?? 1));
-  const safePerPage = Math.min(maxPerPage, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
-  return { page: safePage, perPage: safePerPage, offset: (safePage - 1) * safePerPage };
-}
 
 function asObject(value: unknown): Record<string, unknown> | null {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
@@ -362,7 +357,7 @@ async function getPaymentById(id: string): Promise<PaymentView | null> {
 export async function listQueue(query: PaymentQueueQuery = {}): Promise<Paginated<PaymentView>> {
   const status = query.status ?? "submitted";
   const where = eq(payments.status, status);
-  const { offset, perPage } = pagination(query.page, query.perPage, 20, 50);
+  const { offset, perPage } = paginate({ page: query.page, perPage: query.perPage, defaultPerPage: 20 });
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })

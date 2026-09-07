@@ -12,6 +12,8 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db } from "@/db/client";
+import { escapeLike, isUniqueViolation, paginate } from "@/lib/db-utils";
+import { insertWithSlugRecovery, type SlugContext } from "@/lib/slug";
 import { pages, postCategories, posts } from "@/modules/content/schema";
 import { users } from "@/modules/users/schema";
 import type {
@@ -95,20 +97,6 @@ export class ContentError extends Error {
     super(message);
     this.name = "ContentError";
   }
-}
-
-/** drizzle wraps driver errors in DrizzleQueryError; the pg error code
- *  (e.g. 23505) lives on the underlying cause, so walk the cause chain. */
-function isUniqueViolation(err: unknown): boolean {
-  let current: unknown = err;
-  for (let depth = 0; depth < 5 && current !== null && current !== undefined; depth++) {
-    if (typeof current === "object" && (current as { code?: string }).code === "23505") {
-      return true;
-    }
-    current =
-      typeof current === "object" ? (current as { cause?: unknown }).cause : undefined;
-  }
-  return false;
 }
 
 // ---- post reads --------------------------------------------------------------
@@ -195,21 +183,10 @@ function postCountQuery() {
     .leftJoin(users, eq(posts.authorId, users.id));
 }
 
-/** Escape LIKE wildcards so user search input is treated literally. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
-}
-
 /** Search hits the post title OR excerpt (body search is out of scope). */
 function postSearchCondition(query: string): SQL {
   const pattern = `%${escapeLike(query)}%`;
   return or(ilike(posts.title, pattern), ilike(posts.excerpt, pattern)) as SQL;
-}
-
-function pagination(page?: number, perPage?: number, defaultPerPage = 12) {
-  const safePage = Math.max(1, Math.floor(page ?? 1));
-  const safePerPage = Math.min(50, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
-  return { page: safePage, perPage: safePerPage, offset: (safePage - 1) * safePerPage };
 }
 
 /** Public blog index: published, stamped with a publish date, newest first. */
@@ -227,7 +204,7 @@ export async function listPublishedPosts(
   if (query.categorySlug) conditions.push(eq(postCategories.slug, query.categorySlug));
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 12);
+  const { offset, perPage } = paginate({ page: query.page, perPage: query.perPage, defaultPerPage: 12 });
 
   const [countRow] = await postCountQuery().where(where);
   const rows = await postQuery()
@@ -298,7 +275,7 @@ export async function listAllPosts(
   if (query.categoryId) conditions.push(eq(posts.categoryId, query.categoryId));
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 20);
+  const { offset, perPage } = paginate({ page: query.page, perPage: query.perPage, defaultPerPage: 20 });
 
   const [countRow] = await postCountQuery().where(where);
   const rows = await postQuery()
@@ -362,7 +339,7 @@ export async function listAllPages(
   if (query.status) conditions.push(eq(pages.status, query.status));
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 20);
+  const { offset, perPage } = paginate({ page: query.page, perPage: query.perPage, defaultPerPage: 20 });
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })
@@ -435,52 +412,31 @@ async function postSlugExists(slug: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** First free `base-2`, `base-3`, … slug not already used (live OR trashed). */
-async function nextFreePostSlug(base: string): Promise<string> {
-  for (let n = 2; n < 1000; n++) {
-    const candidate = `${base}-${n}`;
-    if (!(await postSlugExists(candidate))) return candidate;
-  }
-  throw new ContentError("SLUG_CONFLICT", `No free slug available for "${base}".`);
-}
-
-/**
- * Insert with admin-friendly slug recovery. When the insert collides with a row
- * that was soft-deleted (the classic "recreate after trash" flow), we re-try
- * under the next free `-2`/`-3`/… suffixed slug instead of failing. A collision
- * with a LIVE row is a genuine conflict and stays a typed SLUG_CONFLICT error.
- */
-async function insertPostWithSlugRecovery(write: PostWrite, slug: string): Promise<string> {
-  try {
-    const [created] = await db
-      .insert(posts)
-      .values(write)
-      .returning({ id: posts.id });
-    return created.id;
-  } catch (err) {
-    if (!isUniqueViolation(err)) throw err;
+/** Posts' bindings for the shared slug-recovery core (src/lib/slug.ts):
+ *  probes against the posts table + the typed SLUG_CONFLICT error. */
+const postSlugContext: SlugContext = {
+  noun: "post",
+  exists: postSlugExists,
+  isDeleted: async (slug) => {
     const [blocker] = await db
       .select({ deletedAt: posts.deletedAt })
       .from(posts)
       .where(eq(posts.slug, slug))
       .limit(1);
-    if (!blocker || blocker.deletedAt === null) {
-      throw new ContentError("SLUG_CONFLICT", `A post with slug "${slug}" already exists.`);
-    }
-    const free = await nextFreePostSlug(slug);
-    try {
-      const [created] = await db
-        .insert(posts)
-        .values({ ...write, slug: free })
-        .returning({ id: posts.id });
-      return created.id;
-    } catch (retryErr) {
-      if (isUniqueViolation(retryErr)) {
-        throw new ContentError("SLUG_CONFLICT", `A post with slug "${free}" already exists.`);
-      }
-      throw retryErr;
-    }
-  }
+    return blocker !== undefined && blocker.deletedAt !== null;
+  },
+  conflict: (message) => new ContentError("SLUG_CONFLICT", message),
+};
+
+/** Insert with admin-friendly slug recovery (semantics in insertWithSlugRecovery). */
+async function insertPostWithSlugRecovery(write: PostWrite, slug: string): Promise<string> {
+  return insertWithSlugRecovery(slug, postSlugContext, async (candidate) => {
+    const [created] = await db
+      .insert(posts)
+      .values({ ...write, slug: candidate })
+      .returning({ id: posts.id });
+    return created.id;
+  });
 }
 
 export async function upsertPost(input: PostInput): Promise<PostWithRefs> {
@@ -663,47 +619,31 @@ async function pageSlugExists(slug: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-/** First free `base-2`, `base-3`, … slug not already used (live OR trashed). */
-async function nextFreePageSlug(base: string): Promise<string> {
-  for (let n = 2; n < 1000; n++) {
-    const candidate = `${base}-${n}`;
-    if (!(await pageSlugExists(candidate))) return candidate;
-  }
-  throw new ContentError("SLUG_CONFLICT", `No free slug available for "${base}".`);
-}
-
-/** Post-style slug recovery for pages (same recreate-after-trash semantics). */
-async function insertPageWithSlugRecovery(write: PageWrite, slug: string): Promise<string> {
-  try {
-    const [created] = await db
-      .insert(pages)
-      .values(write)
-      .returning({ id: pages.id });
-    return created.id;
-  } catch (err) {
-    if (!isUniqueViolation(err)) throw err;
+/** Pages' bindings for the shared slug-recovery core (src/lib/slug.ts):
+ *  probes against the pages table + the typed SLUG_CONFLICT error. */
+const pageSlugContext: SlugContext = {
+  noun: "page",
+  exists: pageSlugExists,
+  isDeleted: async (slug) => {
     const [blocker] = await db
       .select({ deletedAt: pages.deletedAt })
       .from(pages)
       .where(eq(pages.slug, slug))
       .limit(1);
-    if (!blocker || blocker.deletedAt === null) {
-      throw new ContentError("SLUG_CONFLICT", `A page with slug "${slug}" already exists.`);
-    }
-    const free = await nextFreePageSlug(slug);
-    try {
-      const [created] = await db
-        .insert(pages)
-        .values({ ...write, slug: free })
-        .returning({ id: pages.id });
-      return created.id;
-    } catch (retryErr) {
-      if (isUniqueViolation(retryErr)) {
-        throw new ContentError("SLUG_CONFLICT", `A page with slug "${free}" already exists.`);
-      }
-      throw retryErr;
-    }
-  }
+    return blocker !== undefined && blocker.deletedAt !== null;
+  },
+  conflict: (message) => new ContentError("SLUG_CONFLICT", message),
+};
+
+/** Post-style slug recovery for pages (same recreate-after-trash semantics). */
+async function insertPageWithSlugRecovery(write: PageWrite, slug: string): Promise<string> {
+  return insertWithSlugRecovery(slug, pageSlugContext, async (candidate) => {
+    const [created] = await db
+      .insert(pages)
+      .values({ ...write, slug: candidate })
+      .returning({ id: pages.id });
+    return created.id;
+  });
 }
 
 export async function upsertPage(input: PageInput): Promise<Page> {

@@ -11,6 +11,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db } from "@/db/client";
+import { escapeLike, isUniqueViolation, paginate } from "@/lib/db-utils";
 import { orderStatusEvents, orders, travelers } from "./schema";
 // The order rows carry listing snapshots read from the catalog tables; the
 // listing join for the admin list view reads listings directly — the same
@@ -189,17 +190,6 @@ export class OrderError extends Error {
 
 // ---- row helpers ----------------------------------------------------------------
 
-/** Escape LIKE wildcards so user search input is treated literally. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
-}
-
-function pagination(page?: number, perPage?: number, defaultPerPage = 20, maxPerPage = 50) {
-  const safePage = Math.max(1, Math.floor(page ?? 1));
-  const safePerPage = Math.min(maxPerPage, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
-  return { page: safePage, perPage: safePerPage, offset: (safePage - 1) * safePerPage };
-}
-
 function asObject(value: unknown): Record<string, unknown> | null {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -254,20 +244,6 @@ function orderSearchCondition(query: string): SQL {
     sql`(${orders.customerSnapshot} ->> 'name') ilike ${pattern}`,
     sql`(${orders.customerSnapshot} ->> 'phone') ilike ${pattern}`,
   ) as SQL;
-}
-
-/** drizzle wraps driver errors in DrizzleQueryError; the pg error code
- *  (23505) lives on the underlying cause, so walk the cause chain. */
-function isUniqueViolation(err: unknown): boolean {
-  let current: unknown = err;
-  for (let depth = 0; depth < 5 && current !== null && current !== undefined; depth++) {
-    if (typeof current === "object" && (current as { code?: string }).code === "23505") {
-      return true;
-    }
-    current =
-      typeof current === "object" ? (current as { cause?: unknown }).cause : undefined;
-  }
-  return false;
 }
 
 // ---- order number allocation -----------------------------------------------------
@@ -427,7 +403,12 @@ export async function listOrders(query: OrderListQuery = {}): Promise<Paginated<
   if (search) conditions.push(orderSearchCondition(search));
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 20, query.perPage ? 200 : 50);
+  const { offset, perPage } = paginate({
+    page: query.page,
+    perPage: query.perPage,
+    defaultPerPage: 20,
+    maxPerPage: query.perPage ? 200 : 50,
+  });
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })
@@ -448,7 +429,7 @@ export async function myOrders(
   query: { page?: number; perPage?: number } = {},
 ): Promise<Paginated<OrderListItem>> {
   const where = eq(orders.userId, userId);
-  const { offset, perPage } = pagination(query.page, query.perPage, 10, 50);
+  const { offset, perPage } = paginate({ page: query.page, perPage: query.perPage, defaultPerPage: 10 });
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })

@@ -12,6 +12,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db } from "@/db/client";
+import { escapeLike, paginate } from "@/lib/db-utils";
 // landing_pages is co-located with the leads schema (the leads FK points at it
 // and both ship together) — this module's service consumes that table directly.
 import { landingPages, leadEvents, leads } from "./schema";
@@ -116,11 +117,6 @@ export class LeadError extends Error {
 
 const STAFF_ROLES = ["superadmin", "admin", "staff"] as const;
 
-/** Escape LIKE wildcards so user search input is treated literally. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
-}
-
 function leadSearchCondition(query: string): SQL {
   const pattern = `%${escapeLike(query)}%`;
   return or(
@@ -128,12 +124,6 @@ function leadSearchCondition(query: string): SQL {
     ilike(leads.phone, pattern),
     ilike(leads.email, pattern),
   ) as SQL;
-}
-
-function pagination(page?: number, perPage?: number, defaultPerPage = 20, maxPerPage = 50) {
-  const safePage = Math.max(1, Math.floor(page ?? 1));
-  const safePerPage = Math.min(maxPerPage, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
-  return { page: safePage, perPage: safePerPage, offset: (safePage - 1) * safePerPage };
 }
 
 function asObject(value: unknown): Record<string, unknown> | null {
@@ -236,7 +226,12 @@ export async function listLeads(query: LeadListQuery = {}): Promise<Paginated<Le
   if (search) conditions.push(leadSearchCondition(search));
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 20, query.perPage ? 200 : 50);
+  const { offset, perPage } = paginate({
+    page: query.page,
+    perPage: query.perPage,
+    defaultPerPage: 20,
+    maxPerPage: query.perPage ? 200 : 50,
+  });
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })

@@ -1,6 +1,7 @@
 import "server-only";
 import { and, desc, eq, ilike, isNotNull, isNull, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db/client";
+import { escapeLike } from "@/lib/db-utils";
 import { mediaFiles } from "@/modules/media/schema";
 import { deleteFileObject } from "@/modules/media/storage";
 
@@ -67,11 +68,6 @@ export function toMediaFile(row: MediaFilesRow): MediaFile {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
-}
-
-/** Escape LIKE wildcards so user search input is treated literally. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
 }
 
 function searchCondition(query: string): SQL {

@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { db } from "@/db/client";
+import { escapeLike, paginate } from "@/lib/db-utils";
 import { trackingEvents } from "./schema";
 import { buildMetaEvent, type MetaEventInput } from "./lib";
 import { CAPI_STATUS, sendCapiEvent } from "./capi";
@@ -110,11 +111,6 @@ type TrackingEventRow = {
   createdAt: Date;
 };
 
-/** Escape LIKE wildcards so user search input is treated literally. */
-function escapeLike(value: string): string {
-  return value.replace(/[\\%_]/g, (m) => `\\${m}`);
-}
-
 function trackingSearchCondition(query: string): SQL {
   const pattern = `%${escapeLike(query)}%`;
   return or(
@@ -123,12 +119,6 @@ function trackingSearchCondition(query: string): SQL {
     ilike(trackingEvents.sourceUrl, pattern),
     ilike(trackingEvents.referrer, pattern),
   ) as SQL;
-}
-
-function pagination(page?: number, perPage?: number, defaultPerPage = 25) {
-  const safePage = Math.max(1, Math.floor(page ?? 1));
-  const safePerPage = Math.min(100, Math.max(1, Math.floor(perPage ?? defaultPerPage)));
-  return { page: safePage, perPage: safePerPage, offset: (safePage - 1) * safePerPage };
 }
 
 function asObject(value: unknown): Record<string, unknown> | null {
@@ -238,7 +228,12 @@ export async function listTrackingEvents(
   if (query.capiStatus) conditions.push(eq(trackingEvents.capiStatus, query.capiStatus));
 
   const where = and(...conditions);
-  const { offset, perPage } = pagination(query.page, query.perPage, 25);
+  const { offset, perPage } = paginate({
+    page: query.page,
+    perPage: query.perPage,
+    defaultPerPage: 25,
+    maxPerPage: 100,
+  });
 
   const [countRow] = await db
     .select({ total: sql<number>`count(*)::int` })
