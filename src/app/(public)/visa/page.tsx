@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { cacheLife, cacheTag } from "next/cache";
+import { connection } from "next/server";
 import { Award, FileCheck2, Headphones, ShieldCheck } from "lucide-react";
-import { CACHE_TAGS } from "@/lib/cache-tags";
-import { listVisaServices, listVisaTypes } from "@/modules/catalog/visa-service";
-import { listDestinations } from "@/modules/catalog/service";
+import { getVisaExplorerData } from "./_lib/visa-data";
 import VisaExplorerClient from "./VisaExplorerClient";
 import { SectionHeading } from "@/components/site/SectionHeading";
 
@@ -13,16 +11,20 @@ export const metadata: Metadata = {
     "Fast, reliable visa processing for Dubai, Malaysia, Singapore, Saudi Arabia, UK, and Schengen countries. Expert documentation check, transparent embassy fees, and high approval rates.",
 };
 
-export default async function VisaPage() {
-  "use cache";
-  cacheTag(CACHE_TAGS.listings);
-  cacheLife("hours");
+// The page opts out of build-time prerender (instant = false) so the build
+// never fills a prerender cache entry with this DB read — a Vercel build-time
+// cache-fill timeout was hit when the whole page was one "use cache" scope.
+// Data is runtime-cached per the listings tag in _lib/visa-data.ts.
+export const instant = false;
 
-  const [services, destinations, visaTypes] = await Promise.all([
-    listVisaServices({ activeOnly: true }),
-    listDestinations(true),
-    listVisaTypes(true),
-  ]);
+export default async function VisaPage() {
+  // Request-scoped marker: the route renders on demand and is never
+  // build-prerendered, so the build never fills a DB-backed cache entry for it
+  // (Vercel build-time cache-fill timeout seen when the page was one "use
+  // cache" scope). Data itself is runtime-cached per the listings tag.
+  await connection();
+
+  const { services, destinations, visaTypes } = await getVisaExplorerData();
 
   return (
     <main className="min-h-screen bg-background pb-20">

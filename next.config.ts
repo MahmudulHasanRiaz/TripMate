@@ -41,7 +41,6 @@ const nextConfig: NextConfig = {
   // `use cache` directive, cacheTag/cacheLife, and Partial Prerendering (PPR)
   // as the App Router default. See node_modules/next/dist/docs/.../cacheComponents.md
   cacheComponents: true,
-  partialPrefetching: true,
   experimental: {
     serverActions: {
       // Media uploads ride server actions as multipart FormData. Next's default
