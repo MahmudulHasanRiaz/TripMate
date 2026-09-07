@@ -131,9 +131,15 @@ defaults `DATABASE_URL` to that, so a dedicated deploy `.env` only needs
 `DATABASE_URL` at `localhost:5432`)? Override it on the command:
 `DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tripmate docker compose --profile app up -d --build`.
 
-Apply the schema once from a repo checkout — the runner image is standalone
-and ships no drizzle-kit: `DATABASE_URL=postgresql://postgres:postgres@localhost:5433/tripmate npm run db:migrate && npm run db:seed`, then create the
-superadmin at `/setup`. Health: the container self-checks `GET /api/health`
+**Schema auto-migrates on every (re)deploy.** The runner image applies pending
+`drizzle/` migrations at container start (`scripts/auto-migrate.mjs`, the same
+runtime migrator Vercel uses at build time) before the server boots — over
+`DATABASE_URL_MIGRATE` when set, else `DATABASE_URL`. Fresh deploys and
+Portainer redeploys therefore push schema changes automatically; re-runs are
+no-ops unless a new migration file was committed. `SKIP_DB_MIGRATE=1` opts
+out. Migrations only create/alter tables — they never seed demo content, so on
+a fresh database create the superadmin once at `/setup`. Health: the
+container self-checks `GET /api/health`
 (200 only when Postgres answers) — `docker compose --profile app ps`. Uploaded
 media persists in the bind-mounted `./storage` directory across rebuilds.
 
@@ -150,7 +156,7 @@ re-deploys keep both.
 ## Deploy — Vercel (serverless + Supabase)
 
 Schema-on-deploy is wired into the repo: `package.json` defines
-`vercel-build`, so every Vercel build runs `scripts/vercel-migrate.mjs` first
+`vercel-build`, so every Vercel build runs `scripts/auto-migrate.mjs` first
 (applies the committed `drizzle/` migrations with the runtime migrator — no
 drizzle-kit needed) and only then `next build`. That order is required: with
 Cache Components, `next build` executes the public `'use cache'` data scopes,
@@ -166,7 +172,7 @@ prerender pages.
      `prepare: false` for it.
    - `DATABASE_URL_MIGRATE` — Supabase **Session pooler** (port **5432**) or
      the **direct** connection. Used ONLY by the deploy-time migrate step
-     (`scripts/vercel-migrate.mjs`); DDL needs a real session, so never point
+     (`scripts/auto-migrate.mjs`); DDL needs a real session, so never point
      this at 6543. Falls back to `DATABASE_URL` when unset.
    - `APP_URL` — production URL, e.g. `https://tripmate.vercel.app`.
    - `AUTH_SECRET` — 32+ chars (`openssl rand -base64 32`).

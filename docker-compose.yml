@@ -38,6 +38,11 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/tripmate}
+      # Boot-time auto-migration connection (Supabase session pooler / direct).
+      # Unset -> falls back to DATABASE_URL.
+      DATABASE_URL_MIGRATE: ${DATABASE_URL_MIGRATE:-}
+      # Opt out of boot-time migrations for this stack.
+      SKIP_DB_MIGRATE: ${SKIP_DB_MIGRATE:-}
       APP_URL: ${APP_URL:-http://localhost:3000}
       AUTH_SECRET: ${AUTH_SECRET:-}
       STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
