@@ -33,6 +33,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
   { href: "/admin/users", label: "Users", icon: "users", permission: "users.manage" },
   { href: "/admin/tracking", label: "Tracking", icon: "activity", permission: "tracking.view" },
   { href: "/admin/settings", label: "Settings", icon: "settings", permission: "settings.manage" },
+  { href: "/admin/email-templates", label: "Email Templates", icon: "mail-open", permission: "settings.manage" },
 ];
 
 /** The subset of ADMIN_MENU a role is allowed to see. Superadmin short-circuits. */

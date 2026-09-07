@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   Mail,
+  MailOpen,
   Megaphone,
   Package,
   Receipt,
@@ -20,6 +21,8 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
+
+import { Toaster } from "@/components/ui/toaster";
 
 import { signOutAction } from "@/lib/auth-actions";
 import type { AdminMenuItem } from "@/lib/admin-menu";
@@ -67,6 +70,7 @@ const MENU_ICONS: Record<string, LucideIcon> = {
   users: Users,
   activity: Activity,
   settings: Settings,
+  "mail-open": MailOpen,
 };
 
 type AdminUser = {
@@ -106,6 +110,7 @@ export default function AdminShell({
         <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-6 md:py-8">
           {children}
         </div>
+        <Toaster />
       </SidebarInset>
     </SidebarProvider>
   );
