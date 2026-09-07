@@ -88,11 +88,11 @@ Adding content:
 - `npm run new-module <name>` — module skeleton generator
 
 ## CI
-GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR:
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push/PR — path-aware,
 **quality** (typegen, lint, typecheck, migrate+seed against a Postgres
 service, production build, unit tests) and **integration** (full live-DB
 suite with `RUN_DB_INTEGRATION=1`, then the Playwright e2e suite) with
-failure artifacts. Both jobs must be green to merge.
+failure artifacts. Both jobs must be green to merge. CI is smart: a `changes` diff gate skips install/build/tests for docs/asset-only pushes (jobs still report green), superseded runs on the same branch are cancelled, and npm/Playwright/Next caches are reused.
 
 ## Rate limiting (optional multi-instance)
 Public form guards default to a per-process sliding window (fine for local
