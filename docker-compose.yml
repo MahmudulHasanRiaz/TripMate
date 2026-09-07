@@ -17,5 +17,51 @@ services:
       timeout: 3s
       retries: 10
 
+  # Full production stack (Plan 7). Behind the "app" profile so the default
+  # `docker compose up -d` stays "local dev Postgres only" — and keeps working
+  # on a fresh clone with NO .env yet (compose interpolates every service,
+  # including inactive ones, so required-syntax vars would break dev startup):
+  #   docker compose --profile app up -d --build
+  #
+  # Values resolve from .env in this directory (compose interpolation — the
+  # same file local dev uses; in Portainer paste the same variables into the
+  # stack's Environment variables section). Defaults are compose-aware:
+  #   * DATABASE_URL defaults to the `postgres` service. The value a local
+  #     dev .env carries (localhost:543x) is wrong from inside a container —
+  #     for the app profile, override it (see README Deploy section).
+  #   * AUTH_SECRET has NO default on purpose: an empty value fail-fasts at
+  #     boot with the zod message ("at least 32 chars"). Never bake a secret.
+  app:
+    profiles: ["app"]
+    build: .
+    container_name: tripmate-app
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/tripmate}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      STORAGE_LOCAL_DIR: ${STORAGE_LOCAL_DIR:-storage/uploads}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      # Uploads persist across rebuilds. Bind-mounted at the same path
+      # `npm run dev` writes to, so host dev and the container share media.
+      - ./storage:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   tripmate_pgdata:

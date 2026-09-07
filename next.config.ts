@@ -30,6 +30,12 @@ function readR2Hostname(): string | null {
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  // Emit a self-contained .next/standalone bundle (server.js + traced
+  // node_modules) in addition to the normal build output. `next dev` and
+  // `next start` are unaffected — this only ADDS the folder the Docker image
+  // copies into its runner stage (see Dockerfile). Without it the standalone
+  // server.js is never produced and the image has nothing to run.
+  output: "standalone",
   // Next 16 Cache Components: single unified flag that turns on the
   // `use cache` directive, cacheTag/cacheLife, and Partial Prerendering (PPR)
   // as the App Router default. See node_modules/next/dist/docs/.../cacheComponents.md

@@ -1,0 +1,50 @@
+# Everything the build context must NOT ship to the builder stage. Keep the
+# `next build` inputs in mind before adding entries: package*.json,
+# next.config.ts, tsconfig.json, postcss.config.mjs, components.json,
+# theme-colors.ts, src/, public/ are all REQUIRED. Tests, scripts and docs
+# are absent from the image's tsc program — absent files never type-error.
+
+# dependencies / build output (rebuilt inside the image)
+node_modules
+.next
+out
+build
+coverage
+
+# git + agent tooling
+.git
+.gitignore
+.github
+.claude
+.superpowers
+.genkit
+
+# local secrets — NEVER enter the image; the Dockerfile uses dummies
+.env*
+
+# test tooling + reports (CI's job, not the image's)
+tests
+test-results
+playwright-report
+playwright
+*.tsbuildinfo
+eslint.config.mjs
+vitest.config.mts
+playwright.config.ts
+
+# dev-only scripts (runner is standalone-only). NOTE: drizzle/ +
+# drizzle.config.ts are NOT ignored — the builder migrates its throwaway
+# embedded Postgres before `next build` (see Dockerfile).
+scripts
+
+# runtime data (bind-mounted by compose, not baked in)
+storage
+public/uploads
+
+# docs / editor files
+*.md
+docs
+.vercel
+.dockerignore
+Dockerfile
+docker-compose.yml
