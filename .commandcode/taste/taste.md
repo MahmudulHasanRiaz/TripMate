@@ -1,0 +1,1 @@
+- Communicates in Bengali (Bangla) for project discussions. Confidence: 0.7

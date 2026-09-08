@@ -53,11 +53,12 @@ describe.skipIf(!integration)("dashboard service (integration — Postgres)", ()
       "costOfSalesThisMonth",
       "grossProfitThisMonth",
       "expensesThisMonth",
-      "netThisMonth",
     ] as const) {
       expect(Number.isFinite(kpis[key])).toBe(true);
       expect(kpis[key]).toBeGreaterThanOrEqual(0);
     }
+    // netThisMonth can be negative (a net loss when expenses exceed gross profit).
+    expect(Number.isFinite(kpis.netThisMonth)).toBe(true);
     expect(kpis.leadConversionRate).toBeGreaterThanOrEqual(0);
     expect(kpis.leadConversionRate).toBeLessThanOrEqual(100);
   });

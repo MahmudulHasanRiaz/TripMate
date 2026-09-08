@@ -405,12 +405,21 @@ describe.skipIf(!integration)("payments service (integration — Postgres)", () 
     expect(await payments.getOrderPaidTotal(order.id)).toBe(0);
     expect((await bookings.getOrderDetail(order.id))?.events).toHaveLength(1);
 
-    // No active pay-later gateway → NOT_FOUND (deactivated, then restored).
-    await payments.setGatewayActive(paylaterId, false);
+    // No active pay-later gateway → NOT_FOUND. The shared integration DB may
+    // hold other active pay-later gateways (seed data / other tests), so every
+    // active one must be deactivated — not just this test's — and restored after.
+    const allPayLater = (await payments.listGateways(true))
+      .filter((g) => g.kind === "paylater")
+      .map((g) => g.id);
+    for (const id of allPayLater) {
+      await payments.setGatewayActive(id, false);
+    }
     await expect(payments.selectPayLater({ orderId: order.id })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
-    await payments.setGatewayActive(paylaterId, true);
+    for (const id of allPayLater) {
+      await payments.setGatewayActive(id, true);
+    }
 
     // A quoted order's marker records the quote.
     const quoted = track(await bookings.createPackageOrder(packageInput(listingId), {}));
