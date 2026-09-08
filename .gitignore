@@ -57,3 +57,7 @@ firestore-debug.log
 # Next 16 agentRules generated docs
 AGENTS.md
 CLAUDE.md
+
+# ai agent
+/.commandcode/
+/.claude/
