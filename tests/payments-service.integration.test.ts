@@ -371,7 +371,7 @@ describe.skipIf(!integration)("payments service (integration — Postgres)", () 
     const payments = await import("@/modules/payments/service");
     const bookings = await import("@/modules/bookings/service");
     const { publishedId: listingId } = await createListings();
-    const paylaterId = await createGateway({ name: `Pay Later ${marker}`, kind: "paylater", sortOrder: 10 });
+    await createGateway({ name: `Pay Later ${marker}`, kind: "paylater", sortOrder: 10 });
     const order = track(await bookings.createPackageOrder(packageInput(listingId), {}));
 
     const paylaterGatewayIds = (await payments.listGateways(true))

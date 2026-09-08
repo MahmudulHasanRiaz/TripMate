@@ -38,6 +38,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
  * instead.
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
+  "use cache";
   cacheTag(CACHE_TAGS.settings);
   cacheLife("hours");
 

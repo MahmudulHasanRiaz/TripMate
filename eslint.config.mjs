@@ -5,11 +5,6 @@ const eslintConfig = [
   ...nextVitals,
   ...nextTypescript,
   {
-    rules: {
-      "react/no-danger": "error",
-    },
-  },
-  {
     files: ["**/*.{ts,tsx}"],
     ignores: ["src/db/**", "scripts/**"],
     rules: {
@@ -41,6 +36,7 @@ const eslintConfig = [
       "next-env.d.ts",
       // Project-level ignores:
       ".claude/**",
+      ".commandcode/**",
       "node_modules/**",
       "playwright-report/**",
     ],

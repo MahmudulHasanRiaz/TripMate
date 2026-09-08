@@ -1,4 +1,3 @@
-/* eslint-disable react/no-danger -- JSON-LD payload is server-built typed JSON, never user HTML */
 type JsonLdProps = {
   data: Record<string, unknown>;
 };

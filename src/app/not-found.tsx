@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { getSiteSettings } from "@/lib/site-settings";
+import { DEFAULT_SITE_SETTINGS } from "@/lib/site-settings";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -19,8 +19,10 @@ import { SiteFooter } from "@/components/site/SiteFooter";
  * a primary route home plus obvious onward journeys (Packages, Blog) so a
  * dead link never reads as a dead end.
  */
-export default async function NotFound() {
-  const site = await getSiteSettings();
+export default function NotFound() {
+  // A 404 must never depend on the database or a cache scope — static chrome
+  // with the brand defaults keeps error pages instant and build-safe.
+  const site = DEFAULT_SITE_SETTINGS;
 
   return (
     <>

@@ -31,7 +31,6 @@ export function renderBaseEmail(opts: {
       }}
     >
       <h2 style={{ color: "#0E5E5A" }}>{opts.heading}</h2>
-      {/* eslint-disable-next-line react/no-danger -- bodyHtml is server-built from our own templates, never user input */}
       <div dangerouslySetInnerHTML={{ __html: opts.bodyHtml }} />
       <p style={{ color: "#888", fontSize: 12, marginTop: 32 }}>TripMate</p>
     </div>,

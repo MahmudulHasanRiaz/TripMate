@@ -17,7 +17,6 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 import { CTASection } from "@/components/site/CTASection";
 import { telLink, whatsappLink } from "@/components/site/currency";
 
-import { listActiveCategoryRefs } from "@/modules/catalog/service";
 import { getServicePageData, type ServicePageData } from "../_lib/service-data";
 import { ServiceHero } from "./_components/ServiceHero";
 import { ServiceOptionsSelector } from "./_components/ServiceOptionsSelector";
@@ -48,14 +47,6 @@ import { InquiryForm } from "@/components/site/InquiryForm";
  * content resolves — the same shape as /packages/[slug].
  */
 
-
-export async function generateStaticParams(): Promise<{ slug: string }[]> {
-  const refs = await listActiveCategoryRefs();
-  const slugs = refs.map((ref) => ref.slug);
-  return slugs.length > 0
-    ? slugs.map((slug) => ({ slug }))
-    : [{ slug: "__empty__" }];
-}
 
 export async function generateMetadata(
   props: PageProps<"/services/[slug]">,
