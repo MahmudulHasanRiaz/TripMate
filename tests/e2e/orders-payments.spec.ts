@@ -76,8 +76,14 @@ test("golden path: booking -> in_review -> quote -> pay -> verify -> confirmed -
   // Fill special requests
   await page.locator("textarea").fill("Wheelchair assistance and ground floor room requested.");
 
-  // Submit booking
-  await page.getByRole("button", { name: /submit booking request/i }).click();
+  // Advance to Step 2 (Payment Method)
+  await page.getByRole("button", { name: /proceed to payment/i }).click();
+
+  // Wait for step 2 heading
+  await expect(page.getByText("Select Payment Gateway")).toBeVisible(wait);
+
+  // Submit booking (no gateways configured — "Confirm & Place Order" is always visible)
+  await page.getByRole("button", { name: /confirm & place order/i }).click();
 
   // Wait for success screen and capture orderNo
   const orderNumberDisplay = page.locator('[data-testid="order-number-display"]');

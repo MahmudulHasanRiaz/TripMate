@@ -46,9 +46,8 @@ test.describe.serial("admin dashboard, settings, and email templates", () => {
     // Stable KPI card labels (database accumulates, so assert presence of stable metric labels)
     await expect(page.getByText("Leads Today")).toBeVisible();
     await expect(page.getByText("Pending Payments")).toBeVisible();
-    await expect(page.getByText("Unassigned Leads")).toBeVisible();
-    await expect(page.getByText("Total Revenue")).toBeVisible();
-    await expect(page.getByText("Total Expenses")).toBeVisible();
+    await expect(page.getByText("Revenue")).toBeVisible();
+    await expect(page.getByText("Op. Expenses")).toBeVisible();
     await expect(page.getByText("Net Profit")).toBeVisible();
 
     // Orders by status strip
