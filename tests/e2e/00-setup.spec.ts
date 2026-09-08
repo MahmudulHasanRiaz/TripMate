@@ -43,11 +43,19 @@ test.describe.serial("setup wizard", () => {
   test("completes the wizard and locks /setup", async ({ page }) => {
     test.skip(setupLocked, "setup already complete — wizard suite skipped");
 
-    test.setTimeout(90_000); // cold Turbopack compiles on first /setup hit
+    test.setTimeout(180_000); // cold Turbopack compiles on first /setup hit; demo seeding downloads assets
     await page.goto("/setup");
     await expect(page.getByRole("heading", { name: /set up tripmate/i })).toBeVisible();
 
+    // Step 1 — Installation mode: pick Demo and continue. Seeding downloads
+    // assets and can take a while, so allow a generous wait for the next step.
+    await expect(page.getByRole("heading", { name: /choose installation mode/i })).toBeVisible();
+    await page.getByRole("button", { name: /^Continue$/i }).click();
+
     // Account: create the superadmin (min-10 password passes)
+    await expect(page.getByRole("heading", { name: /admin account/i })).toBeVisible({
+      timeout: 60_000,
+    });
     const email = page.getByLabel(/email address|email/i);
     await email.fill("admin@tripmate.test");
     await expect(email).toHaveValue("admin@tripmate.test");
@@ -72,8 +80,14 @@ test.describe.serial("setup wizard", () => {
     await page.getByRole("button", { name: /skip for now/i }).click();
     await expect(page.getByRole("heading", { name: /meta pixel/i })).toBeVisible();
 
-    // Meta: skip
-    await page.getByRole("button", { name: /skip this step/i }).click();
+    // Meta: demo seeding marks it skipped; otherwise skip it manually.
+    const metaContinue = page.getByRole("button", { name: "Continue", exact: true });
+    const metaSkip = page.getByRole("button", { name: /skip this step/i });
+    if (await metaSkip.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await metaSkip.click();
+    } else {
+      await metaContinue.click();
+    }
     await expect(page.getByRole("heading", { name: /almost done/i })).toBeVisible();
 
     // Complete -> success screen with a link onward to /login

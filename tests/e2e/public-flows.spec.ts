@@ -59,16 +59,18 @@ const POST_CONTENT = [
 ].join("\n");
 const POST_BASE_SLUG = /journey-chronicles-sylhet(-\d+)?/;
 
-const HAJJ_TITLE = "Premium Hajj Package 2026";
+const HAJJ_TITLE = "Premium Executive Hajj 2026";
 const HAJJ_MARK = " (e2e v2)";
 
 const SEEDED_SERVICES = [
-  "Tour Packages",
-  "Hajj",
-  "Umrah",
-  "Medical Travel",
   "Flight Tickets",
-  "Visa & Passport",
+  "Hotel Booking",
+  "Tour Packages",
+  "Hajj Packages",
+  "Umrah Packages",
+  "Medical Travel",
+  "Visa Concierge",
+  "Passport Services",
 ];
 
 test.setTimeout(150_000); // one long journey over admin + several public routes
@@ -204,7 +206,7 @@ test("full public journey — publish a post, then home → package detail → f
     await test.step("home renders the hero and service cards", async () => {
       await page.goto("/");
       await expect(
-        page.getByRole("heading", { level: 1, name: "Your Journey Begins Here", exact: true }),
+        page.getByRole("heading", { level: 1, name: "Travel better. We'll handle the rest.", exact: true }),
       ).toBeVisible(wait);
       await expect(
         page.getByRole("heading", { name: "Every journey, planned with care" }),
@@ -217,10 +219,10 @@ test("full public journey — publish a post, then home → package detail → f
     await test.step("click the featured Hajj card into its detail", async () => {
       // The featured band (capped at 3) shows the three seeded packages on a
       // healthy DB; the Hajj card deep-links to the detail route with itinerary.
-      const hajjCard = page.locator('main a[href="/packages/premium-hajj-2026"]');
+      const hajjCard = page.locator('main a[href="/packages/premium-executive-hajj-2026"]');
       await expect(hajjCard.first()).toBeVisible(wait);
       await hajjCard.first().click();
-      await expect(page).toHaveURL(/\/packages\/premium-hajj-2026$/, wait);
+      await expect(page).toHaveURL(/\/packages\/premium-executive-hajj-2026$/, wait);
     });
 
     await test.step("package detail shows itinerary, price and enquiry CTA", async () => {
@@ -258,7 +260,7 @@ test("full public journey — publish a post, then home → package detail → f
       await expect(page).toHaveURL(/[?&]cat=umrah(?:&|$)/);
       const grid = page.getByTestId("package-grid");
       await expect(grid.locator("a")).toHaveCount(1, wait);
-      await expect(grid.filter({ hasText: "Economy Umrah Package" })).toBeVisible();
+      await expect(grid.filter({ hasText: "Executive Umrah 14-Day Spiritual Journey" })).toBeVisible();
     });
 
     await test.step("/blog lists the published post and opens its detail", async () => {

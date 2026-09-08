@@ -16,19 +16,21 @@ import { test, expect } from "@playwright/test";
 // listings, so exactly the three seeded package cards render.
 // =============================================================================
 
-const HERO_HEADLINE = "Your Journey Begins Here"; // settings.home (seed)
+const HERO_HEADLINE = "Travel better. We'll handle the rest."; // settings.home (seed)
 const SEEDED_SERVICES = [
-  "Tour Packages",
-  "Hajj",
-  "Umrah",
-  "Medical Travel",
   "Flight Tickets",
-  "Visa & Passport",
+  "Hotel Booking",
+  "Tour Packages",
+  "Hajj Packages",
+  "Umrah Packages",
+  "Medical Travel",
+  "Visa Concierge",
+  "Passport Services",
 ];
 const SEEDED_PACKAGES = [
-  "Premium Hajj Package 2026",
-  "Economy Umrah Package",
-  "Malaysia-Singapore Family Tour",
+  "Premium Executive Hajj 2026",
+  "Executive Umrah 14-Day Spiritual Journey",
+  "Malaysia & Singapore 7-Day Family Escape",
 ];
 
 test("home renders the settings-driven hero", async ({ page }) => {
@@ -66,7 +68,7 @@ test("home features the three seeded packages", async ({ page }) => {
   await page.goto("/");
 
   await expect(
-    page.getByRole("heading", { name: "Hand-picked journeys" }),
+    page.getByRole("heading", { name: "Hand-picked trips for every traveller" }),
   ).toBeVisible();
 
   const cards = page.locator('main a[href^="/packages/"]');
@@ -121,9 +123,9 @@ test("home closing CTA surfaces the settings phone + WhatsApp", async ({ page })
 
   // Bengali-market contact escapes, driven by settings.site.phone (seed).
   await expect(
-    page.locator('main a[href="tel:+8801000000000"]'),
+    page.locator('main a[href="tel:+8801711234567"]'),
   ).toBeVisible();
   await expect(
-    page.locator('main a[href="https://wa.me/8801000000000"]'),
+    page.locator('main a[href="https://wa.me/8801711234567"]'),
   ).toBeVisible();
 });

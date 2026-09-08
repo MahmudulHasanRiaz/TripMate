@@ -22,14 +22,15 @@ test("/services/tour-packages lists the category's published package cards", asy
     page.getByRole("heading", { level: 1, name: "Tour Packages" }),
   ).toBeVisible();
 
-  // Seed: the tour-packages category owns the Malaysia-Singapore Family Tour
-  // listing. Assert >= 1 card (residue tolerance) and the seeded card present.
+  // Seed: the tour-packages category owns the Malaysia & Singapore 7-Day
+  // Family Escape listing. Assert >= 1 card (residue tolerance) and the seeded
+  // card present.
   const grid = page.locator(SERVICE_GRID);
   await expect(grid).toBeVisible();
   const card = grid.locator("a").first();
   await expect(card).toBeVisible();
   await expect(
-    grid.filter({ hasText: "Malaysia-Singapore Family Tour" }),
+    grid.filter({ hasText: "Malaysia & Singapore 7-Day Family Escape" }),
   ).toBeVisible();
 });
 

@@ -14,9 +14,9 @@ import { expect, test, type Page } from "@playwright/test";
 const GRID = '[data-testid="package-grid"]';
 
 const SEEDED = [
-  { title: "Premium Hajj Package 2026", query: "hajj" },
-  { title: "Economy Umrah Package", query: "umrah" },
-  { title: "Malaysia-Singapore Family Tour", query: "malaysia" },
+  { title: "Premium Executive Hajj 2026", query: "hajj" },
+  { title: "Executive Umrah 14-Day Spiritual Journey", query: "umrah" },
+  { title: "Malaysia & Singapore 7-Day Family Escape", query: "malaysia" },
 ];
 
 /** Walk pages 1..4 of the index looking for a card whose text includes title. */
@@ -49,9 +49,9 @@ test("filtering by category narrows to the Umrah package", async ({ page }) => {
   await expect(page).toHaveURL(/[?&]cat=umrah(?:&|$)/);
   await expect(page.locator(GRID).locator("a")).toHaveCount(1);
   await expect(
-    page.locator(GRID).filter({ hasText: "Economy Umrah Package" }),
+    page.locator(GRID).filter({ hasText: "Executive Umrah 14-Day Spiritual Journey" }),
   ).toBeVisible();
-  await expect(page.locator(GRID)).not.toContainText("Premium Hajj Package 2026");
+  await expect(page.locator(GRID)).not.toContainText("Premium Executive Hajj 2026");
 });
 
 test("searching 'hajj' narrows to the Hajj package", async ({ page }) => {
@@ -62,7 +62,7 @@ test("searching 'hajj' narrows to the Hajj package", async ({ page }) => {
   await expect(page).toHaveURL(/[?&]q=hajj(?:&|$)/);
   await expect(page.locator(GRID).locator("a")).toHaveCount(1);
   await expect(
-    page.locator(GRID).filter({ hasText: "Premium Hajj Package 2026" }),
+    page.locator(GRID).filter({ hasText: "Premium Executive Hajj 2026" }),
   ).toBeVisible();
 });
 
@@ -72,11 +72,11 @@ test("package detail shows itinerary, price and the phone/WhatsApp/email CTAs", 
   // Reach the Hajj card through its deterministic search filter (the default
   // page can be dominated by residue), then click into the detail route.
   await page.goto("/packages?q=hajj");
-  await page.locator('a[href="/packages/premium-hajj-2026"]').click();
+  await page.locator('a[href="/packages/premium-executive-hajj-2026"]').click();
 
-  await expect(page).toHaveURL(/\/packages\/premium-hajj-2026$/);
+  await expect(page).toHaveURL(/\/packages\/premium-executive-hajj-2026$/);
   await expect(
-    page.getByRole("heading", { level: 1, name: "Premium Hajj Package 2026" }),
+    page.getByRole("heading", { level: 1, name: "Premium Executive Hajj 2026" }),
   ).toBeVisible();
 
   // Price card (desktop sidebar).

@@ -48,11 +48,11 @@ test("golden path: booking -> in_review -> quote -> pay -> verify -> confirmed -
   const travelerName = `Traveler ${timestamp}`;
 
   // ---------------------------------------------------------------------------
-  // Step 1: Public Booking on /packages/premium-hajj-2026
+  // Step 1: Public Booking on /packages/premium-executive-hajj-2026
   // ---------------------------------------------------------------------------
-  await page.goto("/packages/premium-hajj-2026");
+  await page.goto("/packages/premium-executive-hajj-2026");
   await expect(
-    page.getByRole("heading", { level: 1, name: /Premium Hajj Package 2026/i }),
+    page.getByRole("heading", { level: 1, name: /Premium Executive Hajj 2026/i }),
   ).toBeVisible(wait);
 
   // Open BookingForm dialog (desktop sidebar or mobile bar)
@@ -62,7 +62,7 @@ test("golden path: booking -> in_review -> quote -> pay -> verify -> confirmed -
 
   // Wait for dialog
   await expect(
-    page.getByRole("heading", { name: /Book.*Premium Hajj Package 2026/i }),
+    page.getByRole("heading", { name: /Book.*Premium Executive Hajj 2026/i }),
   ).toBeVisible();
 
   // Fill customer details
