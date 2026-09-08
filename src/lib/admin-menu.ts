@@ -44,6 +44,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
   // Settings & Operations
   { href: "/admin/tracking", label: "Analytics & Tracking", icon: "activity", permission: "tracking.view", group: "Settings" },
   { href: "/admin/settings", label: "Settings", icon: "settings", permission: "settings.manage", group: "Settings" },
+  { href: "/admin/reset", label: "Reset & Re-initialize", icon: "trash-2", permission: "settings.manage", group: "Settings" },
   { href: "/admin/email-templates", label: "Email Templates", icon: "mail-open", permission: "settings.manage", group: "Settings" },
 ];
 

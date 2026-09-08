@@ -19,6 +19,7 @@ import {
   Package,
   Receipt,
   Settings,
+  Trash2,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -75,6 +76,7 @@ const MENU_ICONS: Record<string, LucideIcon> = {
   activity: Activity,
   settings: Settings,
   "mail-open": MailOpen,
+  "trash-2": Trash2,
 };
 
 type AdminUser = {
