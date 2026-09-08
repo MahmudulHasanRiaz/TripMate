@@ -34,42 +34,32 @@ test("/services/tour-packages lists the category's published package cards", asy
   ).toBeVisible();
 });
 
-test("/services/flight-tickets (inquiry-based) shows checklist + contact CTAs", async ({
+test("/services/flights (redirect-based) shows the redirect CTA", async ({
   page,
 }) => {
-  await page.goto("/services/flight-tickets");
+  await page.goto("/services/flights");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Flight Tickets" }),
   ).toBeVisible();
 
-  // The static "what we'll need from you" checklist (no category body in v1).
-  await expect(
-    page.getByRole("heading", { name: "What we'll need from you" }),
-  ).toBeVisible();
-  await expect(page.getByText("Your preferred dates")).toBeVisible();
-  await expect(page.getByText("Must-haves")).toBeVisible();
-
-  // Contact actions — settings.site phone/email (seed).
+  // The redirect service shows a link to the external flight booking portal.
   const main = page.getByRole("main");
-  await expect(main.locator('a[href^="tel:"]').first()).toBeVisible();
-  await expect(main.locator('a[href^="https://wa.me/"]').first()).toBeVisible();
   await expect(
-    main.getByRole("link", { name: "Email an advisor" }),
+    main.getByRole("link", { name: /book.*flight/i }),
   ).toBeVisible();
 });
 
-test("/blog shows a graceful empty state when no posts are live", async ({ page }) => {
+test("/blog shows seeded published posts in the grid", async ({ page }) => {
   await page.goto("/blog");
 
   await expect(
     page.getByRole("heading", { level: 1, name: "Stories from the road" }),
   ).toBeVisible();
-  // The blog grid is absent and the empty state renders instead.
-  await expect(page.locator('[data-testid="blog-grid"]')).toHaveCount(0);
-  await expect(
-    page.getByRole("heading", { name: "Stories are being written" }),
-  ).toBeVisible();
+  // The demo seed creates published posts — verify the grid renders them.
+  const grid = page.locator('[data-testid="blog-grid"]');
+  await expect(grid).toBeVisible();
+  await expect(grid.locator("a").first()).toBeVisible();
 });
 
 test("/p/about-us renders the seeded markdown", async ({ page }) => {
