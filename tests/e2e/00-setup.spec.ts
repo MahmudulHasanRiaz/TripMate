@@ -92,7 +92,19 @@ test.describe.serial("setup wizard", () => {
 
     // Complete -> success screen with a link onward to /login
     await page.getByRole("button", { name: /finish setup/i }).click();
-    await expect(page.getByRole("heading", { name: /setup complete/i })).toBeVisible();
+    // Capture any error the wizard surface shows so CI logs tell us WHY
+    // the success screen never appeared (instead of just "element not found").
+    const finishAlert = page.getByRole("alert");
+    await expect
+      .poll(
+        async () => {
+          if (await page.getByRole("heading", { name: /setup complete/i }).isVisible()) return "ok";
+          if (await finishAlert.isVisible()) return `error: ${await finishAlert.textContent()}`;
+          return "waiting";
+        },
+        { timeout: 15_000, intervals: [500] },
+      )
+      .toBe("ok");
     await expect(page.getByRole("link", { name: /continue to login/i })).toBeVisible();
 
     // Locked now: a second visit to /setup redirects off it

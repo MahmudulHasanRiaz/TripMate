@@ -38,7 +38,13 @@ export function withGuard<TInput, TOutput>(
   action: (input: TInput, session: Session | null) => Promise<TOutput>,
 ) {
   return async (input: TInput, rateKey?: string): Promise<TOutput> => {
-    const session = await getSession();
+    let session: Session | null = null;
+    try {
+      session = await getSession();
+    } catch (e) {
+      if (!opts.public) throw e;
+      console.warn("[guard] getSession failed for public action, proceeding without session", e);
+    }
 
     if (!opts.public && !session) throw new GuardError("UNAUTHORIZED");
     if (opts.permission && !session) throw new GuardError("UNAUTHORIZED");
