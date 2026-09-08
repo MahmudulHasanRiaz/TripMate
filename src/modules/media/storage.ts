@@ -35,11 +35,24 @@ export type StoredObject = {
 
 /** Store a buffer through the configured driver under a fresh server-generated
  *  key. Returns the row-ready storage fields. */
+/** Resolve the storage disk for NEW objects: the wizard-stored settings row
+ *  wins when present; otherwise fall back to the STORAGE_DRIVER env (so demo
+ *  seeding and uploads work before/without a settings row — e.g. wizard Mode
+ *  step seeds assets before the Storage step, and the admin reset deletes the
+ *  settings row before re-seeding). Defaults to local. */
+async function resolveStorageDisk(): Promise<"local" | "r2"> {
+  const configured = (await getSetting("storage"))?.driver;
+  if (configured === "r2" || configured === "local") return configured;
+  const env = process.env.STORAGE_DRIVER;
+  if (env === "r2" || env === "local") return env;
+  return "local";
+}
+
 export async function putFileObject(
   mime: string,
   buffer: Buffer,
 ): Promise<StoredObject> {
-  const disk = (await getSetting("storage"))?.driver === "r2" ? "r2" : "local";
+  const disk = await resolveStorageDisk();
   const driver = getStorageDriver(disk);
   const key = buildStorageKey(randomUUID(), mime);
   if (!key) {
