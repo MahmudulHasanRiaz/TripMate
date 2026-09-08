@@ -289,7 +289,13 @@ export const wizardSeedData = relay(
       } else {
         await seedProductionBaseline();
       }
+      // Seeding creates catalog/content rows — expire every public content tag
+      // so pages seeded NOW are not masked by an earlier (empty) cache entry.
       updateTag(CACHE_TAGS.settings);
+      updateTag(CACHE_TAGS.listings);
+      updateTag(CACHE_TAGS.posts);
+      updateTag(CACHE_TAGS.pages);
+      updateTag(CACHE_TAGS.orders);
       return { ok: true };
     },
   ),

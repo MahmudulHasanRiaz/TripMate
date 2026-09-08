@@ -212,14 +212,15 @@ export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
 };
 
 /**
- * Generate CSS variable overrides for :root from the configured theme colors.
- * This injects into a <style> tag so any admin change immediately restyles
- * all Tailwind utility classes using semantic tokens.
+ * Generate CSS variable overrides for the LIGHT theme (:root:not(.dark)).
+ * Scoping to light-only keeps the built-in .dark token set (globals.css)
+ * intact — an unscoped :root override injected after globals would beat the
+ * .dark rules in the cascade and break dark mode.
  */
 export function buildThemeCssVariables(theme: ThemeSettings): string {
   const c = theme.colors;
   return `
-:root {
+:root:not(.dark) {
   --background: ${c.background};
   --foreground: ${c.foreground};
   --card: ${c.card};
