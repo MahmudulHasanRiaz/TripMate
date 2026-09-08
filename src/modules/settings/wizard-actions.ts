@@ -297,13 +297,8 @@ export const wizardSeedData = relay(
 
 /** Finish setup: persists setupComplete=true, locking every wizard action. */
 const completeSetup = relay(
-  withGuard({ public: true }, async (input?: { mode?: "demo" | "production" }) => {
+  withGuard({ public: true }, async () => {
     await assertUnlocked();
-    if (input?.mode === "demo") {
-      await seedDemoData();
-    } else if (input?.mode === "production") {
-      await seedProductionBaseline();
-    }
     await setSetting("setup", { setupComplete: true });
     // The setup row itself isn't read by public chrome, but completing the
     // wizard is the final settings mutation of the onboarding flow — expire the

@@ -226,7 +226,8 @@ export async function seedDemoData() {
         key: "storage",
         value: { driver: process.env.STORAGE_DRIVER === "r2" ? "r2" : "local" },
       },
-    ]);
+    ])
+    .onConflictDoNothing();
   }
 
   // --------------------------------------------------------------------------
@@ -306,6 +307,7 @@ export async function seedDemoData() {
           isActive: true,
         },
       ])
+      .onConflictDoNothing()
       .returning();
   }
 
@@ -398,6 +400,7 @@ export async function seedDemoData() {
           },
         },
       ])
+      .onConflictDoNothing()
       .returning();
   }
 
@@ -417,6 +420,7 @@ export async function seedDemoData() {
         { name: "Medical Visa", slug: "medical-visa", description: "Hospital admission & medical treatment travel", icon: "activity", sortOrder: 4, isActive: true },
         { name: "Work Visa", slug: "work-visa", description: "Employment and overseas contractor documentation", icon: "hard-hat", sortOrder: 5, isActive: true },
       ])
+      .onConflictDoNothing()
       .returning();
   }
 
@@ -535,7 +539,8 @@ export async function seedDemoData() {
         sortOrder: 5,
         isActive: true,
       },
-    ]);
+    ])
+    .onConflictDoNothing();
   }
 
   // --------------------------------------------------------------------------
@@ -618,7 +623,8 @@ export async function seedDemoData() {
         sortOrder: 4,
         isActive: true,
       },
-    ]);
+    ])
+    .onConflictDoNothing();
   }
 
   // --------------------------------------------------------------------------
@@ -875,7 +881,8 @@ export async function seedDemoData() {
         exclusions: ["Any additional surgeries or specialist follow-up treatments"],
         status: "published",
       },
-    ]);
+    ])
+    .onConflictDoNothing();
   }
 
   // --------------------------------------------------------------------------
@@ -950,6 +957,7 @@ export async function seedDemoData() {
           isActive: true,
         },
       ])
+      .onConflictDoNothing()
       .returning();
   }
 
@@ -970,6 +978,7 @@ export async function seedDemoData() {
         { name: "Hotel Accommodations (Makkah & Madinah)", kind: "cost_of_sales", description: "Direct hotel room bookings tied to confirmed packages" },
         { name: "Embassy & Government Visa Fees", kind: "cost_of_sales", description: "Consular visa fees paid to official embassies" },
       ])
+      .onConflictDoNothing()
       .returning();
   }
 
@@ -1028,6 +1037,7 @@ export async function seedDemoData() {
         { name: "Family Travel", slug: "family-travel" },
         { name: "Visa Guidelines", slug: "visa-guidelines" },
       ])
+      .onConflictDoNothing()
       .returning();
   }
 
@@ -1074,7 +1084,8 @@ export async function seedDemoData() {
           description: "Discover the best family attractions in Kuala Lumpur, Genting, and Penang.",
         },
       },
-    ]);
+    ])
+    .onConflictDoNothing();
   }
 
   // --------------------------------------------------------------------------
@@ -1100,6 +1111,7 @@ export async function seedDemoData() {
         validUntil: new Date(Date.now() + 30 * 24 * 3600 * 1000),
         status: "accepted",
       })
+      .onConflictDoNothing()
       .returning();
 
     if (q1) {
@@ -1148,6 +1160,7 @@ export async function seedDemoData() {
         validUntil: new Date(Date.now() + 14 * 24 * 3600 * 1000),
         status: "draft",
       })
+      .onConflictDoNothing()
       .returning();
 
     if (q2) {
