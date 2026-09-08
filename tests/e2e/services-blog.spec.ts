@@ -46,7 +46,7 @@ test("/services/flights (redirect-based) shows the redirect CTA", async ({
   // The redirect service shows a link to the external flight booking portal.
   const main = page.getByRole("main");
   await expect(
-    main.getByRole("link", { name: /book.*flight/i }),
+    main.getByRole("link", { name: /visit partner/i }),
   ).toBeVisible();
 });
 

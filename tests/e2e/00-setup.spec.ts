@@ -95,16 +95,30 @@ test.describe.serial("setup wizard", () => {
     // Capture any error the wizard surface shows so CI logs tell us WHY
     // the success screen never appeared (instead of just "element not found").
     const finishAlert = page.getByRole("alert");
-    await expect
-      .poll(
-        async () => {
-          if (await page.getByRole("heading", { name: /setup complete/i }).isVisible()) return "ok";
-          if (await finishAlert.isVisible()) return `error: ${await finishAlert.textContent()}`;
-          return "waiting";
-        },
-        { timeout: 15_000, intervals: [500] },
-      )
-      .toBe("ok");
+    try {
+      await expect
+        .poll(
+          async () => {
+            if (await page.getByRole("heading", { name: /setup complete/i }).isVisible()) return "ok";
+            if (await finishAlert.isVisible()) {
+              const alertText = await finishAlert.textContent();
+              const alertHtml = await finishAlert.evaluate((el) => el.outerHTML);
+              console.error("[test:finish] alert found:", { alertText, alertHtml, url: page.url() });
+              return `error: ${alertText}`;
+            }
+            return "waiting";
+          },
+          { timeout: 15_000, intervals: [500] },
+        )
+        .toBe("ok");
+    } catch (e) {
+      // Dump diagnostics on failure
+      await page.screenshot({ path: "test-results/wizard-finish-debug.png" });
+      const pageContent = await page.content();
+      console.error("[test:finish] page HTML length:", pageContent.length);
+      console.error("[test:finish] alert visible:", await finishAlert.isVisible().catch(() => false));
+      throw e;
+    }
     await expect(page.getByRole("link", { name: /continue to login/i })).toBeVisible();
 
     // Locked now: a second visit to /setup redirects off it

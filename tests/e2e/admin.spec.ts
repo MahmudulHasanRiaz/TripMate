@@ -69,6 +69,6 @@ test("account page renders for signed-in user", async ({ page }) => {
 
   await page.goto("/account");
   await expect(
-    page.getByRole("heading", { name: "My Account" }),
+    page.getByRole("heading", { name: /Welcome, .+/ }),
   ).toBeVisible();
 });

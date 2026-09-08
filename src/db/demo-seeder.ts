@@ -794,6 +794,7 @@ export async function seedDemoData() {
         slug: "luxury-dubai-desert-safari",
         summary: "5 Days of Middle Eastern glamour: Burj Khalifa At The Top, VIP 4x4 Desert Dune Bashing, Marina Dhow Cruise, and Miracle Garden.",
         description: "## Dazzling Skylines and Ancient Sands\n\nImmerse yourself in the captivating contrast of futuristic skyscrapers and serene desert sunsets.",
+        isFeatured: false,
         coverImage: {
           url: storedUrls.pkgDubaiCover || "",
           alt: "Desert safari 4x4 dune bashing in Dubai",
@@ -808,7 +809,6 @@ export async function seedDemoData() {
         costPrice: "94000",
         startingPrice: "105000",
         currency: "BDT",
-        isFeatured: true,
         itinerary: [
           { day: "1", title: "Arrival in Dubai & Marina Dhow Cruise", details: "DXB airport reception, 4-star hotel check-in. Evening Marina dinner cruise with live entertainment." },
           { day: "2", title: "Burj Khalifa & Dubai Mall", details: "124th floor observation deck ticket, Dubai Aquarium visit, Fountain show." },
@@ -843,7 +843,7 @@ export async function seedDemoData() {
         costPrice: "138000",
         startingPrice: "155000",
         currency: "BDT",
-        isFeatured: true,
+        isFeatured: false,
         inclusions: [
           "Private Water Villa at 4-Star Deluxe Island Resort",
           "Full board gourmet meals (Breakfast, Lunch, Dinner & Drinks)",

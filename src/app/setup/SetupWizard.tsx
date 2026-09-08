@@ -1573,13 +1573,16 @@ export default function SetupWizard({
     setFinishError(null);
     try {
       const res = await wizardComplete({ mode });
+      console.log("[wizard:finish] action result:", JSON.stringify(res));
       const err = resultError(res);
       if (err) {
+        console.warn("[wizard:finish] mapped error:", err);
         setFinishError(err);
         return;
       }
       setFinished(true);
     } catch (e) {
+      console.error("[wizard:finish] caught:", e);
       setFinishError(friendlyError(e));
     } finally {
       setFinishBusy(false);
