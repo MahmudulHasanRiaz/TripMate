@@ -140,13 +140,24 @@ export async function seedDemoData() {
   };
 
   const storedUrls: Record<string, string> = {};
+  const assetFailures: string[] = [];
   for (const [key, asset] of Object.entries(ASSETS)) {
     try {
       storedUrls[key] = await downloadAndStoreDemoAsset(asset);
     } catch (e) {
-      console.warn(`[demo-seed] Failed storing asset ${asset.name}, fallback used`, e);
+      console.warn(`[demo-seed] Failed storing asset ${asset.name}`, e);
+      assetFailures.push(asset.name);
       storedUrls[key] = "";
     }
+  }
+  if (assetFailures.length > 0) {
+    console.warn(
+      `[demo-seed] ${assetFailures.length}/${Object.keys(ASSETS).length} demo images could not be stored: ` +
+        `${assetFailures.join(", ")}. Content was still seeded, but packages/destinations will be imageless. ` +
+        `On Vercel, STORAGE_DRIVER=local cannot persist files — configure R2 ` +
+        `(STORAGE_DRIVER=r2 + R2_ACCOUNT_ID/R2_ACCESS_KEY_ID/R2_SECRET_ACCESS_KEY/` +
+        `R2_BUCKET_NAME/R2_PUBLIC_URL in the project env) and re-run demo seeding for images.`,
+    );
   }
 
   // --------------------------------------------------------------------------

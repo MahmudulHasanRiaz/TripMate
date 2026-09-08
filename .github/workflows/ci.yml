@@ -1,20 +1,21 @@
-# TripMate v2 CI — smart + path-aware.
+# TripMate CI — build-error-free gate.
 #
-# Jobs:
-#   changes     — cheap diff gate (runs always, ~seconds). Tells the heavy
-#                 jobs whether any CODE path changed in this push/PR.
-#   quality     — typegen + lint + typecheck + build + pure unit tests on a
-#                 fresh migrated+seeded Postgres. The job ALWAYS runs (it is
-#                 a required check) but when no code changed it skips the
-#                 heavy steps and finishes green in ~40s instead of ~6min.
-#   integration — DB-backed vitest (RUN_DB_INTEGRATION=1) + Playwright e2e,
-#                 gated the same way; still waits for quality first.
+# The team deploys through Vercel and Portainer, not GitHub Actions. CI's only
+# job is to guarantee the code is build-error free before merge:
+#
+#   changes  — cheap diff gate (runs always). Tells quality whether any code
+#              path changed in this push/PR (docs/asset-only pushes skip the
+#              heavy job and finish green in seconds).
+#   quality  — typegen + lint + typecheck + migrate + seed + production build
+#              + unit tests on a fresh Postgres. No Playwright e2e and no
+#              DB-integration suite here: those need a live browser + shared
+#              database, they are flaky in CI, and they never gate a deploy —
+#              run them locally / on demand (npm run test:e2e).
 #
 # Optimisations:
 #   - concurrency.cancel-in-progress cancels superseded runs on the same
 #     branch/PR, so fast iteration never queues duplicate work.
-#   - path gate: docs/asset-only changes skip install/build/tests entirely.
-#   - caches: npm (setup-node), Playwright browsers, Next/Turbopack build.
+#   - caches: npm (setup-node), Next/Turbopack build.
 name: CI
 
 on:
@@ -38,7 +39,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Full history so the diff base (event.before / PR base) is local.
           fetch-depth: 0
       - name: Detect code changes
         id: diff
@@ -51,15 +51,11 @@ jobs:
             base="${{ github.event.before }}"
             head="${{ github.sha }}"
           fi
-          # New branch / first push: no before commit, run the full CI.
           if [ "$base" = "0000000000000000000000000000000000000000" ] || [ -z "$base" ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Paths that affect build/lint/test. Everything else (docs, public
-          # assets, Dockerfile, .env.example, README...) is non-code and skips
-          # the heavy jobs.
-          changed="$(git diff --name-only "$base" "$head" -- src tests drizzle scripts .github theme-colors.ts components.json next.config.ts tsconfig.json eslint.config.mjs postcss.config.mjs vitest.config.mts playwright.config.ts package.json package-lock.json)"
+          changed="$(git diff --name-only "$base" "$head" -- src tests scripts .github theme-colors.ts components.json next.config.ts tsconfig.json eslint.config.mjs postcss.config.mjs vitest.config.mts playwright.config.ts package.json package-lock.json)"
           if [ -n "$changed" ]; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
@@ -78,8 +74,6 @@ jobs:
           POSTGRES_DB: tripmate
         ports:
           - 5432:5432
-        # docker create FLAGS only (no `-c` server settings — the runner
-        # would parse them as docker flags); health-check flags per docs.
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
@@ -101,11 +95,9 @@ jobs:
         if: needs.changes.outputs.code == 'true'
         run: |
           npm install -g npm@12
-          # --allow-remote opts into npm 12 new tarball-dep default
-          # (Tailwind oxide pulls one).
           npm ci --allow-remote=all
 
-      - name: No code changes - skipping install/build/tests
+      - name: No code changes - skipping checks
         if: needs.changes.outputs.code != 'true'
         run: echo "Only non-code files changed in this push; CI skipped."
 
@@ -138,91 +130,10 @@ jobs:
           restore-keys: |
             next-${{ runner.os }}-
 
-      - name: Build
+      - name: Production build
         if: needs.changes.outputs.code == 'true'
         run: npm run build
 
-      - name: Unit tests (DB suites self-skip)
+      - name: Unit tests (DB suites self-skip without RUN_DB_INTEGRATION)
         if: needs.changes.outputs.code == 'true'
         run: npm test
-
-  integration:
-    runs-on: ubuntu-latest
-    needs: [quality, changes]
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: tripmate
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tripmate
-      APP_URL: http://localhost:3000
-      AUTH_SECRET: ci-integration-dummy-secret-0000000000000000
-      RUN_DB_INTEGRATION: "1"
-      CI: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install deps (npm 12, latest)
-        if: needs.changes.outputs.code == 'true'
-        run: |
-          npm install -g npm@12
-          npm ci --allow-remote=all
-
-      - name: No code changes - skipping integration/e2e
-        if: needs.changes.outputs.code != 'true'
-        run: echo "Only non-code files changed in this push; CI skipped."
-
-      - name: Cache Playwright browsers
-        if: needs.changes.outputs.code == 'true'
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
-
-      - name: Install Playwright chromium
-        if: needs.changes.outputs.code == 'true'
-        run: npx playwright install --with-deps chromium
-
-      # 00-setup.spec.ts expects a FRESH migrated+seeded DB (it creates
-      # admin@tripmate.test and locks /setup); workers:1 + sorted file order
-      # keep the e2e suite serial against this one shared database.
-      - name: Migrate
-        if: needs.changes.outputs.code == 'true'
-        run: npm run db:migrate
-
-      - name: Seed (idempotent)
-        if: needs.changes.outputs.code == 'true'
-        run: npm run db:seed
-
-      - name: DB integration tests (vitest)
-        if: needs.changes.outputs.code == 'true'
-        run: npm test
-
-      - name: Playwright e2e
-        if: needs.changes.outputs.code == 'true'
-        run: npm run test:e2e
-
-      - name: Upload Playwright report
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report
-          path: |
-            playwright-report/
-            test-results/
-          if-no-files-found: ignore
