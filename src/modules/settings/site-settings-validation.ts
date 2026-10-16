@@ -116,6 +116,32 @@ export const siteSettingsInputSchema = z.object({
     500,
     "Footer description must be 500 characters or fewer",
   ),
+  footerColumns: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1, "Column title is required").max(60),
+        links: z
+          .array(
+            z.object({
+              label: z.string().trim().min(1, "Link label is required").max(80),
+              href: z.string().trim().min(1, "Link URL is required").max(500),
+            }),
+          )
+          .max(12),
+      }),
+    )
+    .max(4)
+    .optional(),
+  footerSocials: z
+    .array(
+      z.object({
+        network: z.string().trim().min(1, "Network is required").max(40),
+        href: z.string().trim().min(1, "URL is required").max(500),
+      }),
+    )
+    .max(8)
+    .optional(),
+  copyright: clearableOptionalText(200, "Copyright must be 200 characters or fewer"),
 });
 export type SiteSettingsInput = z.infer<typeof siteSettingsInputSchema>;
 
@@ -159,5 +185,10 @@ export const homeSettingsInputSchema = z.object({
       trip: z.string().trim().max(200).nullable().optional(),
     }),
   ).max(12).optional(),
+  showHero: z.boolean().optional(),
+  showFeatured: z.boolean().optional(),
+  showCta: z.boolean().optional(),
+  showStats: z.boolean().optional(),
+  showTestimonials: z.boolean().optional(),
 });
 export type HomeSettingsInput = z.infer<typeof homeSettingsInputSchema>;

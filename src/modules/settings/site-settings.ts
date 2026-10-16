@@ -41,7 +41,14 @@ export const SITE_SETTING_KEYS = [
   "faviconUrl",
   "searchEngineVisibility",
   "footerDescription",
+  "footerColumns",
+  "footerSocials",
+  "copyright",
 ] as const satisfies readonly (keyof SiteSettings)[];
+
+export type FooterLink = { label: string; href: string };
+export type FooterColumn = { title: string; links: FooterLink[] };
+export type FooterSocial = { network: string; href: string };
 
 export type SiteSettings = {
   title: string;
@@ -52,6 +59,9 @@ export type SiteSettings = {
   faviconUrl: string;
   searchEngineVisibility: boolean;
   footerDescription: string | null;
+  footerColumns: FooterColumn[];
+  footerSocials: FooterSocial[];
+  copyright: string | null;
 };
 
 /** Brand shown before the setup wizard seeds a `site` row — the seed row's own
@@ -67,6 +77,9 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   faviconUrl: "",
   searchEngineVisibility: true,
   footerDescription: null,
+  footerColumns: [],
+  footerSocials: [],
+  copyright: null,
 };
 
 /** Project a raw jsonb cell onto Record<string, unknown> | null (jsonb may hold
@@ -95,6 +108,13 @@ function mergedString(row: Record<string, unknown>, key: string, fallback: strin
 export async function getSiteSettings(): Promise<SiteSettings> {
   const row = asRow(await getSetting("site"));
   const footer = row.footerDescription;
+  const columns = Array.isArray(row.footerColumns)
+    ? (row.footerColumns as FooterColumn[]).filter((c) => c && typeof c.title === "string")
+    : [];
+  const socials = Array.isArray(row.footerSocials)
+    ? (row.footerSocials as FooterSocial[]).filter((s) => s && typeof s.href === "string")
+    : [];
+  const copyright = row.copyright;
   return {
     title: mergedString(row, "title", DEFAULT_SITE_SETTINGS.title),
     phone: mergedString(row, "phone", DEFAULT_SITE_SETTINGS.phone),
@@ -107,6 +127,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
         ? row.searchEngineVisibility
         : DEFAULT_SITE_SETTINGS.searchEngineVisibility,
     footerDescription: typeof footer === "string" && footer !== "" ? footer : null,
+    footerColumns: columns,
+    footerSocials: socials,
+    copyright: typeof copyright === "string" && copyright !== "" ? copyright : null,
   };
 }
 
@@ -137,6 +160,9 @@ export async function updateSiteSettings(input: SiteSettingsInput): Promise<Site
     faviconUrl: input.faviconUrl,
     searchEngineVisibility: input.searchEngineVisibility,
     footerDescription: mergedText(current.footerDescription, input.footerDescription),
+    footerColumns: input.footerColumns ?? current.footerColumns,
+    footerSocials: input.footerSocials ?? current.footerSocials,
+    copyright: mergedText(current.copyright, input.copyright),
   };
   await setSetting("site", next);
   return next;
@@ -161,6 +187,12 @@ export type HomeSettings = {
   ctaSub: string | null;
   stats: HomeStat[] | null;
   testimonials: HomeTestimonial[] | null;
+  /** Per-section visibility toggles (§2.11). Absent (legacy rows) → visible. */
+  showHero: boolean;
+  showFeatured: boolean;
+  showCta: boolean;
+  showStats: boolean;
+  showTestimonials: boolean;
 };
 
 /**
@@ -193,6 +225,11 @@ export async function getHomeSettings(): Promise<HomeSettings> {
     ctaSub: text("ctaSub"),
     stats: (arrayOf("stats") as HomeStat[] | null) ?? null,
     testimonials: (arrayOf("testimonials") as HomeTestimonial[] | null) ?? null,
+    showHero: row.showHero !== false,
+    showFeatured: row.showFeatured !== false,
+    showCta: row.showCta !== false,
+    showStats: row.showStats !== false,
+    showTestimonials: row.showTestimonials !== false,
   };
 }
 
@@ -219,6 +256,11 @@ export async function updateHomeSettings(input: HomeSettingsInput): Promise<Home
     stats: input.stats !== undefined ? input.stats : current.stats,
     testimonials:
       input.testimonials !== undefined ? input.testimonials : current.testimonials,
+    showHero: input.showHero ?? current.showHero,
+    showFeatured: input.showFeatured ?? current.showFeatured,
+    showCta: input.showCta ?? current.showCta,
+    showStats: input.showStats ?? current.showStats,
+    showTestimonials: input.showTestimonials ?? current.showTestimonials,
   };
   // Preserve any future/unknown keys already stored in the home row so an
   // admin save never silently drops data this form does not edit yet.

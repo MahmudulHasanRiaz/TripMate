@@ -12,11 +12,17 @@ import {
 } from "lucide-react";
 import {
   THEME_TEMPLATES,
+  themeAAPass,
+  type CustomThemePreset,
   type ThemeColors,
   type ThemeSettings,
   type ThemeTemplateKey,
 } from "@/modules/settings/theme";
-import { saveThemeSettingsAction } from "@/modules/settings/site-settings-actions";
+import {
+  deleteCustomPresetAction,
+  saveCustomPresetAction,
+  saveThemeSettingsAction,
+} from "@/modules/settings/site-settings-actions";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -139,6 +145,10 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
     initialTheme.template,
   );
   const [colors, setColors] = useState<ThemeColors>({ ...initialTheme.colors });
+  const [presets, setPresets] = useState<CustomThemePreset[]>(initialTheme.customPresets ?? []);
+  const [presetName, setPresetName] = useState("");
+
+  const aa = themeAAPass(colors);
 
   const handleTemplateSelect = (templateKey: ThemeTemplateKey) => {
     setSelectedTemplate(templateKey);
@@ -185,6 +195,39 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
           title: "Connection error",
           description: "Could not save theme settings. Please try again.",
         });
+      }
+    });
+  };
+
+  const handleSavePreset = () => {
+    const name = presetName.trim();
+    if (!name) return;
+    startTransition(async () => {
+      const res = await saveCustomPresetAction({ name, colors });
+      if (res.ok) {
+        toast({ title: "Preset saved", description: `"${name}" is now in your gallery.` });
+        setPresetName("");
+        router.refresh();
+      } else {
+        toast({ variant: "destructive", title: "Could not save preset", description: res.error });
+      }
+    });
+  };
+
+  const handleApplyPreset = (preset: CustomThemePreset) => {
+    setSelectedTemplate("custom");
+    setColors({ ...preset.colors });
+  };
+
+  const handleDeletePreset = (id: string) => {
+    startTransition(async () => {
+      const res = await deleteCustomPresetAction({ id });
+      if (res.ok) {
+        setPresets((prev) => prev.filter((p) => p.id !== id));
+        toast({ title: "Preset deleted" });
+        router.refresh();
+      } else {
+        toast({ variant: "destructive", title: "Could not delete preset", description: res.error });
       }
     });
   };
@@ -261,6 +304,52 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
             );
           })}
         </div>
+      </div>
+
+      {/* 1b. Custom presets */}
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight">Custom presets</h3>
+          <p className="text-xs text-muted-foreground">
+            Name the colors above and save them as a reusable preset. AA hint checks body-text contrast (4.5:1).
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            type="text"
+            value={presetName}
+            onChange={(e) => setPresetName(e.target.value)}
+            placeholder="Preset name, e.g. Ramadan Gold"
+            maxLength={80}
+            className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <Button type="button" onClick={handleSavePreset} disabled={isPending || !presetName.trim()} className="h-10 text-xs">
+            Save current colors as preset
+          </Button>
+        </div>
+        <p className={`text-xs ${aa.pass ? "text-success" : "text-warning"}`} role="status">
+          Contrast {aa.ratio}:1 — {aa.pass ? "passes WCAG AA for body text." : "below AA (4.5:1); darken text or lighten background."}
+        </p>
+        {presets.length > 0 ? (
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {presets.map((preset) => (
+              <li key={preset.id} className="flex items-center gap-2 rounded-lg border border-border bg-card p-2.5">
+                <span
+                  className="size-6 shrink-0 rounded-sm border border-black/10"
+                  style={{ backgroundColor: `hsl(${preset.colors.primary})` }}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1 truncate text-xs font-medium">{preset.name}</span>
+                <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleApplyPreset(preset)}>
+                  Apply
+                </Button>
+                <Button type="button" variant="ghost" size="sm" className="h-8 text-xs text-destructive" onClick={() => handleDeletePreset(preset.id)}>
+                  Delete
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       {/* 2. Interactive Live Preview */}

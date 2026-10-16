@@ -52,6 +52,7 @@ import {
   adminCreatePaymentInputSchema,
   customerPaymentSubmitSchema,
   gatewayInputSchema,
+  paymentSettingsSchema,
   paymentSubmitInputSchema,
   uuidSchema,
 } from "./validation";
@@ -375,6 +376,19 @@ export const reorderGatewaysAction = paymentAction<unknown, PaymentActionResult>
     const parsed = parsePaymentInput(reorderGatewaysInput, input);
     if (!parsed.ok) return parsed;
     await reorderGateways(parsed.data.items);
+    expireGatewayTags();
+    return { ok: true };
+  },
+);
+
+/** Save the payments settings row (requireTxnId, partial payments) — §2.8. */
+export const savePaymentSettingsAction = paymentAction<unknown, PaymentActionResult>(
+  { permission: "settings.manage" },
+  async (input) => {
+    const parsed = parsePaymentInput(paymentSettingsSchema, input);
+    if (!parsed.ok) return parsed;
+    const { updatePaymentSettings } = await import("./settings");
+    await updatePaymentSettings(parsed.data);
     expireGatewayTags();
     return { ok: true };
   },

@@ -85,6 +85,10 @@ export default async function PublicLayout({
         phone={site.phone}
         email={site.email}
         address={site.address}
+        footerDescription={site.footerDescription}
+        footerColumns={site.footerColumns}
+        footerSocials={site.footerSocials}
+        copyright={site.copyright}
       />
     </>
   );

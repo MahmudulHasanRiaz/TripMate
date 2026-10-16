@@ -32,7 +32,7 @@ import type { Session } from "@/lib/auth-helpers";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { homeSettingsInputSchema, siteSettingsInputSchema } from "./site-settings-validation";
 import { updateHomeSettings, updateSiteSettings } from "./site-settings";
-import { updateThemeSettings } from "./theme-service";
+import { updateThemeSettings, saveCustomPreset, deleteCustomPreset } from "./theme-service";
 import { type ThemeColors, type ThemeTemplateKey } from "./theme";
 
 export type SettingsActionResult =
@@ -40,7 +40,7 @@ export type SettingsActionResult =
   | { ok: false; code: string; error: string };
 
 const themeSettingsSchema = z.object({
-  template: z.enum(["signature", "ocean", "emerald", "royal", "sunset", "minimal"]),
+  template: z.enum(["signature", "ocean", "emerald", "royal", "sunset", "minimal", "custom"]),
   colors: z.record(z.string()).optional(),
 });
 
@@ -114,6 +114,84 @@ export const saveHomeSettingsAction = settingsAction<unknown>(
       return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
     }
     await updateHomeSettings(parsed.data);
+    updateTag(CACHE_TAGS.settings);
+    return { ok: true };
+  },
+);
+
+/** Toggle search-engine indexing alone (SEO & Indexing section). */
+export const setSearchVisibilityAction = settingsAction<unknown>(
+  { permission: "settings.manage" },
+  async (input) => {
+    const parsed = z.object({ searchEngineVisibility: z.boolean() }).safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
+    }
+    const { getSiteSettings } = await import("./site-settings");
+    const current = await getSiteSettings();
+    await updateSiteSettings({ ...current, ...parsed.data });
+    updateTag(CACHE_TAGS.settings);
+    return { ok: true };
+  },
+);
+
+/** Save footer config alone (columns, links, socials, copyright). */
+const footerSettingsSchema = siteSettingsInputSchema.pick({
+  footerDescription: true,
+  footerColumns: true,
+  footerSocials: true,
+  copyright: true,
+});
+
+export const saveFooterSettingsAction = settingsAction<unknown>(
+  { permission: "settings.manage" },
+  async (input) => {
+    const parsed = footerSettingsSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
+    }
+    const { getSiteSettings } = await import("./site-settings");
+    const current = await getSiteSettings();
+    await updateSiteSettings({ ...current, ...parsed.data });
+    updateTag(CACHE_TAGS.settings);
+    return { ok: true };
+  },
+);
+
+/** Save a named custom theme preset (§2.1). */
+const customPresetSchema = z.object({
+  id: z.string().trim().max(120).optional(),
+  name: z.string().trim().min(1, "Preset name is required").max(80),
+  colors: z.record(z.string().trim().min(1)),
+});
+
+export const saveCustomPresetAction = settingsAction<unknown>(
+  { permission: "settings.manage" },
+  async (input) => {
+    const parsed = customPresetSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
+    }
+    const { DEFAULT_THEME_SETTINGS } = await import("./theme");
+    const colors = {
+      ...DEFAULT_THEME_SETTINGS.colors,
+      ...parsed.data.colors,
+    } as ThemeColors;
+    await saveCustomPreset({ id: parsed.data.id, name: parsed.data.name, colors });
+    updateTag(CACHE_TAGS.settings);
+    return { ok: true };
+  },
+);
+
+/** Delete a named custom theme preset. */
+export const deleteCustomPresetAction = settingsAction<unknown>(
+  { permission: "settings.manage" },
+  async (input) => {
+    const parsed = z.object({ id: z.string().trim().min(1) }).safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
+    }
+    await deleteCustomPreset(parsed.data.id);
     updateTag(CACHE_TAGS.settings);
     return { ok: true };
   },

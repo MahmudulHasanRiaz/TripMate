@@ -103,14 +103,16 @@ export default async function Home() {
 
   return (
     <>
-      <HeroSection
-        headline={home.headline}
-        sub={home.sub}
-        ctaLabel={home.ctaLabel}
-        ctaHref={home.ctaHref}
-        imageSrc={home.imageUrl}
-        imageAlt={home.imageAlt}
-      />
+      {home.showHero ? (
+        <HeroSection
+          headline={home.headline}
+          sub={home.sub}
+          ctaLabel={home.ctaLabel}
+          ctaHref={home.ctaHref}
+          imageSrc={home.imageUrl}
+          imageAlt={home.imageAlt}
+        />
+      ) : null}
 
       <TravelActionPanel
         destinations={destinations}
@@ -126,7 +128,7 @@ export default async function Home() {
         <TrustStrip />
       </div>
 
-      {displayPackages.length > 0 ? (
+      {displayPackages.length > 0 && home.showFeatured ? (
         <section className="bg-background">
           <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
@@ -179,9 +181,9 @@ export default async function Home() {
         </section>
       ) : null}
 
-      {realStats.length > 0 ? <StatsBand stats={realStats} /> : null}
+      {realStats.length > 0 && home.showStats ? <StatsBand stats={realStats} /> : null}
 
-      <TestimonialsSection config={{ items: home.testimonials }} />
+      {home.showTestimonials ? <TestimonialsSection config={{ items: home.testimonials }} /> : null}
 
       <HumanConcierge phone={site.phone} email={site.email} />
 
@@ -233,13 +235,15 @@ export default async function Home() {
         </div>
       </section>
 
-      <CTASection
-        headline={home.ctaHeadline}
-        sub={home.ctaSub}
-        ctaLabel="Explore packages"
-        ctaHref={PACKAGES_HREF}
-        phone={site.phone}
-      />
+      {home.showCta ? (
+        <CTASection
+          headline={home.ctaHeadline}
+          sub={home.ctaSub}
+          ctaLabel="Explore packages"
+          ctaHref={PACKAGES_HREF}
+          phone={site.phone}
+        />
+      ) : null}
     </>
   );
 }
@@ -296,6 +300,11 @@ function readHomeSetting(raw: Record<string, unknown> | null): {
   ctaSub: string;
   stats?: Stat[];
   testimonials: TestimonialItem[];
+  showHero: boolean;
+  showFeatured: boolean;
+  showCta: boolean;
+  showStats: boolean;
+  showTestimonials: boolean;
 } {
   const pick = (key: string): string | undefined =>
     typeof raw?.[key] === "string" && (raw[key] as string).trim()
@@ -338,6 +347,11 @@ function readHomeSetting(raw: Record<string, unknown> | null): {
       "From Hajj and Umrah to family holidays and medical travel — talk to a TripMate advisor today.",
     stats: rawStats,
     testimonials: rawTestimonials ?? [],
+    showHero: raw?.showHero !== false,
+    showFeatured: raw?.showFeatured !== false,
+    showCta: raw?.showCta !== false,
+    showStats: raw?.showStats !== false,
+    showTestimonials: raw?.showTestimonials !== false,
   };
 }
 
