@@ -84,7 +84,7 @@ describe.skipIf(!integration)("dashboard service (integration — Postgres)", ()
     const [kpis, board] = await Promise.all([getDashboardKpis(), getOrderBoardCounts()]);
     expect(kpis.ordersByStatus).toEqual(board);
     expect(Object.keys(kpis.ordersByStatus).sort()).toEqual(
-      ["cancelled", "completed", "confirmed", "in_review", "pending", "quoted", "total"].sort(),
+      ["cancelled", "completed", "confirmed", "pending", "total"].sort(),
     );
   });
 

@@ -32,8 +32,6 @@ export const instant = false;
 
 const STATUS_TITLES: Record<OrderStatus, string> = {
   pending: "Pending Review",
-  in_review: "In Review",
-  quoted: "Quote Ready",
   confirmed: "Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -44,8 +42,6 @@ const STATUS_BADGE_VARIANTS: Record<
   "secondary" | "info" | "default" | "warning" | "success" | "destructive"
 > = {
   pending: "secondary",
-  in_review: "info",
-  quoted: "info",
   confirmed: "success",
   completed: "default",
   cancelled: "destructive",

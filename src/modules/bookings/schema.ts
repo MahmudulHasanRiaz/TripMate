@@ -13,8 +13,6 @@ export const orderTypeEnum = pgEnum("order_type", ["package", "inquiry", "servic
 
 export const orderStatusEnum = pgEnum("order_status", [
   "pending",
-  "in_review",
-  "quoted",
   "confirmed",
   "cancelled",
   "completed",

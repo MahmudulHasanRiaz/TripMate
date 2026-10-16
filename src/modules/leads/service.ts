@@ -364,6 +364,7 @@ export async function getLeadBoardCounts(): Promise<LeadBoardCounts> {
     contacted: 0,
     qualified: 0,
     negotiating: 0,
+    follow_up: 0,
     converted: 0,
     lost: 0,
     total: 0,
@@ -604,7 +605,27 @@ export async function markLeadConverted(
 ): Promise<LeadDetail> {
   const current = await getLeadDetail(leadId);
   if (!current) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
-  if (current.status === "converted") return current;
+  // Already converted: still wire a NEW order link (§2.6 quotation → order
+  // path converts at quotation creation, then links the order on conversion).
+  if (current.status === "converted") {
+    if (opts.convertedOrderId && opts.convertedOrderId !== current.convertedOrderId) {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(leads)
+          .set({ convertedOrderId: opts.convertedOrderId, updatedAt: new Date() })
+          .where(eq(leads.id, leadId));
+        await addLeadEventOn(tx, leadId, {
+          type: "converted",
+          actorId: opts.actorId ?? null,
+          payload: { from: current.status, convertedOrderId: opts.convertedOrderId ?? null },
+        });
+      });
+      const detail = await getLeadDetail(leadId);
+      if (!detail) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
+      return detail;
+    }
+    return current;
+  }
   return transitionToConverted(current, opts);
 }
 

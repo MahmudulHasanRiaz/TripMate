@@ -41,8 +41,6 @@ type OrdersBoardProps = {
 
 const STATUS_TITLES: Record<OrderStatus, string> = {
   pending: "Pending Inquiries",
-  in_review: "In Review",
-  quoted: "Quoted",
   confirmed: "Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -53,8 +51,6 @@ const STATUS_BADGE_VARIANTS: Record<
   "secondary" | "info" | "default" | "warning" | "success" | "destructive"
 > = {
   pending: "secondary",
-  in_review: "info",
-  quoted: "info",
   confirmed: "success",
   completed: "default",
   cancelled: "destructive",
@@ -83,8 +79,6 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
   // Group items by status
   const itemsByStatus: Record<OrderStatus, OrderListItem[]> = {
     pending: [],
-    in_review: [],
-    quoted: [],
     confirmed: [],
     completed: [],
     cancelled: [],

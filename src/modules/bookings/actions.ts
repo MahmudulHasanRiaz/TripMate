@@ -55,6 +55,7 @@ import {
   orderStatusSchema,
   packageOrderInputSchema,
   serviceOptionOrderInputSchema,
+  travelerInputSchema,
   uuidSchema,
   validateInquiryExtraFields,
   type InquiryOrderInput,
@@ -62,13 +63,18 @@ import {
   type ServiceOptionOrderInput,
 } from "./validation";
 import {
+  addTraveler,
   convertLeadToOrder,
   createInquiryOrder,
   createPackageOrder,
   createServiceOptionOrder,
+  createServiceSaleOrder,
+  getOrderDetail,
   OrderError,
+  removeTraveler,
   setQuote,
   transitionOrder,
+  updateTraveler,
 } from "./service";
 import {
   listGateways,
@@ -509,7 +515,7 @@ const createOrderFromLeadInput = z.object({
   input: convertLeadOrderInputSchema,
 });
 
-/** Set the quoted price (pending/in_review → quoted) from the detail page. */
+  /** Set the quoted price (pending → confirmed) from the detail page. */
 export const setQuoteAction = orderAction<unknown, OrderActionResult<OrderIdRef>>(
   async (input, session) => {
     const parsed = parseOrderInput(setQuoteInput, input);
@@ -590,5 +596,124 @@ export const createOrderFromLeadAction = orderAction<
     listingTitle: order.listingSnapshot?.title ?? "",
   });
 
+  return { ok: true, data: { id: order.id, orderNo: order.orderNo } };
+});
+
+/**
+ * Travelers at ANY order stage (§2.7) — admin surface (orders.manage).
+ * No status guard: the order only needs to exist.
+ */
+const travelerWriteInput = travelerInputSchema.extend({
+  orderId: uuidSchema,
+});
+
+export const addTravelerAction = orderAction<unknown, OrderActionResult<OrderIdRef>>(
+  async (input, session) => {
+    const parsed = parseOrderInput(travelerWriteInput, input);
+    if (!parsed.ok) return parsed;
+    if (!session) return { ok: false, error: "UNAUTHORIZED" };
+    await addTraveler(parsed.data.orderId, parsed.data);
+    expireOrder(parsed.data.orderId);
+    return { ok: true, data: { id: parsed.data.orderId } };
+  },
+);
+
+const updateTravelerInput = travelerInputSchema.extend({
+  travelerId: uuidSchema,
+  orderId: uuidSchema,
+});
+
+export const updateTravelerAction = orderAction<unknown, OrderActionResult<OrderIdRef>>(
+  async (input, session) => {
+    const parsed = parseOrderInput(updateTravelerInput, input);
+    if (!parsed.ok) return parsed;
+    if (!session) return { ok: false, error: "UNAUTHORIZED" };
+    await updateTraveler(parsed.data.travelerId, parsed.data);
+    expireOrder(parsed.data.orderId);
+    return { ok: true, data: { id: parsed.data.orderId } };
+  },
+);
+
+const removeTravelerInput = z.object({
+  travelerId: uuidSchema,
+  orderId: uuidSchema,
+});
+
+export const removeTravelerAction = orderAction<unknown, OrderActionResult<OrderIdRef>>(
+  async (input, session) => {
+    const parsed = parseOrderInput(removeTravelerInput, input);
+    if (!parsed.ok) return parsed;
+    if (!session) return { ok: false, error: "UNAUTHORIZED" };
+    await removeTraveler(parsed.data.travelerId);
+    expireOrder(parsed.data.orderId);
+    return { ok: true, data: { id: parsed.data.orderId } };
+  },
+);
+
+/**
+ * Portal traveler submission (§2.7): the session user must own the order.
+ * Same no-stage-guard rule as the admin surface.
+ */
+export async function submitMyTravelerAction(
+  input: unknown,
+): Promise<OrderActionResult<OrderIdRef>> {
+  const parsed = travelerWriteInput.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
+  }
+  const { getSession } = await import("@/lib/auth-helpers");
+  const session = await getSession();
+  if (!session) return { ok: false, error: "UNAUTHORIZED" };
+  const order = await getOrderDetail(parsed.data.orderId);
+  if (!order || order.userId !== session.user.id) {
+    return { ok: false, code: "NOT_FOUND", error: "Order not found." };
+  }
+  try {
+    await addTraveler(parsed.data.orderId, parsed.data);
+  } catch (e) {
+    if (e instanceof OrderError) return { ok: false, code: e.code, error: e.message };
+    throw e;
+  }
+  updateTag(CACHE_TAGS.orders);
+  updateTag(CACHE_TAGS.order(parsed.data.orderId));
+  return { ok: true, data: { id: parsed.data.orderId } };
+}
+
+/** Generic service quick-create (§2.9): exactly the six fields. */
+const serviceSaleInput = z.object({
+  serviceName: z.string().trim().min(1, "Service name is required").max(200),
+  customerName: z.string().trim().min(1, "Customer name is required").max(200),
+  customerPhone: z.string().trim().min(5, "Customer phone must be at least 5 characters").max(20),
+  note: z.string().trim().max(2000).optional(),
+  totalAmount: z.coerce.number().finite().positive("Total amount must be greater than zero").max(999_999_999_999.99),
+  costAmount: z.coerce.number().finite().min(0, "Cost amount cannot be negative").max(999_999_999_999.99),
+});
+
+export const createServiceSaleAction = orderAction<
+  unknown,
+  OrderActionResult<{ id: string; orderNo: string }>
+>(async (input, session) => {
+  const parsed = parseOrderInput(serviceSaleInput, input);
+  if (!parsed.ok) return parsed;
+  if (!session) return { ok: false, error: "UNAUTHORIZED" };
+  let order;
+  try {
+    order = await createServiceSaleOrder(
+      {
+        serviceName: parsed.data.serviceName,
+        customerName: parsed.data.customerName,
+        customerPhone: parsed.data.customerPhone,
+        note: parsed.data.note ?? null,
+        totalAmount: parsed.data.totalAmount,
+        costAmount: parsed.data.costAmount,
+      },
+      { actorId: session.user.id },
+    );
+  } catch (e) {
+    if (e instanceof OrderError) return { ok: false, code: e.code, error: e.message };
+    throw e;
+  }
+  updateTag(CACHE_TAGS.orders);
+  updateTag(CACHE_TAGS.order(order.id));
   return { ok: true, data: { id: order.id, orderNo: order.orderNo } };
 });

@@ -27,6 +27,7 @@ import {
   assignLeadAction,
   changeLeadStatusAction,
   convertLeadAction,
+  logFollowUpAction,
   updateLeadNoteAction,
 } from "@/modules/leads/actions";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ const STATUS_BADGE_VARIANTS: Record<
   contacted: "info",
   qualified: "default",
   negotiating: "warning",
+  follow_up: "info",
   converted: "success",
   lost: "destructive",
 };
@@ -83,6 +85,9 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
   const [noteText, setNoteText] = useState(lead.notes || "");
   const [noteNotice, setNoteNotice] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [followUpNote, setFollowUpNote] = useState("");
+  const [followUpDate, setFollowUpDate] = useState("");
+  const [followUpNotice, setFollowUpNotice] = useState<string | null>(null);
 
   const cleanPhone = lead.phone ? lead.phone.replace(/[^\d+]/g, "") : "";
   const waPhone = lead.phone ? lead.phone.replace(/[^\d]/g, "") : "";
@@ -144,6 +149,32 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
         setIsConverted(Boolean(lead.convertedOrderId || lead.status === "converted"));
         setCurrentStatus(lead.status);
         setErrorMessage("An unexpected error occurred while converting lead.");
+      }
+    });
+  };
+
+  // Log follow-up (§2.6): increments count, sets next date, timeline event.
+  const handleLogFollowUp = () => {
+    setErrorMessage(null);
+    setFollowUpNotice(null);
+    startTransition(async () => {
+      try {
+        const res = await logFollowUpAction({
+          id: lead.id,
+          note: followUpNote,
+          nextFollowUpAt: followUpDate ? new Date(followUpDate).toISOString() : null,
+        });
+        if (res.ok) {
+          setFollowUpNotice("Follow-up logged.");
+          setFollowUpNote("");
+          setFollowUpDate("");
+          setTimeout(() => setFollowUpNotice(null), 2500);
+          router.refresh();
+        } else {
+          setErrorMessage(res.error || "Failed to log follow-up.");
+        }
+      } catch {
+        setErrorMessage("An unexpected error occurred while logging follow-up.");
       }
     });
   };
@@ -390,6 +421,12 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                       eventLabel = "Internal Note";
                       payloadText =
                         event.payload && "note" in event.payload ? String(event.payload.note) : "";
+                    } else if (event.type === "follow_up") {
+                      EventIcon = Phone;
+                      iconColor = "text-info";
+                      eventLabel = `Follow-up${event.payload && "count" in event.payload ? ` #${String(event.payload.count)}` : ""}`;
+                      payloadText =
+                        event.payload && "note" in event.payload ? String(event.payload.note) : "";
                     } else if (event.type === "converted") {
                       EventIcon = CheckCircle2;
                       iconColor = "text-success";
@@ -502,7 +539,13 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
               </div>
 
               {/* Convert Lead to Booking */}
-              <div className="border-t border-border/60 pt-4">
+              <div className="space-y-2 border-t border-border/60 pt-4">
+                <Button asChild className="h-10 min-h-10 w-full gap-1.5 text-xs font-semibold">
+                  <Link href={`/admin/quotations?convertLead=${lead.id}` as Route}>
+                    <FileText className="size-4" aria-hidden="true" />
+                    Convert to Quotation
+                  </Link>
+                </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
@@ -578,6 +621,65 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                   <Save className="size-3.5" aria-hidden="true" />
                 )}
                 Save Internal Note
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Follow-ups (§2.6) */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center justify-between">
+                <span>Follow-ups{lead.followUpCount > 0 ? ` (${lead.followUpCount})` : ""}</span>
+                {followUpNotice ? (
+                  <span className="text-xs font-normal text-success flex items-center gap-1">
+                    <CheckCircle2 className="size-3" aria-hidden="true" />
+                    {followUpNotice}
+                  </span>
+                ) : null}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {lead.nextFollowUpAt ? (
+                <p className="text-xs text-muted-foreground">
+                  Next follow-up:{" "}
+                  {new Date(lead.nextFollowUpAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
+              ) : null}
+              <Textarea
+                value={followUpNote}
+                onChange={(e) => setFollowUpNote(e.target.value)}
+                placeholder="What was discussed? Next step..."
+                rows={3}
+                disabled={isPending}
+                className="text-xs resize-none"
+              />
+              <div>
+                <Label className="text-xs font-medium">Next follow-up date</Label>
+                <input
+                  type="date"
+                  value={followUpDate}
+                  onChange={(e) => setFollowUpDate(e.target.value)}
+                  disabled={isPending}
+                  className="mt-1.5 h-10 w-full rounded-md border border-input bg-background px-3 text-xs"
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                disabled={isPending || !followUpNote.trim()}
+                onClick={handleLogFollowUp}
+                className="w-full h-10 min-h-10 text-xs font-semibold gap-1.5"
+              >
+                {isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Phone className="size-3.5" aria-hidden="true" />
+                )}
+                Log follow-up
               </Button>
             </CardContent>
           </Card>

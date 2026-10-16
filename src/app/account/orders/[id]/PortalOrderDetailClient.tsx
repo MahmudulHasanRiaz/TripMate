@@ -52,8 +52,6 @@ type PortalOrderDetailClientProps = {
 
 const STATUS_TITLES: Record<OrderStatus, string> = {
   pending: "Pending Review",
-  in_review: "In Review",
-  quoted: "Quote Ready",
   confirmed: "Booking Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -64,8 +62,6 @@ const STATUS_BADGE_VARIANTS: Record<
   "secondary" | "info" | "default" | "warning" | "success" | "destructive"
 > = {
   pending: "secondary",
-  in_review: "info",
-  quoted: "info",
   confirmed: "success",
   completed: "default",
   cancelled: "destructive",
@@ -84,7 +80,6 @@ export default function PortalOrderDetailClient({
   );
   const [methodTxnId, setMethodTxnId] = useState("");
   const [senderNumber, setSenderNumber] = useState("");
-  const [screenshotUrl, setScreenshotUrl] = useState("");
   const [note, setNote] = useState("");
 
   // Notices
@@ -93,7 +88,7 @@ export default function PortalOrderDetailClient({
 
   const selectedGateway = gateways.find((g) => g.id === selectedGatewayId);
   const isPayLater = selectedGateway?.kind === "paylater";
-  const isPayable = order.status === "quoted" || order.status === "confirmed";
+  const isPayable = order.status === "confirmed";
 
   const handleSubmitPayment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,19 +100,14 @@ export default function PortalOrderDetailClient({
       return;
     }
 
-    if (!methodTxnId.trim()) {
-      setErrorMessage("Transaction ID is required.");
-      return;
-    }
-
     startTransition(async () => {
       try {
         const res = await submitMyPaymentAction({
           orderId: order.id,
           gatewayId: selectedGatewayId,
-          methodTxnId: methodTxnId.trim(),
+          // Txn id optional client-side; the server enforces requireTxnId.
+          ...(methodTxnId.trim() ? { methodTxnId: methodTxnId.trim() } : {}),
           senderNumber: senderNumber.trim() || undefined,
-          screenshotUrl: screenshotUrl.trim() || undefined,
           note: note.trim() || undefined,
         });
 
@@ -125,7 +115,6 @@ export default function PortalOrderDetailClient({
           setSuccessNotice("Your payment has been submitted for verification!");
           setMethodTxnId("");
           setSenderNumber("");
-          setScreenshotUrl("");
           setNote("");
           router.refresh();
         } else {
@@ -462,7 +451,7 @@ export default function PortalOrderDetailClient({
                           <div className="grid gap-3 sm:grid-cols-2">
                             <div className="space-y-1.5 sm:col-span-2">
                               <Label htmlFor="cust-method-txnid" className="text-xs font-medium">
-                                Transaction ID / TrxID <span className="text-destructive">*</span>
+                                Transaction ID / TrxID
                               </Label>
                               <Input
                                 id="cust-method-txnid"
@@ -470,11 +459,10 @@ export default function PortalOrderDetailClient({
                                 value={methodTxnId}
                                 onChange={(e) => setMethodTxnId(e.target.value)}
                                 className="min-h-11 font-mono text-sm"
-                                required
                               />
                             </div>
 
-                            <div className="space-y-1.5">
+                            <div className="space-y-1.5 sm:col-span-2">
                               <Label htmlFor="cust-sender-number" className="text-xs font-medium">
                                 Sender Mobile / Account Number (optional)
                               </Label>
@@ -484,19 +472,6 @@ export default function PortalOrderDetailClient({
                                 value={senderNumber}
                                 onChange={(e) => setSenderNumber(e.target.value)}
                                 className="min-h-11 font-mono text-sm"
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="cust-screenshot-url" className="text-xs font-medium">
-                                Deposit Slip / Screenshot Link (optional)
-                              </Label>
-                              <Input
-                                id="cust-screenshot-url"
-                                placeholder="https://..."
-                                value={screenshotUrl}
-                                onChange={(e) => setScreenshotUrl(e.target.value)}
-                                className="min-h-11 text-sm"
                               />
                             </div>
                           </div>
@@ -537,7 +512,7 @@ export default function PortalOrderDetailClient({
                     </div>
                   )}
                 </div>
-              ) : order.status === "pending" || order.status === "in_review" ? (
+              ) : order.status === "pending" ? (
                 <div className="rounded-lg border border-border bg-secondary/30 p-4 text-xs text-muted-foreground flex items-start gap-2.5">
                   <Info className="size-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
                   <div>

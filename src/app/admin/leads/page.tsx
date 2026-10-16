@@ -35,7 +35,8 @@ export default async function LeadsPage({
     ? (statusRaw as LeadStatus)
     : undefined;
   const assignedTo = typeof sp.assignedTo === "string" ? sp.assignedTo.trim() : "";
-  const view = sp.view === "list" ? "list" : "board";
+  // List view is the DEFAULT (§3); Kanban is the opt-in toggle (?view=board).
+  const view = sp.view === "board" ? "board" : "list";
   const page = /^\d+$/.test(sp.page ?? "") ? Math.max(1, Number(sp.page)) : 1;
 
   const [counts, paginated, staffUsers] = await Promise.all([

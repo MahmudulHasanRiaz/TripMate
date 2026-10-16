@@ -26,12 +26,22 @@ type LineItemState = {
   unitCost: number;
 };
 
+export type QuotationPrefill = {
+  leadId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string | null;
+  notes?: string | null;
+};
+
 export default function QuotationFormDialog({
   quotation,
+  prefill,
   open,
   onOpenChange,
 }: {
   quotation?: QuotationDetail | null;
+  prefill?: QuotationPrefill | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -39,10 +49,16 @@ export default function QuotationFormDialog({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const [customerName, setCustomerName] = useState(quotation?.customerName ?? "");
-  const [customerPhone, setCustomerPhone] = useState(quotation?.customerPhone ?? "");
-  const [customerEmail, setCustomerEmail] = useState(quotation?.customerEmail ?? "");
-  const [notes, setNotes] = useState(quotation?.notes ?? "");
+  const [customerName, setCustomerName] = useState(
+    quotation?.customerName ?? prefill?.customerName ?? "",
+  );
+  const [customerPhone, setCustomerPhone] = useState(
+    quotation?.customerPhone ?? prefill?.customerPhone ?? "",
+  );
+  const [customerEmail, setCustomerEmail] = useState(
+    quotation?.customerEmail ?? prefill?.customerEmail ?? "",
+  );
+  const [notes, setNotes] = useState(quotation?.notes ?? prefill?.notes ?? "");
   const [validUntil, setValidUntil] = useState(
     quotation?.validUntil ? new Date(quotation.validUntil).toISOString().split("T")[0] : "",
   );
@@ -100,6 +116,7 @@ export default function QuotationFormDialog({
     startTransition(async () => {
       const res = await saveQuotationAction({
         id: quotation?.id,
+        leadId: quotation?.leadId ?? prefill?.leadId ?? null,
         customerName,
         customerPhone,
         customerEmail: customerEmail.trim() || null,

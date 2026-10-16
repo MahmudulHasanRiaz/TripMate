@@ -89,8 +89,6 @@ type OrderDetailClientProps = {
 
 const STATUS_TITLES: Record<OrderStatus, string> = {
   pending: "Pending",
-  in_review: "In Review",
-  quoted: "Quoted",
   confirmed: "Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -101,8 +99,6 @@ const STATUS_BADGE_VARIANTS: Record<
   "secondary" | "info" | "default" | "warning" | "success" | "destructive"
 > = {
   pending: "secondary",
-  in_review: "info",
-  quoted: "info",
   confirmed: "success",
   completed: "default",
   cancelled: "destructive",
@@ -150,7 +146,7 @@ export default function OrderDetailClient({
   );
 
   const canComposeQuote =
-    canManageOrders && (order.status === "pending" || order.status === "in_review");
+    canManageOrders && order.status === "pending";
 
   // Handle status update
   const handleStatusUpdate = () => {
@@ -1005,9 +1001,9 @@ export default function OrderDetailClient({
               {canComposeQuote ? (
                 <form onSubmit={handleQuoteSave} className="space-y-3">
                   <p className="text-xs text-muted-foreground">
-                    Setting a quote sets the agreed price and transitions status from{" "}
+                    Setting a quote sets the agreed price and confirms the order from{" "}
                     <span className="font-semibold text-foreground">{order.status}</span> to{" "}
-                    <span className="font-semibold text-foreground">quoted</span>.
+                    <span className="font-semibold text-foreground">confirmed</span>.
                   </p>
 
                   <div className="space-y-1.5">
@@ -1056,11 +1052,6 @@ export default function OrderDetailClient({
                         : "Not quoted"}
                     </p>
                   </div>
-                  {order.status === "quoted" ? (
-                    <p className="text-[11px] text-muted-foreground leading-relaxed">
-                      To revise this quote, first move the order back to <strong>In Review</strong> using the status selector above.
-                    </p>
-                  ) : null}
                 </div>
               )}
             </CardContent>

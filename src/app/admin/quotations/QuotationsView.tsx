@@ -17,7 +17,7 @@ import {
 import type { QuotationListItem } from "@/modules/bookings/quotations-service";
 import type { QuotationStatus } from "@/modules/bookings/quotations-validation";
 import { formatMoney } from "@/components/site/currency";
-import QuotationFormDialog from "./QuotationFormDialog";
+import QuotationFormDialog, { type QuotationPrefill } from "./QuotationFormDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,16 +72,18 @@ export default function QuotationsView({
   currentStatus,
   currentSearch,
   currentPage,
+  prefill,
 }: {
   items: QuotationListItem[];
   total: number;
   currentStatus?: QuotationStatus;
   currentSearch: string;
   currentPage: number;
+  prefill?: QuotationPrefill | null;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState(currentSearch);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(Boolean(prefill));
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -256,7 +258,7 @@ export default function QuotationsView({
         <span>Page {currentPage}</span>
       </div>
 
-      <QuotationFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <QuotationFormDialog open={createOpen} onOpenChange={setCreateOpen} prefill={prefill ?? null} />
     </div>
   );
 }

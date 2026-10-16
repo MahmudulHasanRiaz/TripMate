@@ -12,12 +12,13 @@ import {
 // imports — validation.ts is zod-only so it runs anywhere.
 
 describe("lead status enum", () => {
-  it("exposes the six documented pipeline statuses", () => {
+  it("exposes the seven documented pipeline statuses (§2.6)", () => {
     expect(LEAD_STATUSES).toEqual([
       "new",
       "contacted",
       "qualified",
       "negotiating",
+      "follow_up",
       "converted",
       "lost",
     ]);
@@ -34,8 +35,18 @@ describe("lead status enum", () => {
 });
 
 describe("lead source enum", () => {
-  it("exposes landing / organic / manual", () => {
-    expect(LEAD_SOURCES).toEqual(["landing", "organic", "manual"]);
+  it("exposes the documented sources (§2.6)", () => {
+    expect(LEAD_SOURCES).toEqual([
+      "landing",
+      "organic",
+      "manual",
+      "direct",
+      "referral",
+      "facebook",
+      "instagram",
+      "tiktok",
+      "other",
+    ]);
   });
 
   it("accepts landing/organic/manual and rejects others", () => {

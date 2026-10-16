@@ -25,6 +25,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
   { href: "/admin/leads", label: "Leads", icon: "mail", permission: "leads.view", group: "Sales" },
   { href: "/admin/quotations", label: "Quotations", icon: "file-spreadsheet", permission: "orders.view", group: "Sales" },
   { href: "/admin/orders", label: "Orders", icon: "book-copy", permission: "orders.view", group: "Sales" },
+  { href: "/admin/services", label: "Services", icon: "briefcase", permission: "orders.view", group: "Sales" },
 
   // Customers
   { href: "/admin/users", label: "Users & Customers", icon: "users", permission: "users.manage", group: "Customers" },

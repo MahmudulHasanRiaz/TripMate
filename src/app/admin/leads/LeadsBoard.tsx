@@ -52,6 +52,7 @@ const STATUS_TITLES: Record<LeadStatus, string> = {
   contacted: "Contacted",
   qualified: "Qualified",
   negotiating: "Negotiating",
+  follow_up: "Follow-up",
   converted: "Converted",
   lost: "Lost / Closed",
 };
@@ -64,6 +65,7 @@ const STATUS_BADGE_VARIANTS: Record<
   contacted: "info",
   qualified: "default",
   negotiating: "warning",
+  follow_up: "info",
   converted: "success",
   lost: "destructive",
 };
@@ -94,6 +96,7 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
     contacted: [],
     qualified: [],
     negotiating: [],
+    follow_up: [],
     converted: [],
     lost: [],
   };

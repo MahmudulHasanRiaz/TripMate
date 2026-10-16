@@ -337,6 +337,16 @@ export async function upsertQuotation(
         return [q];
       });
 
+      // §2.6: a quotation created from a lead links + converts the lead.
+      // Best-effort after the quotation stands (never fails the save).
+      if (input.leadId) {
+        try {
+          await markLeadConverted(input.leadId, { actorId: actorId ?? null });
+        } catch (e) {
+          console.warn("[quotations] lead convert link failed", e);
+        }
+      }
+
       return inserted;
     } catch (err) {
       if (isUniqueViolation(err)) continue;

@@ -45,12 +45,9 @@ import {
 //      change, and transitionOrder to the same status is refused by the map,
 //      so the payment row is the whole record.
 //   2. verifyPayment confirms the order via the bookings service's
-//      confirmOrder — but the T1 status machine only carries a
-//      quoted → confirmed edge. A verified payment on a pending/in_review
-//      order (e.g. an unquoted package order paid upfront) therefore leaves
-//      the order status untouched (logged, not failed); the operator quotes,
-//      then confirms — or a later verified payment confirms it. The verified
-//      payment itself always stands.
+//      confirmOrder — the §2.7 status machine carries a pending → confirmed
+//      edge, so a verified payment on a pending order confirms it. The
+//      verified payment itself always stands.
 //   3. finalPrice is NOT written by payments. It stays managed by the orders
 //      surface (the operator's final agreed price); getOrderPaidTotal is the
 //      "what has actually been paid" read.
@@ -581,11 +578,9 @@ export async function selectPayLater(input: {
 
 /**
  * Mark a submitted payment verified and run the order side-effect: the order
- * moves to confirmed via the bookings service's confirmOrder whenever the T1
- * status machine allows it (quoted → confirmed). Pending/in_review orders are
- * left as-is with a warning (choice 2 in the module header — the verified
- * payment always stands); confirmed/completed orders skip the transition;
- * a cancelled order refuses verification outright.
+ * moves to confirmed via the bookings service's confirmOrder whenever the
+ * status machine allows it (pending → confirmed). Confirmed/completed orders
+ * skip the transition; a cancelled order refuses verification outright.
  *
  * The payment write is the source of truth and lands FIRST; the order
  * transition and the CAPI Purchase event are best-effort after it (a failure
@@ -626,14 +621,9 @@ export async function verifyPayment(
   if (!updated) throw new PaymentError("NOT_FOUND", `Payment ${paymentId} not found.`);
 
   // Order side-effect (choice 2): confirm via the bookings SERVICE (never its
-  // actions). An OrderError here means the map refuses the edge (pending/
-  // in_review → confirmed) — warn and keep the verified payment; anything
-  // else propagates.
-  if (
-    order.status === "pending" ||
-    order.status === "in_review" ||
-    order.status === "quoted"
-  ) {
+  // actions). An OrderError here means the map refuses the edge — warn and
+  // keep the verified payment; anything else propagates.
+  if (order.status === "pending") {
     try {
       await confirmOrder(order.id, {
         actorId: opts.verifiedBy ?? null,

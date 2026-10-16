@@ -176,7 +176,7 @@ describe.skipIf(!integration)("bookings service (integration — Postgres)", () 
       id: created.id,
       orderNo: created.orderNo,
       type: "package",
-      status: "in_review",
+      status: "pending",
       source: "website",
       userId,
       userName: `Owner ${marker}`,
@@ -201,40 +201,36 @@ describe.skipIf(!integration)("bookings service (integration — Postgres)", () 
     const spouse = detail?.travelers.find((t) => t.name === `Spouse ${marker}`);
     expect(spouse).toMatchObject({ dob: "1992-11-30", relation: "spouse" });
     expect(detail?.travelers.some((t) => t.passportNo === "BX0123456")).toBe(true);
-    // The created event: fromStatus null → in_review, no actor.
+    // The created event: fromStatus null → pending, no actor.
     expect(detail?.events).toHaveLength(1);
-    expect(detail?.events[0]).toMatchObject({ fromStatus: null, toStatus: "in_review" });
+    expect(detail?.events[0]).toMatchObject({ fromStatus: null, toStatus: "pending" });
     expect(detail?.events[0].actorId).toBeNull();
 
-    // Quote from in_review, then confirm, then complete.
+    // Quote from pending (→ confirmed), then complete.
     detail = await service.setQuote(created.id, 1500);
-    expect(detail?.status).toBe("quoted");
-    expect(detail?.quotedPrice).toBe(1500);
-    detail = await service.confirmOrder(created.id, { actorId: userId });
     expect(detail?.status).toBe("confirmed");
+    expect(detail?.quotedPrice).toBe(1500);
     detail = await service.completeOrder(created.id, { actorId: userId });
     expect(detail?.status).toBe("completed");
 
-    // Timeline: created → quoted → confirmed → completed, oldest first.
+    // Timeline: created → confirmed → completed, oldest first.
     const timeline = detail?.events.map((e) => [e.fromStatus, e.toStatus]);
     expect(timeline).toEqual([
-      [null, "in_review"],
-      ["in_review", "quoted"],
-      ["quoted", "confirmed"],
+      [null, "pending"],
+      ["pending", "confirmed"],
       ["confirmed", "completed"],
     ]);
     expect(detail?.events[1].note).toBe("Quoted at 1500.00 BDT");
-    expect(detail?.events[2].actorId).toBe(userId);
+    expect(detail?.events[1].actorId).toBeNull();
 
     // Terminal statuses have no outgoing edges.
     await expect(service.cancelOrder(created.id)).rejects.toMatchObject({
       code: "ILLEGAL_TRANSITION",
     });
-    // And confirmed → quoted was never legal (complete only from confirmed).
+    // And completed → pending was never legal.
     const confirmed2 = track(await service.createPackageOrder(packageInput(listingId), {}));
     await service.setQuote(confirmed2.id, 99);
-    await service.confirmOrder(confirmed2.id);
-    await expect(service.transitionOrder(confirmed2.id, "quoted")).rejects.toMatchObject({
+    await expect(service.transitionOrder(confirmed2.id, "pending")).rejects.toMatchObject({
       code: "ILLEGAL_TRANSITION",
     });
   });
@@ -278,7 +274,7 @@ describe.skipIf(!integration)("bookings service (integration — Postgres)", () 
     expect(detail?.events[0]).toMatchObject({ fromStatus: null, toStatus: "pending" });
 
     const quoted = await service.setQuote(created.id, 450);
-    expect(quoted.status).toBe("quoted");
+    expect(quoted.status).toBe("confirmed");
 
     // A general inquiry (no listing) carries no snapshot and defaults to BDT.
     const general = track(
@@ -324,7 +320,7 @@ describe.skipIf(!integration)("bookings service (integration — Postgres)", () 
     const mine = byOrderNo.items.find((o) => o.id === created.id);
     expect(mine).toMatchObject({
       orderNo: created.orderNo,
-      status: "in_review",
+      status: "pending",
       customerName: `Customer ${marker}`,
       customerPhone: "+8801712345678",
       listingTitle: `Published Package ${marker}`,
@@ -335,7 +331,7 @@ describe.skipIf(!integration)("bookings service (integration — Postgres)", () 
     expect(byCustomer.items.some((o) => o.id === created.id)).toBe(true);
 
     const board = await service.getOrderBoardCounts();
-    expect(board.in_review).toBeGreaterThanOrEqual(1);
+    expect(board.pending).toBeGreaterThanOrEqual(1);
     expect(board.total).toBeGreaterThanOrEqual(1);
 
     const portal = await service.myOrders(ownerId);
@@ -374,14 +370,14 @@ describe.skipIf(!integration)("bookings service (integration — Postgres)", () 
 
     expect(order).toMatchObject({
       type: "package",
-      status: "in_review",
+      status: "pending",
       source: "lead_conversion",
       leadId,
       listingSnapshot: { title: `Draft Package ${marker}`, price: 800 },
     });
     expect(order.events[0]).toMatchObject({
       fromStatus: null,
-      toStatus: "in_review",
+      toStatus: "pending",
       actorId: staffId,
     });
 

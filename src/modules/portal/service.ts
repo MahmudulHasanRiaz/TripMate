@@ -128,11 +128,7 @@ export async function getPortalDashboardData(
   const totalBookings = ordersResult.total;
 
   const activeTrips = userOrders.filter(
-    (o) =>
-      o.status === "pending" ||
-      o.status === "in_review" ||
-      o.status === "quoted" ||
-      o.status === "confirmed",
+    (o) => o.status === "pending" || o.status === "confirmed",
   ).length;
 
   const totalQuoted = userOrders.reduce(
