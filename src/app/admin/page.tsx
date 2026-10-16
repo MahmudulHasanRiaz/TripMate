@@ -12,7 +12,17 @@ import {
 } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
 import { menuForRole } from "@/lib/admin-menu";
-import { getDashboardKpis, getDashboardTrend } from "@/modules/dashboard/service";
+import {
+  getDashboardKpis,
+  getDashboardRangeKpis,
+  getDashboardTrend,
+  getLeadFunnel,
+  getProfitByService,
+  getRecentOrders,
+  getRecentPayments,
+  resolveDashboardRange,
+  type DashboardPreset,
+} from "@/modules/dashboard/service";
 import type { OrderStatus } from "@/modules/bookings/validation";
 import { ORDER_STATUSES } from "@/modules/bookings/validation";
 import { formatMoney } from "@/components/site/currency";
@@ -21,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import DashboardTrendView from "./DashboardTrendView";
+import DashboardRangeFilter from "./DashboardRangeFilter";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -45,75 +56,81 @@ const ORDER_STATUS_BADGE_VARIANTS: Record<
   cancelled: "destructive",
 };
 
-export default async function AdminDashboardPage() {
-  const [session, kpis, trend] = await Promise.all([
-    requireSession(),
-    getDashboardKpis(),
-    getDashboardTrend({ days: 30 }),
-  ]);
+export default async function AdminDashboardPage(props: {
+  searchParams: Promise<{ preset?: string; from?: string; to?: string }>;
+}) {
+  const sp = await props.searchParams;
+  const preset: DashboardPreset =
+    sp.preset === "today" || sp.preset === "week" || sp.preset === "custom" ? sp.preset : "month";
+  const range = await resolveDashboardRange({ preset, from: sp.from, to: sp.to });
+  const [session, kpis, rangeKpis, trend, funnel, profitByService, recentOrders, recentPayments] =
+    await Promise.all([
+      requireSession(),
+      getDashboardKpis(),
+      getDashboardRangeKpis(range),
+      getDashboardTrend({ days: 30 }),
+      getLeadFunnel(),
+      getProfitByService(range),
+      getRecentOrders(),
+      getRecentPayments(),
+    ]);
 
   const sections = menuForRole(session.user.role).length;
+  void sections;
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-0.5">
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="text-xs text-muted-foreground">
             Overview of inquiries, orders, payments, expenses, and operational queues.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs font-mono font-normal">
-            Menu sections: {sections}
-          </Badge>
-          <Badge variant="secondary" className="text-xs capitalize font-medium">
-            {session.user.role}
-          </Badge>
-        </div>
+        <DashboardRangeFilter preset={range.preset} from={range.from} to={range.to} />
       </div>
 
       {/* KPI Cards Row (Responsive financial & operational grid) */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        {/* Leads Today / Total */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Leads / conversion in range */}
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Leads Today</span>
+              <span>Leads</span>
               <Users className="size-3.5 text-muted-foreground" aria-hidden="true" />
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
             <p className="font-mono text-xl font-bold tracking-tight text-foreground">
-              {kpis.leadsToday}
+              {rangeKpis.leads}
             </p>
             <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>Total: <strong className="text-foreground font-mono">{kpis.leadsTotal}</strong></span>
+              <span>In selected range</span>
               <Badge variant="secondary" className="text-[10px] px-1 py-0 font-mono">
-                {kpis.leadConversionRate}% conv
+                {rangeKpis.leadConversionRate}% conv
               </Badge>
             </div>
           </CardContent>
         </Card>
 
-        {/* Pending Payments */}
+        {/* Pending Collections */}
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Pending Payments</span>
+              <span>Pending Collections</span>
               <Banknote className="size-3.5 text-warning" aria-hidden="true" />
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-foreground">
-              {kpis.pendingPaymentsCount}
+            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+              {formatMoney(rangeKpis.pendingCollections, "BDT")}
             </p>
             <Link
               href={"/admin/payments" as Route}
               className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
             >
-              <span>Awaiting verification</span>
+              <span>{rangeKpis.pendingPaymentsCount} awaiting verification</span>
               <ArrowRight className="size-2.5" aria-hidden="true" />
             </Link>
           </CardContent>
@@ -128,11 +145,11 @@ export default async function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate">
-              {formatMoney(kpis.revenueThisMonth, "BDT")}
+            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+              {formatMoney(rangeKpis.revenue, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Verified this month
+              Verified · {rangeKpis.days}-day range
             </p>
           </CardContent>
         </Card>
@@ -146,8 +163,8 @@ export default async function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate">
-              {formatMoney(kpis.costOfSalesThisMonth, "BDT")}
+            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+              {formatMoney(rangeKpis.costOfSales, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
               Direct orders cost
@@ -164,12 +181,12 @@ export default async function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400 truncate">
-              {formatMoney(kpis.grossProfitThisMonth, "BDT")}
+            <p className="font-mono text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400 truncate tabular-nums" data-money>
+              {formatMoney(rangeKpis.grossProfit, "BDT")}
             </p>
             <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
               <span>Margin:</span>
-              <span className="font-semibold text-foreground">{kpis.grossMarginPercent}%</span>
+              <span className="font-semibold text-foreground">{rangeKpis.grossMarginPercent}%</span>
             </div>
           </CardContent>
         </Card>
@@ -183,11 +200,11 @@ export default async function AdminDashboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate">
-              {formatMoney(kpis.expensesThisMonth, "BDT")}
+            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+              {formatMoney(rangeKpis.expenses, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Approved this month
+              Approved in range
             </p>
           </CardContent>
         </Card>
@@ -197,7 +214,7 @@ export default async function AdminDashboardPage() {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Net Profit</span>
-              {kpis.netThisMonth >= 0 ? (
+              {rangeKpis.net >= 0 ? (
                 <ArrowUpRight className="size-3.5 text-success" aria-hidden="true" />
               ) : (
                 <ArrowDownRight className="size-3.5 text-destructive" aria-hidden="true" />
@@ -207,21 +224,44 @@ export default async function AdminDashboardPage() {
           <CardContent className="p-3 pt-1">
             <p
               className={cn(
-                "font-mono text-lg font-bold tracking-tight truncate",
-                kpis.netThisMonth >= 0 ? "text-success" : "text-destructive",
+                "font-mono text-lg font-bold tracking-tight truncate tabular-nums",
+                rangeKpis.net >= 0 ? "text-success" : "text-destructive",
               )}
+              data-money
             >
-              {formatMoney(kpis.netThisMonth, "BDT")}
+              {formatMoney(rangeKpis.net, "BDT")}
             </p>
             <div className="mt-1 flex items-center justify-between text-[11px]">
               <Badge
-                variant={kpis.netThisMonth >= 0 ? "success" : "destructive"}
+                variant={rangeKpis.net >= 0 ? "success" : "destructive"}
                 className="text-[10px] px-1 py-0"
               >
-                {kpis.netThisMonth >= 0 ? "Profitable" : "Deficit"}
+                {rangeKpis.net >= 0 ? "Profitable" : "Deficit"}
               </Badge>
-              <span className="text-muted-foreground font-mono">{kpis.netMarginPercent}% net</span>
+              <span className="text-muted-foreground font-mono">{rangeKpis.netMarginPercent}% net</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Follow-ups due */}
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+              <span>Follow-ups Due</span>
+              <Users className="size-3.5 text-muted-foreground" aria-hidden="true" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-1">
+            <p className="font-mono text-xl font-bold tracking-tight text-foreground">
+              {rangeKpis.followUpsDue}
+            </p>
+            <Link
+              href={"/admin/leads" as Route}
+              className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+            >
+              <span>Overdue or due now</span>
+              <ArrowRight className="size-2.5" aria-hidden="true" />
+            </Link>
           </CardContent>
         </Card>
       </div>
@@ -269,7 +309,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {/* Queues Section */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         {/* Payment Verification Queue */}
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-4 pb-2">
@@ -339,6 +379,159 @@ export default async function AdminDashboardPage() {
                 </Link>
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+        {/* Follow-ups Due Queue */}
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="p-4 pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Users className="size-4 text-muted-foreground" aria-hidden="true" />
+                <span>Follow-ups Due</span>
+              </CardTitle>
+              <Badge
+                variant={rangeKpis.followUpsDue > 0 ? "warning" : "secondary"}
+                className="font-mono text-xs"
+              >
+                {rangeKpis.followUpsDue} due
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 pt-1 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Leads whose next follow-up date has passed and are not converted or lost.
+            </p>
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs text-muted-foreground font-mono">
+                {rangeKpis.followUpsDue === 0
+                  ? "Nothing overdue"
+                  : `${rangeKpis.followUpsDue} lead${rangeKpis.followUpsDue === 1 ? "" : "s"} waiting`}
+              </span>
+              <Button asChild size="sm" variant="outline" className="min-h-10 text-xs">
+                <Link href={"/admin/leads" as Route}>
+                  Open leads
+                  <ArrowRight className="size-3.5 ml-1.5" aria-hidden="true" />
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Funnel + Profit by service */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-sm font-semibold">Lead funnel by stage</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-1 space-y-2">
+            {funnel.map((point) => {
+              const max = Math.max(1, ...funnel.map((p) => p.count));
+              return (
+                <div key={point.status} className="flex items-center gap-3">
+                  <span className="w-24 shrink-0 text-xs capitalize text-muted-foreground">
+                    {point.status.replace("_", " ")}
+                  </span>
+                  <div className="h-2 min-h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${Math.round((point.count / max) * 100)}%` }}
+                    />
+                  </div>
+                  <span className="w-8 shrink-0 text-right font-mono text-xs font-bold">{point.count}</span>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-sm font-semibold">Profit by service</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-1 space-y-2">
+            {profitByService.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No orders in this range yet.</p>
+            ) : (
+              profitByService.map((point) => (
+                <div key={point.type} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
+                  <span className="text-xs font-medium capitalize">{point.type}</span>
+                  <span className="text-right font-mono text-xs tabular-nums" data-money>
+                    {formatMoney(point.revenue, "BDT")}
+                    <span className="ml-2 text-muted-foreground">
+                      profit {formatMoney(point.profit, "BDT")}
+                    </span>
+                  </span>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent orders + payments */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="p-4 pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold">Recent orders</CardTitle>
+              <Link href={"/admin/orders" as Route} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                View all <ArrowRight className="size-3" aria-hidden="true" />
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 pt-1">
+            {recentOrders.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No orders yet.</p>
+            ) : (
+              <ul className="divide-y divide-border/60">
+                {recentOrders.map((order) => (
+                  <li key={order.id} className="flex items-center justify-between gap-3 py-2">
+                    <Link href={`/admin/orders/${order.id}` as Route} className="font-mono text-xs font-bold hover:text-primary">
+                      {order.orderNo}
+                    </Link>
+                    <Badge variant={ORDER_STATUS_BADGE_VARIANTS[order.status as OrderStatus]} className="text-[10px] capitalize">
+                      {ORDER_STATUS_LABELS[order.status as OrderStatus] ?? order.status}
+                    </Badge>
+                    <span className="font-mono text-xs tabular-nums" data-money>
+                      {order.total !== null ? formatMoney(order.total, "BDT") : "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-xs border-border bg-card">
+          <CardHeader className="p-4 pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold">Recent payments</CardTitle>
+              <Link href={"/admin/payments" as Route} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
+                Open queue <ArrowRight className="size-3" aria-hidden="true" />
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 pt-1">
+            {recentPayments.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No payments yet.</p>
+            ) : (
+              <ul className="divide-y divide-border/60">
+                {recentPayments.map((payment) => (
+                  <li key={payment.id} className="flex items-center justify-between gap-3 py-2">
+                    <Link href={"/admin/payments" as Route} className="font-mono text-xs hover:text-primary">
+                      {payment.orderId.slice(0, 8)}…
+                    </Link>
+                    <Badge variant="outline" className="text-[10px] capitalize">{payment.status}</Badge>
+                    <span className="font-mono text-xs font-bold tabular-nums" data-money>
+                      {formatMoney(payment.amount, "BDT")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>
