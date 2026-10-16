@@ -21,6 +21,7 @@ import {
 import type { QuotationDetail } from "@/modules/bookings/quotations-service";
 import type { QuotationStatus } from "@/modules/bookings/quotations-validation";
 import {
+  acceptQuotationAction,
   updateQuotationStatusAction,
   convertQuotationToOrderAction,
 } from "@/modules/bookings/quotations-actions";
@@ -46,6 +47,19 @@ export default function QuotationDetailView({
         id: quotation.id,
         status: newStatus,
       });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      router.refresh();
+    });
+  };
+
+  /** Staff records acceptance on the customer's behalf (§2.7: who + when). */
+  const handleAccept = () => {
+    setError(null);
+    startTransition(async () => {
+      const res = await acceptQuotationAction({ id: quotation.id, status: "accepted" });
       if (!res.ok) {
         setError(res.error);
         return;
@@ -161,6 +175,17 @@ export default function QuotationDetailView({
               {quotation.validUntil && (
                 <> · Valid until {new Date(quotation.validUntil).toLocaleDateString("en-GB")}</>
               )}
+              {quotation.acceptedAt && (
+                <>
+                  {" "}· Accepted{" "}
+                  {new Date(quotation.acceptedAt).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                  {quotation.acceptedBy ? ` by ${quotation.acceptedBy}` : ""}
+                </>
+              )}
             </p>
           </div>
 
@@ -182,7 +207,7 @@ export default function QuotationDetailView({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleStatusChange("accepted")}
+                onClick={handleAccept}
                 disabled={isPending}
                 className="gap-1.5 text-xs text-emerald-600 border-emerald-500/30 hover:bg-emerald-500/10"
               >

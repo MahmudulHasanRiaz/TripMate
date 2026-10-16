@@ -17,6 +17,7 @@ import type { MyOrderDetail } from "@/modules/portal/service";
 import type { GatewayView } from "@/modules/payments/service";
 import type { OrderStatus } from "@/modules/bookings/validation";
 import GatewayPaymentDialog from "@/app/account/_components/GatewayPaymentDialog";
+import PortalTravelerForm from "@/app/account/_components/PortalTravelerForm";
 import { formatMoney } from "@/components/site/currency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -247,6 +248,8 @@ export default function PortalOrderDetailClient({
               </CardContent>
             </Card>
           ) : null}
+
+          {order.status !== "cancelled" ? <PortalTravelerForm orderId={order.id} /> : null}
 
           {/* Payment Block */}
           <Card className="shadow-xs border-primary/20">

@@ -19,7 +19,6 @@ import {
   PlusCircle,
   Send,
   User,
-  Users,
 } from "lucide-react";
 import type { OrderDetail } from "@/modules/bookings/service";
 import type { GatewayView, PaymentView } from "@/modules/payments/service";
@@ -32,6 +31,7 @@ import {
   setQuoteAction,
   updateOrderStatusAction,
 } from "@/modules/bookings/actions";
+import TravelerManager from "./TravelerManager";
 import {
   adminCreatePaymentAction,
   rejectPaymentAction,
@@ -496,43 +496,8 @@ export default function OrderDetailClient({
             </CardContent>
           </Card>
 
-          {/* Travelers Table (for package orders) */}
-          {order.travelers.length > 0 ? (
-            <Card className="shadow-xs">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Users className="size-4 text-muted-foreground" aria-hidden="true" />
-                    Travelers Manifest ({order.travelers.length})
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-xs font-semibold">#</TableHead>
-                      <TableHead className="text-xs font-semibold">Traveler Name</TableHead>
-                      <TableHead className="text-xs font-semibold">Passport No.</TableHead>
-                      <TableHead className="text-xs font-semibold">Date of Birth</TableHead>
-                      <TableHead className="text-xs font-semibold">Relation</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {order.travelers.map((t, idx) => (
-                      <TableRow key={t.id || idx} className="text-xs">
-                        <TableCell className="text-muted-foreground font-mono">{idx + 1}</TableCell>
-                        <TableCell className="font-semibold text-foreground">{t.name}</TableCell>
-                        <TableCell className="font-mono">{t.passportNo || "—"}</TableCell>
-                        <TableCell className="font-mono">{t.dob || "—"}</TableCell>
-                        <TableCell className="text-muted-foreground">{t.relation || "—"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          ) : null}
+          {/* Travelers (any stage) */}
+          <TravelerManager orderId={order.id} initial={order.travelers} canEdit={canManageOrders} />
 
           {/* Special Requests */}
           {order.specialRequests ? (
