@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -1063,6 +1064,20 @@ export default function SettingsTabsView({
           </Card>
         </TabsContent>
       </Tabs>
+
+      <Card className="border-destructive/30 shadow-xs">
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+          <div className="space-y-0.5">
+            <p className="text-sm font-semibold text-foreground">Danger Zone</p>
+            <p className="text-xs text-muted-foreground">
+              Wipe all content and re-initialize the database. Typed confirmation required.
+            </p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="h-9 border-destructive/40 text-destructive hover:text-destructive">
+            <Link href="/admin/reset">Open Reset &amp; Re-initialize</Link>
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
