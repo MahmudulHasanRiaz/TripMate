@@ -7,6 +7,7 @@ import {
   QuotationError,
   upsertQuotation,
   updateQuotationStatus,
+  acceptQuotation,
   convertQuotationToOrder,
   deleteQuotation,
 } from "./quotations-service";
@@ -118,6 +119,38 @@ export async function deleteQuotationAction(rawId: string): Promise<ActionResult
 
   try {
     return await guarded(rawId);
+  } catch (err) {
+    if (err instanceof GuardError) return { ok: false, error: err.code };
+    if (err instanceof QuotationError) return { ok: false, code: err.code, error: err.message };
+    throw err;
+  }
+}
+
+/**
+ * Accept a quotation on behalf of the customer or record the customer's own
+ * acceptance (§2.7). Staff accept records the staff user in acceptedBy.
+ */
+export async function acceptQuotationAction(
+  rawInput: unknown,
+): Promise<ActionResult> {
+  const guarded = withGuard(
+    { permission: "orders.manage" },
+    async (input: unknown, session): Promise<ActionResult> => {
+      const parsed = quotationStatusInputSchema.safeParse(input);
+      if (!parsed.success) {
+        return { ok: false, code: "VALIDATION", error: parsed.error.issues[0].message };
+      }
+      await acceptQuotation(parsed.data.id, {
+        acceptedBy: "staff",
+        actorId: session?.user?.id ?? null,
+      });
+      revalidateQuotations();
+      return { ok: true };
+    },
+  );
+
+  try {
+    return await guarded(rawInput);
   } catch (err) {
     if (err instanceof GuardError) return { ok: false, error: err.code };
     if (err instanceof QuotationError) return { ok: false, code: err.code, error: err.message };

@@ -396,7 +396,8 @@ export async function getOrderPaidTotal(orderId: string): Promise<number> {
 export type SubmitManualPaymentInput = {
   orderId: string;
   gatewayId: string;
-  methodTxnId: string;
+  /** Null when `requireTxnId` is OFF (§2.8) — recorded without a txn reference. */
+  methodTxnId: string | null;
   senderNumber?: string | null;
   screenshotUrl?: string | null;
   note?: string | null;
@@ -474,23 +475,26 @@ export async function submitManualPayment(
 
   const amount = payableAmountOrThrow(order);
 
-  // Duplicate-claim guard (choice 5 in the module header).
-  const [duplicate] = await db
-    .select({ id: payments.id })
-    .from(payments)
-    .where(
-      and(
-        eq(payments.gatewayId, gateway.id),
-        eq(payments.methodTxnId, input.methodTxnId),
-        sql`${payments.status} in ('submitted', 'verified')`,
-      ),
-    )
-    .limit(1);
-  if (duplicate) {
-    throw new PaymentError(
-      "INVALID_STATE",
-      "This transaction ID is already claimed by another payment.",
-    );
+  // Duplicate-claim guard (choice 5 in the module header). Skipped when no
+  // txn id was supplied (requireTxnId OFF) — nothing to dedupe on.
+  if (input.methodTxnId) {
+    const [duplicate] = await db
+      .select({ id: payments.id })
+      .from(payments)
+      .where(
+        and(
+          eq(payments.gatewayId, gateway.id),
+          eq(payments.methodTxnId, input.methodTxnId),
+          sql`${payments.status} in ('submitted', 'verified')`,
+        ),
+      )
+      .limit(1);
+    if (duplicate) {
+      throw new PaymentError(
+        "INVALID_STATE",
+        "This transaction ID is already claimed by another payment.",
+      );
+    }
   }
 
   const [inserted] = await db

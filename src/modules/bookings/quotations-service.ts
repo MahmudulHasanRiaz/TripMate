@@ -84,6 +84,8 @@ export type QuotationDetail = {
   validUntil: Date | null;
   convertedOrderId: string | null;
   convertedOrderNo?: string | null;
+  acceptedBy: string | null;
+  acceptedAt: Date | null;
   createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -184,6 +186,8 @@ export async function getQuotationById(id: string): Promise<QuotationDetail | nu
       status: quotations.status,
       validUntil: quotations.validUntil,
       convertedOrderId: quotations.convertedOrderId,
+      acceptedBy: quotations.acceptedBy,
+      acceptedAt: quotations.acceptedAt,
       createdBy: quotations.createdBy,
       createdAt: quotations.createdAt,
       updatedAt: quotations.updatedAt,
@@ -361,6 +365,32 @@ export async function updateQuotationStatus(input: QuotationStatusInput): Promis
       updatedAt: new Date(),
     })
     .where(eq(quotations.id, input.id));
+}
+
+/**
+ * Accept a quotation (§2.7): records who accepted (customer|staff) and when.
+ * Staff-accept records the staff user id in acceptedBy as `staff:<id>`.
+ */
+export async function acceptQuotation(
+  id: string,
+  opts: { acceptedBy: "customer" | "staff"; actorId?: string | null },
+): Promise<void> {
+  const quote = await getQuotationById(id);
+  if (!quote) throw new QuotationError("NOT_FOUND", "Quotation not found");
+  if (quote.status === "converted") {
+    throw new QuotationError("ALREADY_CONVERTED", "Quotation is already converted");
+  }
+  const acceptedBy =
+    opts.acceptedBy === "staff" && opts.actorId ? `staff:${opts.actorId}` : opts.acceptedBy;
+  await db
+    .update(quotations)
+    .set({
+      status: "accepted",
+      acceptedBy,
+      acceptedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(quotations.id, id));
 }
 
 export async function convertQuotationToOrder(

@@ -116,6 +116,18 @@ export const adminCreatePaymentInputSchema = paymentSubmitInputSchema.omit({
 });
 export type AdminCreatePaymentInput = z.infer<typeof adminCreatePaymentInputSchema>;
 
+/** Customer flow when `requireTxnId` is OFF (§2.8): txn id optional.
+ *  The base schema stays strict (tests + admin paths pin it); the action
+ *  layer selects this variant after reading the payments settings row. */
+export const customerPaymentSubmitSchema = paymentSubmitInputSchema.extend({
+  methodTxnId: z
+    .string()
+    .trim()
+    .max(64, "Transaction ID must be 64 characters or fewer")
+    .optional(),
+});
+export type CustomerPaymentSubmitInput = z.infer<typeof customerPaymentSubmitSchema>;
+
 // ---- gateway config ---------------------------------------------------------------
 
 /** Cap on config entries — a gateway's config is DISPLAY data (account number,

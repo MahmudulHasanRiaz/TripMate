@@ -47,6 +47,7 @@ import {
   getUserEmailById,
   insertLeadPublic,
   LeadError,
+  logLeadFollowUp,
   markLeadConverted,
   pickNextAssignee,
   updateLeadNote,
@@ -398,6 +399,30 @@ export const updateLeadNoteAction = leadAction<unknown, LeadActionResult<LeadIdR
     await updateLeadNote(parsed.data.id, parsed.data.note ?? "", {
       actorId: session?.user.id ?? null,
     });
+    expireLead(parsed.data.id);
+    return { ok: true, data: { id: parsed.data.id } };
+  },
+);
+
+const logFollowUpInput = z.object({
+  id: uuidSchema,
+  note: z.string().trim().min(1, "Follow-up note is required").max(4000),
+  nextFollowUpAt: z.string().datetime({ offset: true }).nullable().optional(),
+});
+
+/** Log a follow-up: increments count, sets next date, appends timeline event (§2.6). */
+export const logFollowUpAction = leadAction<unknown, LeadActionResult<LeadIdRef>>(
+  async (input, session) => {
+    const parsed = parseLeadInput(logFollowUpInput, input);
+    if (!parsed.ok) return parsed;
+    await logLeadFollowUp(
+      parsed.data.id,
+      {
+        note: parsed.data.note,
+        nextFollowUpAt: parsed.data.nextFollowUpAt ? new Date(parsed.data.nextFollowUpAt) : null,
+      },
+      { actorId: session?.user.id ?? null },
+    );
     expireLead(parsed.data.id);
     return { ok: true, data: { id: parsed.data.id } };
   },
