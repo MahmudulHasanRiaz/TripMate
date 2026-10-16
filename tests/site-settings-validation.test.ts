@@ -285,6 +285,9 @@ describe.skipIf(!integration)("site settings round-trip (integration — Postgre
       faviconUrl: "/favicon.svg",
       searchEngineVisibility: false,
       footerDescription: "Journeys, planned.",
+      footerColumns: [],
+      footerSocials: [],
+      copyright: null,
     });
   });
 
@@ -350,6 +353,11 @@ describe.skipIf(!integration)("site settings round-trip (integration — Postgre
       ctaSub: null,
       stats: null,
       testimonials: null,
+      showHero: true,
+      showFeatured: true,
+      showCta: true,
+      showStats: true,
+      showTestimonials: true,
     });
   });
 });

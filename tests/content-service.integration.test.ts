@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeAll } from "vitest";
 import "dotenv/config";
 import { postInput, postCategoryInput, pageInput } from "@/modules/content/validation";
 
@@ -19,6 +19,14 @@ const CONTENT_CAT = "integration-content-cat";
 const USAGE_POST = "content-usage-post";
 
 describe.skipIf(!integration)("content service (integration — Postgres)", () => {
+  // The seeded-page assertions need the static pages present. CI seeds the
+  // database; local runs may not have — ensure them idempotently.
+  beforeAll(async () => {
+    const { db } = await import("@/db/client");
+    const { seedStaticContent } = await import("@/modules/content/seed-static-pages");
+    await seedStaticContent(db);
+  });
+
   it("serves the seeded static pages as published markdown", async () => {
     const service = await import("@/modules/content/service");
     const about = await service.getPublishedPageBySlug("about-us");
