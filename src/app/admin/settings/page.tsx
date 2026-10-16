@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { requirePermission } from "@/lib/auth-helpers";
+import { hasPermission } from "@/modules/users/permissions";
 import { getHomeSettings, getSiteSettings } from "@/modules/settings/site-settings";
 import { getThemeSettings } from "@/modules/settings/theme-service";
+import { getPaymentSettings } from "@/modules/payments/settings";
+import { getSetting } from "@/modules/settings/service";
 import SettingsTabsView from "./SettingsTabsView";
 
 export const metadata: Metadata = {
@@ -11,13 +14,20 @@ export const metadata: Metadata = {
 export const instant = false;
 
 export default async function AdminSettingsPage() {
-  await requirePermission("settings.manage");
+  const session = await requirePermission("settings.manage");
 
-  const [site, home, theme] = await Promise.all([
+  const [site, home, theme, paymentSettings, storage] = await Promise.all([
     getSiteSettings(),
     getHomeSettings(),
     getThemeSettings(),
+    getPaymentSettings(),
+    getSetting("storage"),
   ]);
+
+  const storageDriver =
+    storage && typeof storage === "object" && "driver" in storage
+      ? String((storage as Record<string, unknown>).driver)
+      : "local";
 
   return (
     <div className="space-y-6">
@@ -40,7 +50,14 @@ export default async function AdminSettingsPage() {
         </span>
       </div>
 
-      <SettingsTabsView initialSite={site} initialHome={home} initialTheme={theme} />
+      <SettingsTabsView
+        initialSite={site}
+        initialHome={home}
+        initialTheme={theme}
+        initialPaymentSettings={paymentSettings}
+        storageDriver={storageDriver}
+        canManagePayments={hasPermission(session.user.role, null, "payments.manage_gateways")}
+      />
     </div>
   );
 }
