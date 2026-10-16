@@ -2,6 +2,8 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { withGuard } from "@/lib/guard";
 import { requireSession, type Session } from "@/lib/auth-helpers";
 import {
@@ -101,3 +103,60 @@ export const toggleUserStatusAction = withGuard(
     return { ok: true };
   },
 );
+
+/** Admin set/reset a customer's password (permission-gated, §2.4). */
+const setPasswordSchema = z.object({
+  userId: z.string().uuid(),
+  newPassword: z.string().min(10, "Password must be at least 10 characters").max(128),
+});
+
+export const adminSetPasswordAction = withGuard(
+  { permission: "users.manage" },
+  async (rawInput: unknown, session: Session | null) => {
+    const parsed = setPasswordSchema.safeParse(rawInput);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message || "Invalid password payload" };
+    }
+    if (!session) {
+      return { ok: false, error: "Unauthorized" };
+    }
+    try {
+      await auth.api.setUserPassword({
+        body: { userId: parsed.data.userId, newPassword: parsed.data.newPassword },
+        headers: await headers(),
+      });
+    } catch (e) {
+      return { ok: false, error: e instanceof Error ? e.message : "Failed to set password" };
+    }
+    revalidatePath("/admin/users");
+    return { ok: true };
+  },
+);
+
+/** Change own password from the customer portal (§2.4). */
+const changeOwnPasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Enter your current password"),
+  newPassword: z.string().min(10, "New password must be at least 10 characters").max(128),
+});
+
+export async function changeOwnPasswordAction(
+  input: z.infer<typeof changeOwnPasswordSchema>,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await requireSession();
+    const parsed = changeOwnPasswordSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message || "Invalid input" };
+    }
+    await auth.api.changePassword({
+      body: {
+        currentPassword: parsed.data.currentPassword,
+        newPassword: parsed.data.newPassword,
+      },
+      headers: await headers(),
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to change password" };
+  }
+}

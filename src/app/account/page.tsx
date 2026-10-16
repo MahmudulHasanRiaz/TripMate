@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ProfileEditDialog } from "./_components/ProfileEditDialog";
+import ChangePasswordCard from "./_components/ChangePasswordCard";
 import type { OrderStatus } from "@/modules/bookings/validation";
 
 export const metadata: Metadata = {
@@ -379,6 +380,8 @@ export default async function AccountPage() {
               </div>
             </CardContent>
           </Card>
+
+          <ChangePasswordCard />
 
           {/* Concierge & Assistance */}
           <Card className="border-border bg-gradient-to-br from-primary/5 to-transparent shadow-xs">

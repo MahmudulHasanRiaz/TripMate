@@ -143,6 +143,13 @@ export default function LoginForm() {
               {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {busy ? "Signing in…" : "Sign in"}
             </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              New to TripMate?{" "}
+              <a href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
+                Create an account
+              </a>
+            </p>
           </form>
         </Form>
       </CardContent>
