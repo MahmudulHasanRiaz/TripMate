@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
+
 import { Check, ChevronDown, Minus } from "lucide-react";
 
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
 import { Gallery } from "@/components/site/Gallery";
+import { youtubeEmbedUrl } from "@/lib/seo-meta";
 
 import type { PackageDetailData } from "../../_lib/catalog-data";
 
@@ -14,7 +16,7 @@ import type { PackageDetailData } from "../../_lib/catalog-data";
  * react-markdown + rehype-sanitize pipeline — never raw HTML.
  */
 export function PackageContent({ data }: { data: PackageDetailData }) {
-  const { summary, description, gallery, itinerary, inclusions, exclusions } = data;
+  const { summary, description, gallery, videoUrl, itinerary, inclusions, exclusions } = data;
   const hasLongform = Boolean(summary || description);
 
   return (
@@ -49,6 +51,8 @@ export function PackageContent({ data }: { data: PackageDetailData }) {
           />
         </section>
       ) : null}
+
+      {videoUrl ? <PackageVideo url={videoUrl} title={data.title} /> : null}
 
       {itinerary.length > 0 ? (
         <section aria-labelledby="package-itinerary-heading" data-testid="package-itinerary">
@@ -101,8 +105,32 @@ export function PackageContent({ data }: { data: PackageDetailData }) {
   );
 }
 
-function SectionHeading({ id, children }: { id: string; children: ReactNode }) {
+function PackageVideo({ url, title }: { url: string; title: string }) {
+  const embed = youtubeEmbedUrl(url);
   return (
+    <section aria-labelledby="package-video-heading">
+      <SectionHeading id="package-video-heading">Watch</SectionHeading>
+      <div className="mt-5 overflow-hidden rounded-lg border border-border bg-card">
+        {embed ? (
+          <iframe
+            src={embed}
+            title={`${title} — video`}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="aspect-video w-full"
+          />
+        ) : (
+          <video src={url} controls preload="metadata" className="aspect-video w-full bg-black">
+            Your browser cannot play this video.
+          </video>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SectionHeading({ id, children }: { id: string; children: ReactNode }) {  return (
     <h2
       id={id}
       className="font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl"

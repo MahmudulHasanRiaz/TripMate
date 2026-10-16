@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import { detailMetadata } from "@/lib/seo-meta";
 import { getSiteSettings } from "@/lib/site-settings";
 import {
   getDestinationBySlug,
@@ -55,15 +56,12 @@ export async function generateMetadata(
       : (destination.description?.slice(0, 160) ||
         `Explore travel itineraries, holiday packages, and visa processing for ${destination.name} with TripMate.`);
 
-  return {
+  return detailMetadata({
+    path: `/destinations/${destination.slug}`,
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      images: destination.image ? [{ url: destination.image, alt: destination.name }] : [],
-    },
-  };
+    image: destination.image ? { url: destination.image, alt: destination.name } : null,
+  });
 }
 
 export default function DestinationPage(props: DestinationPageProps) {

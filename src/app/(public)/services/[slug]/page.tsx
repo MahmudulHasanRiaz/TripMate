@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { getSiteSettings } from "@/lib/site-settings";
+import { detailMetadata } from "@/lib/seo-meta";
 import { PackageCard } from "@/components/site/PackageCard";
 import { SectionHeading } from "@/components/site/SectionHeading";
 import { CTASection } from "@/components/site/CTASection";
@@ -56,10 +57,11 @@ export async function generateMetadata(
   if (!data) return { title: "Service not found" };
   // No inline "| TripMate" suffix: the root layout's title.template
   // ("%s | TripMate") appends it — an inline suffix would double it.
-  return {
+  return detailMetadata({
+    path: `/services/${data.slug}`,
     title: data.name,
     description: descriptionFor(data),
-  };
+  });
 }
 
 export default function ServicePage(props: PageProps<"/services/[slug]">) {

@@ -6,7 +6,9 @@ import { Suspense } from "react";
 import { ArrowLeft, CalendarDays, PenLine } from "lucide-react";
 
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
+import { Gallery } from "@/components/site/Gallery";
 import { JsonLd } from "@/components/site/JsonLd";
+import { detailMetadata, youtubeEmbedUrl } from "@/lib/seo-meta";
 
 import { getBlogPostData } from "../_lib/blog-data";
 
@@ -30,10 +32,12 @@ export async function generateMetadata(
   if (!post) return { title: "Post not found" };
 
   const description = post.seoDescription || post.excerpt || undefined;
-  return {
+  return detailMetadata({
+    path: `/blog/${post.slug}`,
     title: post.seoTitle || post.title,
-    ...(description ? { description } : {}),
-  };
+    description,
+    image: post.image,
+  });
 }
 
 export default function BlogPostPage(props: PageProps<"/blog/[slug]">) {
@@ -144,6 +148,33 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
           <p className="text-lg leading-relaxed text-muted-foreground">{post.excerpt}</p>
         ) : null}
       </div>
+
+      {post.gallery.length > 0 ? (
+        <div className="mx-auto mt-10 max-w-4xl">
+          <Gallery
+            images={post.gallery.map((image) => ({ src: image.url, alt: image.alt }))}
+          />
+        </div>
+      ) : null}
+
+      {post.videoUrl ? (
+        <div className="mx-auto mt-10 max-w-4xl overflow-hidden rounded-xl border border-border bg-card">
+          {youtubeEmbedUrl(post.videoUrl) ? (
+            <iframe
+              src={youtubeEmbedUrl(post.videoUrl) as string}
+              title={`${post.title} — video`}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="aspect-video w-full"
+            />
+          ) : (
+            <video src={post.videoUrl} controls preload="metadata" className="aspect-video w-full bg-black">
+              Your browser cannot play this video.
+            </video>
+          )}
+        </div>
+      ) : null}
     </article>
   </>
   );

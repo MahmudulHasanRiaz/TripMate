@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 
 import { FaqAccordion } from "@/components/site/FaqAccordion";
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
+import { detailMetadata } from "@/lib/seo-meta";
 import { isReservedSlug } from "@/modules/content/validation";
 
 import { getStaticPageData, type StaticPageData } from "../p/_lib/page-data";
@@ -24,10 +25,11 @@ export async function generateMetadata(
   if (isReservedSlug(slug)) return { title: "Page not found" };
   const data = await getStaticPageData(slug);
   if (!data) return { title: "Page not found" };
-  return {
+  return detailMetadata({
+    path: `/${data.slug}`,
     title: data.seoTitle || data.title,
-    ...(data.seoDescription ? { description: data.seoDescription } : {}),
-  };
+    description: data.seoDescription || undefined,
+  });
 }
 
 export default function EvergreenPage(props: PageProps<"/[slug]">) {
