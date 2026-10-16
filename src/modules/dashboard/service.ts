@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, type SQLWrapper } from "drizzle-orm";
 import { db } from "@/db/client";
 // Cross-module-table reads follow the established convention (bookings reads
 // catalog listings; expenses reads bookings orders + payments + catalog): the
@@ -264,7 +264,7 @@ function rangeDays(from: string, to: string): number {
 export async function getDashboardRangeKpis(range: DashboardRange): Promise<DashboardRangeKpis> {
   const from = sql`(${range.from}::date)`;
   const to = sql`(${range.to}::date)`;
-  const inRange = (col: SQL<unknown>) => sql`date(${col}) >= ${from} and date(${col}) <= ${to}`;
+  const inRange = (col: SQLWrapper) => sql`date(${col}) >= ${from} and date(${col}) <= ${to}`;
 
   const [payRows, orderRows, expRows, leadRows, dueRows, fuRows] = await Promise.all([
     db

@@ -129,7 +129,12 @@ export const setSearchVisibilityAction = settingsAction<unknown>(
     }
     const { getSiteSettings } = await import("./site-settings");
     const current = await getSiteSettings();
-    await updateSiteSettings({ ...current, ...parsed.data });
+    await updateSiteSettings({
+      ...current,
+      ...parsed.data,
+      footerDescription: current.footerDescription ?? undefined,
+      copyright: current.copyright ?? undefined,
+    });
     updateTag(CACHE_TAGS.settings);
     return { ok: true };
   },
@@ -152,7 +157,12 @@ export const saveFooterSettingsAction = settingsAction<unknown>(
     }
     const { getSiteSettings } = await import("./site-settings");
     const current = await getSiteSettings();
-    await updateSiteSettings({ ...current, ...parsed.data });
+    await updateSiteSettings({
+      ...current,
+      ...parsed.data,
+      footerDescription: parsed.data.footerDescription ?? current.footerDescription ?? undefined,
+      copyright: parsed.data.copyright ?? current.copyright ?? undefined,
+    });
     updateTag(CACHE_TAGS.settings);
     return { ok: true };
   },

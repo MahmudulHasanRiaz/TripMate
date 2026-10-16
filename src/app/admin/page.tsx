@@ -381,8 +381,6 @@ export default async function AdminDashboardPage(props: {
             </div>
           </CardContent>
         </Card>
-      </div>
-
         {/* Follow-ups Due Queue */}
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-4 pb-2">

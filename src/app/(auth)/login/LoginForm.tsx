@@ -21,6 +21,7 @@
  */
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -146,9 +147,9 @@ export default function LoginForm() {
 
             <p className="text-center text-sm text-muted-foreground">
               New to TripMate?{" "}
-              <a href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
+              <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
                 Create an account
-              </a>
+              </Link>
             </p>
           </form>
         </Form>

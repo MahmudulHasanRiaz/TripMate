@@ -1,7 +1,10 @@
 -- §2.7: simplify order_status to pending, confirmed, completed, cancelled.
--- Safe replacement (no in-place delete): new enum → USING mapping
--- (quoted → confirmed, in_review → pending) → drop old → rename.
--- Covers orders.status AND order_status_events.from_status/to_status.
+-- Safe replacement (no in-place delete): drop default → new enum → USING
+-- mapping (quoted → confirmed, in_review → pending) → drop old → rename →
+-- restore default. Covers orders.status AND
+-- order_status_events.from_status/to_status. No DML in this migration.
+ALTER TABLE "orders" ALTER COLUMN "status" DROP DEFAULT;
+--> statement-breakpoint
 CREATE TYPE "public"."order_status_new" AS ENUM('pending', 'confirmed', 'completed', 'cancelled');
 --> statement-breakpoint
 ALTER TABLE "order_status_events" ALTER COLUMN "from_status" TYPE "public"."order_status_new" USING (
@@ -31,3 +34,5 @@ ALTER TABLE "orders" ALTER COLUMN "status" TYPE "public"."order_status_new" USIN
 DROP TYPE "public"."order_status";
 --> statement-breakpoint
 ALTER TYPE "public"."order_status_new" RENAME TO "order_status";
+--> statement-breakpoint
+ALTER TABLE "orders" ALTER COLUMN "status" SET DEFAULT 'pending'::"public"."order_status";
