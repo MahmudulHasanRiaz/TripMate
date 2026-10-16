@@ -57,6 +57,41 @@
       "when": 1788793657301,
       "tag": "0007_lethal_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788700000008,
+      "tag": "0008_lead_status_follow_up",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788700000009,
+      "tag": "0009_lead_source_values",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788700000010,
+      "tag": "0010_leads_followup_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788700000011,
+      "tag": "0011_quotations_acceptance",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788700000012,
+      "tag": "0012_order_type_service",
+      "breakpoints": true
     }
   ]
 }

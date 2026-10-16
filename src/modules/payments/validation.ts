@@ -138,9 +138,34 @@ export const gatewayConfigSchema = z
     `Gateway config is limited to ${GATEWAY_CONFIG_MAX_ENTRIES} entries`,
   );
 
+/** Structured gateway config (§2.8): MFS account + bank details.
+ *  `instructions` stays as an operator override; when empty the UI generates
+ *  default text per mfsType (Send Money vs Payment vs Cash Out). */
+export const gatewayMfsTypeSchema = z.enum(["personal", "agent", "merchant"]);
+export type GatewayMfsType = z.infer<typeof gatewayMfsTypeSchema>;
+
+export const gatewayDisplayConfigSchema = z.object({
+  accountNumber: z.string().trim().max(40).optional(),
+  accountHolder: z.string().trim().max(120).optional(),
+  mfsType: gatewayMfsTypeSchema.nullable().optional(),
+  bankName: z.string().trim().max(120).nullable().optional(),
+});
+export type GatewayDisplayConfig = z.infer<typeof gatewayDisplayConfigSchema>;
+
+/** Default customer instruction text per MFS account type. */
+export function defaultGatewayInstructions(config: GatewayDisplayConfig): string {
+  switch (config.mfsType) {
+    case "merchant":
+      return "Open the app and choose Payment (merchant). Enter the number below, complete the payment, then submit the transaction ID.";
+    case "agent":
+      return "Visit an agent point or use Cash Out to the number below, then submit the transaction ID and sender number.";
+    default:
+      return "Open the app and choose Send Money. Enter the number below, complete the transfer, then submit the transaction ID and sender number.";
+  }
+}
+
 /** Upsert payload for a payment gateway. `id` present → update, absent →
- *  create. Names carry NO uniqueness in v1 (the id is the identity — two
- *  gateways may share a display name; per T2: "name only"). */
+ *  create. Names carry NO uniqueness (the id is the identity). */
 export const gatewayInputSchema = z.object({
   id: uuidSchema.optional(),
   name: z
@@ -184,3 +209,18 @@ export const amountInputSchema = z.coerce
     (v) => Math.round(v * 100) / 100 === v,
     "Amount supports at most two decimal places",
   );
+
+// ---- payment settings (§2.8) ------------------------------------------------------
+
+/** Settings row `payments`: txn-ID requirement + partial-payment allowance.
+ *  Both default false; stored via the generic settings key-value row. */
+export const paymentSettingsSchema = z.object({
+  requireTxnId: z.boolean().default(false),
+  allowCustomerPartialPayments: z.boolean().default(false),
+});
+export type PaymentSettings = z.infer<typeof paymentSettingsSchema>;
+
+export const DEFAULT_PAYMENT_SETTINGS: PaymentSettings = {
+  requireTxnId: false,
+  allowCustomerPartialPayments: false,
+};

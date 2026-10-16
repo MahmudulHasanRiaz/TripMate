@@ -22,7 +22,7 @@ export const ORDER_STATUSES = [
 export const orderStatusSchema = z.enum(ORDER_STATUSES);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
-export const ORDER_TYPES = ["package", "inquiry"] as const;
+export const ORDER_TYPES = ["package", "inquiry", "service"] as const;
 export const orderTypeSchema = z.enum(ORDER_TYPES);
 export type OrderType = z.infer<typeof orderTypeSchema>;
 

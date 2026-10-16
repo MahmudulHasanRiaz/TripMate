@@ -14,6 +14,7 @@ export const leadStatusEnum = pgEnum("lead_status", [
   "contacted",
   "qualified",
   "negotiating",
+  "follow_up",
   "converted",
   "lost",
 ]);
@@ -22,6 +23,12 @@ export const leadSourceEnum = pgEnum("lead_source", [
   "landing",
   "organic",
   "manual",
+  "direct",
+  "referral",
+  "facebook",
+  "instagram",
+  "tiktok",
+  "other",
 ]);
 
 export const landingPages = pgTable("landing_pages", {
@@ -53,6 +60,8 @@ export const leads = pgTable("leads", {
   convertedOrderId: uuid("converted_order_id"),
   score: integer("score"),
   notes: text("notes"),
+  followUpCount: integer("follow_up_count").notNull().default(0),
+  nextFollowUpAt: timestamp("next_follow_up_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

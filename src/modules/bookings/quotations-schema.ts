@@ -33,6 +33,8 @@ export const quotations = pgTable("quotations", {
   validUntil: timestamp("valid_until", { withTimezone: true }),
   status: quotationStatusEnum("status").notNull().default("draft"),
   convertedOrderId: uuid("converted_order_id").references(() => orders.id),
+  acceptedBy: text("accepted_by"),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
