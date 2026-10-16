@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { requireRole } from "@/lib/auth-helpers";
 import { menuForRole } from "@/lib/admin-menu";
 import AdminShell from "./AdminShell";
+
+/** Admin is never indexed (§2.2): always noindex, nofollow. */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * Session-gated admin shell: the whole subtree depends on the request's

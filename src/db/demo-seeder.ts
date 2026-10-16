@@ -178,7 +178,7 @@ export async function seedDemoData() {
           title: "TripMate Travel",
           logoUrl: "/logo.svg",
           faviconUrl: "/favicon.svg",
-          searchEngineVisibility: true,
+          searchEngineVisibility: false,
           phone: "+880 1711-234567",
           email: "support@tripmate.com",
           address: "Concord Bilkis Tower, 6th Floor, Madani Avenue, Gulshan-2, Dhaka-1212",
