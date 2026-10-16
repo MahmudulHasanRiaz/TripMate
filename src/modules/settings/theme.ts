@@ -26,7 +26,8 @@ export type ThemeTemplateKey =
   | "emerald"
   | "royal"
   | "sunset"
-  | "minimal";
+  | "minimal"
+  | "custom";
 
 export type ThemeTemplate = {
   id: ThemeTemplateKey;
@@ -37,8 +38,7 @@ export type ThemeTemplate = {
 };
 
 export const THEME_TEMPLATES: Record<ThemeTemplateKey, ThemeTemplate> = {
-  signature: {
-    id: "signature",
+  signature: {    id: "signature",
     name: "TripMate Signature",
     description: "Deep teal with warm sand surfaces and gold spiritual highlights. Balanced and trustworthy.",
     badge: "Default",
@@ -199,17 +199,94 @@ export const THEME_TEMPLATES: Record<ThemeTemplateKey, ThemeTemplate> = {
       destructive: "2 70% 41%",
     },
   },
+  custom: {
+    id: "custom",
+    name: "Custom",
+    description: "User-built preset. Per-token colors with live preview before save.",
+    badge: "Custom",
+    colors: {
+      primary: "178 74% 21%",
+      primaryForeground: "0 0% 100%",
+      secondary: "40 44% 91%",
+      secondaryForeground: "225 15% 12%",
+      accent: "41 55% 54%",
+      accentForeground: "40 33% 8%",
+      accentText: "40 45% 27%",
+      background: "40 33% 97%",
+      foreground: "225 15% 12%",
+      card: "0 0% 100%",
+      cardForeground: "225 15% 12%",
+      muted: "40 25% 93%",
+      mutedForeground: "220 6% 40%",
+      border: "40 22% 88%",
+      input: "40 12% 55%",
+      ring: "178 74% 21%",
+      success: "142 72% 29%",
+      warning: "32 95% 38%",
+      destructive: "2 70% 41%",
+    },
+  },
+};
+
+export type CustomThemePreset = {
+  id: string;
+  name: string;
+  colors: ThemeColors;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ThemeSettings = {
   template: ThemeTemplateKey;
   colors: ThemeColors;
+  customPresets?: CustomThemePreset[];
 };
 
 export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
   template: "signature",
   colors: { ...THEME_TEMPLATES.signature.colors },
+  customPresets: [],
 };
+
+/** HSL "h s% l%" → relative luminance (sRGB) for AA contrast hints. */
+function hslToLuminance(hsl: string): number {
+  const m = hsl.trim().match(/^([\d.]+)\s+([\d.]+)%\s+([\d.]+)%$/);
+  if (!m) return 0;
+  const h = Number(m[1]);
+  const s = Number(m[2]) / 100;
+  const l = Number(m[3]) / 100;
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const mm = l - c / 2;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) { r = c; g = x; }
+  else if (h < 120) { r = x; g = c; }
+  else if (h < 180) { g = c; b = x; }
+  else if (h < 240) { g = x; b = c; }
+  else if (h < 300) { r = x; b = c; }
+  else { r = c; b = x; }
+  const toLin = (v: number): number => {
+    const sV = v + mm;
+    return sV <= 0.03928 ? sV / 12.92 : Math.pow((sV + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * toLin(r) + 0.7152 * toLin(g) + 0.0722 * toLin(b);
+}
+
+/** WCAG contrast ratio between two HSL channel strings. */
+export function themeContrastRatio(a: string, b: string): number {
+  const l1 = hslToLuminance(a);
+  const l2 = hslToLuminance(b);
+  const [hi, lo] = l1 >= l2 ? [l1, l2] : [l2, l1];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** AA hint for a preset: body text pair must reach 4.5:1 (§1.2). */
+export function themeAAPass(colors: ThemeColors): { ratio: number; pass: boolean } {
+  const ratio = themeContrastRatio(colors.foreground, colors.background);
+  return { ratio: Math.round(ratio * 100) / 100, pass: ratio >= 4.5 };
+}
 
 /**
  * Generate CSS variable overrides for the LIGHT theme (:root:not(.dark)).
