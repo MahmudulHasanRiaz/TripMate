@@ -58,6 +58,8 @@ export type PackageDetailData = {
   description: string | null;
   cover: { url: string; alt: string } | null;
   gallery: { url: string; alt: string }[];
+  /** Promotional video (YouTube or direct mp4), placed after the gallery (§4). */
+  videoUrl: string | null;
   durationDays: number | null;
   rating: number | null;
   price: number | null;
@@ -207,6 +209,7 @@ export async function getPackageDetailData(slug: string): Promise<PackageDetailD
       url: image.url,
       alt: image.alt ?? listing.title,
     })),
+    videoUrl: listing.videoUrl,
     durationDays: listing.durationDays,
     rating: listing.rating,
     price: listing.price,

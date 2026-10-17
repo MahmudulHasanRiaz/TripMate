@@ -50,8 +50,6 @@ type OrdersListProps = {
 
 const STATUS_TITLES: Record<OrderStatus, string> = {
   pending: "Pending",
-  in_review: "In Review",
-  quoted: "Quoted",
   confirmed: "Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -62,8 +60,6 @@ const STATUS_BADGE_VARIANTS: Record<
   "secondary" | "info" | "default" | "warning" | "success" | "destructive"
 > = {
   pending: "secondary",
-  in_review: "info",
-  quoted: "info",
   confirmed: "success",
   completed: "default",
   cancelled: "destructive",

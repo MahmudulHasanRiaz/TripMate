@@ -58,6 +58,7 @@ const STATUS_BADGE_VARIANTS: Record<
   contacted: "info",
   qualified: "default",
   negotiating: "warning",
+  follow_up: "info",
   converted: "success",
   lost: "destructive",
 };

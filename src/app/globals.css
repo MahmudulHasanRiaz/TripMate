@@ -30,7 +30,7 @@
   --border: 40 22% 88%;
   --input: 40 12% 55%;
   --ring: 178 74% 21%;
-  --radius: 0.75rem;
+  --radius: 0.625rem;
   --sidebar: hsl(0 0% 100%);
   --sidebar-foreground: hsl(225 15% 12%);
   --sidebar-primary: hsl(178 74% 21%);
@@ -140,8 +140,49 @@
   * {
     @apply border-border;
   }
+  html {
+    font-size: 16px;
+  }
   body {
     @apply bg-background text-foreground font-body antialiased;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  /* Typography minimums (§1.1): body 14px min, captions 12px floor,
+     headings 20/24/30 scale. Compact = spacing, never small type. */
+  small,
+  .text-caption {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+  h1 {
+    font-size: 1.875rem;
+    line-height: 1.2;
+  }
+  h2 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+  }
+  h3 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+  /* Money/numbers align in columns. */
+  .tnum,
+  [data-money] {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Operational density (§1.1): menu 40px, button 36-40px, input 40px, row 48px. */
+  :where(button, [role="menuitem"], input, select, textarea) {
+    min-height: 2.25rem;
+  }
+  :where(tr[data-row]) {
+    height: 3rem;
+  }
+  /* Motion (§1.3): 150-200ms ease-out, skeleton shimmer only. */
+  :where(a, button, input, select, [role="menuitem"]) {
+    transition-duration: 175ms;
+    transition-timing-function: ease-out;
   }
   :focus-visible {
     outline: 2px solid hsl(var(--primary));

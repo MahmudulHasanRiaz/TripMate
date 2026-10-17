@@ -6,54 +6,43 @@ import { ArrowLeft } from "lucide-react";
 
 import { FaqAccordion } from "@/components/site/FaqAccordion";
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
+import { detailMetadata } from "@/lib/seo-meta";
+import { isReservedSlug } from "@/modules/content/validation";
 
-import { getStaticPageData, type StaticPageData } from "../_lib/page-data";
-import { tryParseFaqSections } from "../_lib/faq-parse";
+import { getStaticPageData, type StaticPageData } from "../p/_lib/page-data";
+import { tryParseFaqSections } from "../p/_lib/faq-parse";
 
 /**
- * Dynamic static page — /p/[slug] (about-us, faq, terms-of-service,
- * privacy-policy, …).
- *
- * Renders the page's markdown sections (each section cell = one sanitized
- * ProseMarkdown block). Cached read by slug (pages tag + hours profile, see
- * _lib/page-data.ts) so an admin page edit revalidates exactly this route.
- * No generateStaticParams: prerendering every page at build would freeze the
- * build DB's set; on-demand render + the tag contract stays correct for
- * just-published pages.
- *
- * The FAQ page (slug === "faq") gets special treatment: its seeded sections
- * are clean `## Question` + plain-answer pairs, which the server parses into
- * FaqAccordion items (see _lib/faq-parse.ts). The parse is conservative — if
- * an admin ever writes rich/multi-paragraph markdown the parser returns null
- * and the page degrades to the plain prose path below rather than leaking
- * markdown characters into an accordion body. (Deliberately slug-scoped, not a
- * generic "looks like a Q&A" heuristic, so an ordinary page whose sections
- * happen to start with `##` is never mistaken for an FAQ.)
+ * Evergreen page — /{slug} (§2.3). Replaces the legacy /p/[slug] surface
+ * (which now 301-redirects here). Reserved slugs (packages, blog, admin, …)
+ * never resolve as pages so static routes always win.
  */
 
-
 export async function generateMetadata(
-  props: PageProps<"/p/[slug]">,
+  props: PageProps<"/[slug]">,
 ): Promise<Metadata> {
   const { slug } = await props.params;
+  if (isReservedSlug(slug)) return { title: "Page not found" };
   const data = await getStaticPageData(slug);
   if (!data) return { title: "Page not found" };
-  return {
+  return detailMetadata({
+    path: `/${data.slug}`,
     title: data.seoTitle || data.title,
-    ...(data.seoDescription ? { description: data.seoDescription } : {}),
-  };
+    description: data.seoDescription || undefined,
+  });
 }
 
-export default function StaticPage(props: PageProps<"/p/[slug]">) {
+export default function EvergreenPage(props: PageProps<"/[slug]">) {
   return (
-    <Suspense fallback={<StaticPageFallback />}>
-      <StaticPageBody params={props.params} />
+    <Suspense fallback={<EvergreenFallback />}>
+      <EvergreenBody params={props.params} />
     </Suspense>
   );
 }
 
-async function StaticPageBody({ params }: { params: Promise<{ slug: string }> }) {
+async function EvergreenBody({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  if (isReservedSlug(slug)) notFound();
   const data = await getStaticPageData(slug);
   if (!data) notFound();
 
@@ -86,12 +75,9 @@ async function StaticPageBody({ params }: { params: Promise<{ slug: string }> })
   );
 }
 
-/** FAQ page: accordion when the markdown parses to clean Q&A, else prose. */
 function FaqPageBody({ data }: { data: StaticPageData }) {
   const items = tryParseFaqSections(data.sections);
   if (!items) {
-    // Fallback path: rich or multi-paragraph markdown — the accordion body
-    // renders plain text and cannot carry it, so render as prose instead.
     return (
       <div className="mx-auto mt-12 flex max-w-3xl flex-col gap-10">
         {data.sections.map((section, i) => (
@@ -107,8 +93,7 @@ function FaqPageBody({ data }: { data: StaticPageData }) {
   );
 }
 
-/** Prerendered stand-in while a given slug's content resolves. */
-function StaticPageFallback() {
+function EvergreenFallback() {
   return (
     <div aria-hidden="true" className="select-none">
       <div className="mx-auto w-full max-w-[1400px] px-4 pb-24 pt-10 lg:px-8 lg:pt-14">

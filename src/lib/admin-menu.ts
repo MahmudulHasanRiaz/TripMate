@@ -25,6 +25,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
   { href: "/admin/leads", label: "Leads", icon: "mail", permission: "leads.view", group: "Sales" },
   { href: "/admin/quotations", label: "Quotations", icon: "file-spreadsheet", permission: "orders.view", group: "Sales" },
   { href: "/admin/orders", label: "Orders", icon: "book-copy", permission: "orders.view", group: "Sales" },
+  { href: "/admin/services", label: "Services", icon: "briefcase", permission: "orders.view", group: "Sales" },
 
   // Customers
   { href: "/admin/users", label: "Users & Customers", icon: "users", permission: "users.manage", group: "Customers" },
@@ -43,6 +44,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
 
   // Settings & Operations
   { href: "/admin/tracking", label: "Analytics & Tracking", icon: "activity", permission: "tracking.view", group: "Settings" },
+  { href: "/admin/help", label: "Help (সহায়তা)", icon: "book-open", permission: "orders.view", group: "Settings" },
   { href: "/admin/settings", label: "Settings", icon: "settings", permission: "settings.manage", group: "Settings" },
   { href: "/admin/reset", label: "Reset & Re-initialize", icon: "trash-2", permission: "settings.manage", group: "Settings" },
   { href: "/admin/email-templates", label: "Email Templates", icon: "mail-open", permission: "settings.manage", group: "Settings" },

@@ -81,6 +81,8 @@ export type LeadDetail = {
   convertedOrderId: string | null;
   score: number | null;
   notes: string | null;
+  followUpCount: number;
+  nextFollowUpAt: Date | null;
   landingTitle: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -286,6 +288,8 @@ export async function getLeadDetail(id: string): Promise<LeadDetail | null> {
       convertedOrderId: leads.convertedOrderId,
       score: leads.score,
       notes: leads.notes,
+      followUpCount: leads.followUpCount,
+      nextFollowUpAt: leads.nextFollowUpAt,
       createdAt: leads.createdAt,
       updatedAt: leads.updatedAt,
       landingTitle: landingPages.title,
@@ -315,6 +319,8 @@ export async function getLeadDetail(id: string): Promise<LeadDetail | null> {
     convertedOrderId: row.convertedOrderId,
     score: row.score,
     notes: row.notes,
+    followUpCount: row.followUpCount ?? 0,
+    nextFollowUpAt: row.nextFollowUpAt,
     landingTitle: row.landingTitle,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -358,6 +364,7 @@ export async function getLeadBoardCounts(): Promise<LeadBoardCounts> {
     contacted: 0,
     qualified: 0,
     negotiating: 0,
+    follow_up: 0,
     converted: 0,
     lost: 0,
     total: 0,
@@ -598,7 +605,27 @@ export async function markLeadConverted(
 ): Promise<LeadDetail> {
   const current = await getLeadDetail(leadId);
   if (!current) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
-  if (current.status === "converted") return current;
+  // Already converted: still wire a NEW order link (§2.6 quotation → order
+  // path converts at quotation creation, then links the order on conversion).
+  if (current.status === "converted") {
+    if (opts.convertedOrderId && opts.convertedOrderId !== current.convertedOrderId) {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(leads)
+          .set({ convertedOrderId: opts.convertedOrderId, updatedAt: new Date() })
+          .where(eq(leads.id, leadId));
+        await addLeadEventOn(tx, leadId, {
+          type: "converted",
+          actorId: opts.actorId ?? null,
+          payload: { from: current.status, convertedOrderId: opts.convertedOrderId ?? null },
+        });
+      });
+      const detail = await getLeadDetail(leadId);
+      if (!detail) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
+      return detail;
+    }
+    return current;
+  }
   return transitionToConverted(current, opts);
 }
 
@@ -661,4 +688,75 @@ export async function updateLeadNote(
   const detail = await getLeadDetail(leadId);
   if (!detail) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
   return detail;
+}
+
+/**
+ * Log a follow-up (§2.6): increments followUpCount, sets nextFollowUpAt,
+ * and appends a `follow_up` event (payload=note, actorId=user) so history
+ * shows who/when. Atomic write + event.
+ */
+export async function logLeadFollowUp(
+  leadId: string,
+  input: { note: string; nextFollowUpAt?: Date | null },
+  opts: { actorId?: string | null } = {},
+): Promise<LeadDetail> {
+  const current = await getLeadDetail(leadId);
+  if (!current) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
+  const note = input.note?.trim() ?? "";
+  if (!note) throw new LeadError("NOT_FOUND", "Follow-up note is required.");
+
+  await db.transaction(async (tx) => {
+    const [row] = await tx
+      .update(leads)
+      .set({
+        followUpCount: sql`${leads.followUpCount} + 1`,
+        nextFollowUpAt: input.nextFollowUpAt ?? null,
+        updatedAt: new Date(),
+      })
+      .where(eq(leads.id, leadId))
+      .returning({ id: leads.id });
+    if (!row) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
+    await addLeadEventOn(tx, leadId, {
+      type: "follow_up",
+      actorId: opts.actorId ?? null,
+      payload: {
+        note,
+        count: (current.followUpCount ?? 0) + 1,
+        nextFollowUpAt: input.nextFollowUpAt ? input.nextFollowUpAt.toISOString() : null,
+      },
+    });
+  });
+
+  const detail = await getLeadDetail(leadId);
+  if (!detail) throw new LeadError("NOT_FOUND", `Lead ${leadId} not found.`);
+  return detail;
+}
+
+/** Follow-ups due: nextFollowUpAt <= now, not converted/lost (§2.10 queue). */
+export async function listFollowUpsDue(limit = 50): Promise<LeadListItem[]> {
+  const rows = await db
+    .select(listCols)
+    .from(leads)
+    .leftJoin(landingPages, eq(leads.landingPageId, landingPages.id))
+    .leftJoin(users, eq(leads.assignedTo, users.id))
+    .where(
+      and(
+        sql`${leads.nextFollowUpAt} <= now()`,
+        sql`${leads.status} not in ('converted', 'lost')`,
+      ),
+    )
+    .orderBy(asc(leads.nextFollowUpAt))
+    .limit(limit);
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    phone: row.phone,
+    email: row.email,
+    landingTitle: row.landingTitle,
+    status: row.status as LeadStatus,
+    assignedToName: row.assignedToName,
+    score: row.score,
+    createdAt: row.createdAt,
+    source: row.source as LeadSource,
+  }));
 }

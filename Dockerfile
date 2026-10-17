@@ -20,9 +20,11 @@
 # drizzle/ migration at container START (scripts/auto-migrate.mjs) before the
 # server boots — the same guarantee Vercel gets at build time. Re-deploys and
 # fresh deploys on Docker/Portainer therefore push schema changes
-# automatically. Migrations run over DATABASE_URL_MIGRATE when set (Supabase
-# session pooler / direct), falling back to DATABASE_URL. Set
-# SKIP_DB_MIGRATE=1 to opt out.
+# automatically. Migrations run over DATABASE_URL_MIGRATE when set, falling
+# back to DATABASE_URL; a transaction-pooler URL (port 6543 / ?pgbouncer=true)
+# in either slot fails the boot fast with an actionable message (DDL cannot run
+# over the transaction pooler; :5432 direct and session pooler are fine). Set
+# SKIP_DB_MIGRATE=1 to opt out (loudly warned).
 
 # --- deps: full dependency install (dev deps included — the builder needs
 # the Next/Turbopack + drizzle-kit/tsx toolchain; they never reach the runner).
@@ -94,9 +96,11 @@ COPY --from=deps-prod --chown=node:node /app/node_modules ./node_modules
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder --chown=node:node /app/public ./public
-# Boot-time auto-migration needs the migration files + the migrator script.
+# Boot-time auto-migration needs the migration files + the migrator script
+# (and its pure helper module).
 COPY --from=builder --chown=node:node /app/drizzle ./drizzle
 COPY --from=builder --chown=node:node /app/scripts/auto-migrate.mjs ./scripts/auto-migrate.mjs
+COPY --from=builder --chown=node:node /app/scripts/migrate-lib.mjs ./scripts/migrate-lib.mjs
 USER node
 EXPOSE 3000
 # /api/health returns 200 only when the app can query Postgres. Alpine ships

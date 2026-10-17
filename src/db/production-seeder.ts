@@ -38,7 +38,7 @@ export async function seedProductionBaseline() {
           title: "TripMate",
           logoUrl: "",
           faviconUrl: "",
-          searchEngineVisibility: true,
+          searchEngineVisibility: false,
           phone: "+880 1700-000000",
           email: "info@tripmate.com",
           address: "Dhaka, Bangladesh",

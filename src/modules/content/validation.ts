@@ -42,6 +42,39 @@ export const slugSchema = z
     "Slug must be lowercase letters/numbers separated by single dashes (no leading/trailing dash, e.g. about-us)",
   );
 
+/** Root-level evergreen pages live at /{slug} (§2.3). These slugs are
+ *  reserved by routes/API/static files and can never be a page slug. */
+export const RESERVED_SLUGS: readonly string[] = [
+  "packages",
+  "blog",
+  "services",
+  "destinations",
+  "visa",
+  "account",
+  "admin",
+  "login",
+  "signup",
+  "api",
+  "l",
+  "p",
+  "setup",
+  "orders",
+  "checkout",
+  "_next",
+  "robots",
+  "sitemap",
+  "favicon",
+];
+
+export function isReservedSlug(slug: string): boolean {
+  return RESERVED_SLUGS.includes(slug.toLowerCase());
+}
+
+export const pageSlugSchema = slugSchema.refine(
+  (v) => !isReservedSlug(v),
+  (v) => ({ message: `"${v}" is reserved — choose a different slug` }),
+);
+
 /** Ids travel as route params / form keys and reach DB uuid columns — parsed
  *  (never trusted raw) at every trust boundary. */
 export const uuidSchema = z.string().uuid("Must be a valid UUID");
@@ -151,7 +184,7 @@ export type PostCategoryInput = z.infer<typeof postCategoryInput>;
 export const pageInput = z.object({
   id: uuidSchema.optional(),
   title: z.string().trim().min(1, "Title is required").max(200),
-  slug: slugSchema,
+  slug: pageSlugSchema,
   sections: pageSectionsSchema,
   status: contentStatusSchema.optional(), // omit → DB default 'draft'
   seo: seoSchema,

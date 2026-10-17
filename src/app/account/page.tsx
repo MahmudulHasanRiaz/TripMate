@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ProfileEditDialog } from "./_components/ProfileEditDialog";
+import ChangePasswordCard from "./_components/ChangePasswordCard";
 import type { OrderStatus } from "@/modules/bookings/validation";
 
 export const metadata: Metadata = {
@@ -31,8 +32,6 @@ export const instant = false;
 
 const STATUS_TITLES: Record<OrderStatus, string> = {
   pending: "Pending Review",
-  in_review: "In Review",
-  quoted: "Quote Ready",
   confirmed: "Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -43,8 +42,6 @@ const STATUS_BADGE_VARIANTS: Record<
   "secondary" | "info" | "default" | "warning" | "success" | "destructive"
 > = {
   pending: "secondary",
-  in_review: "info",
-  quoted: "info",
   confirmed: "success",
   completed: "default",
   cancelled: "destructive",
@@ -379,6 +376,8 @@ export default async function AccountPage() {
               </div>
             </CardContent>
           </Card>
+
+          <ChangePasswordCard />
 
           {/* Concierge & Assistance */}
           <Card className="border-border bg-gradient-to-br from-primary/5 to-transparent shadow-xs">

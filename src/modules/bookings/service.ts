@@ -13,6 +13,7 @@ import {
 import { db } from "@/db/client";
 import { escapeLike, isUniqueViolation, paginate } from "@/lib/db-utils";
 import { orderStatusEvents, orders, travelers } from "./schema";
+import { payments } from "@/modules/payments/schema";
 // The order rows carry listing snapshots read from the catalog tables; the
 // listing join for the admin list view reads listings directly — the same
 // cross-module-table convention modules/leads uses for landing_pages/users.
@@ -31,6 +32,7 @@ import {
   type OrderType,
   type PackageOrderInput,
   type ServiceOptionOrderInput,
+  type TravelerInput,
 } from "./validation";
 
 // All DB queries for the bookings (orders) module. Server-only — importing it
@@ -196,7 +198,8 @@ export class OrderError extends Error {
       | "ILLEGAL_TRANSITION"
       | "ALREADY_CONVERTED"
       | "ORDER_NO_CONFLICT"
-      | "INVALID_PRICE",
+      | "INVALID_PRICE"
+      | "VALIDATION",
     message: string,
   ) {
     super(message);
@@ -595,8 +598,6 @@ export async function getOrderBoardCounts(): Promise<OrderBoardCounts> {
 
   const counts: OrderBoardCounts = {
     pending: 0,
-    in_review: 0,
-    quoted: 0,
     confirmed: 0,
     cancelled: 0,
     completed: 0,
@@ -640,7 +641,7 @@ function creationNote(source: OrderSource | undefined): string {
 /**
  * Public package booking: freeze the listing snapshot (title/price/currency/
  * durationDays/slug) + the customer snapshot, insert the order (type package,
- * status in_review), its travelers and the created event in ONE transaction.
+ * status pending), its travelers and the created event in ONE transaction.
  * The orderNo draw is retried on unique collisions (≤ 5).
  */
 export async function createPackageOrder(
@@ -677,7 +678,7 @@ export async function createPackageOrder(
       paymentStatus: "unpaid",
       paidAmount: "0.00",
       type: "package" as const,
-      status: "in_review" as const,
+      status: "pending" as const,
       currency: listing.currency,
       specialRequests: input.specialRequests ?? null,
       source: opts.source ?? "website",
@@ -697,7 +698,7 @@ export async function createPackageOrder(
         );
       }
       await addOrderEventOn(tx, orderId, {
-        toStatus: "in_review",
+        toStatus: "pending",
         note: creationNote(opts.source),
         actorId: opts.actorId ?? null,
       });
@@ -773,7 +774,7 @@ export async function createInquiryOrder(
 
 /**
  * Service Option Booking: customer selects an active service option (e.g. Passport 5-Year / 10-Year).
- * Creates a real order with type "inquiry", status "in_review", quotedPrice & costPrice set to option prices,
+ * Creates a real order with type "inquiry", status "pending", quotedPrice & costPrice set to option prices,
  * frozen option snapshot, traveler manifest, and an audit trail event.
  */
 async function resolveServiceOption(optionId: string) {
@@ -846,7 +847,7 @@ export async function createServiceOptionOrder(
       paymentStatus: "unpaid",
       paidAmount: "0.00",
       type: "inquiry" as const,
-      status: "in_review" as const,
+      status: "pending" as const,
       currency: "BDT",
       specialRequests: input.specialRequests ?? null,
       source: opts.source ?? "website",
@@ -866,7 +867,7 @@ export async function createServiceOptionOrder(
         );
       }
       await addOrderEventOn(tx, orderId, {
-        toStatus: "in_review",
+        toStatus: "pending",
         note: creationNote(opts.source),
         actorId: opts.actorId ?? null,
       });
@@ -924,10 +925,10 @@ export async function transitionOrder(
 }
 
 /**
- * Set the quoted price — the only write that moves an order to "quoted"
- * (legal from pending/in_review only). The price lands with two decimals; the
- * audit event defaults its note to the quoted amount + currency so the
- * timeline always shows what was quoted.
+ * Set the quoted price (§2.7) — legal from pending only; moves the order to
+ * "confirmed" in one step (quoting IS price confirmation). The price lands
+ * with two decimals; the audit event defaults its note to the quoted amount
+ * + currency so the timeline always shows what was quoted.
  */
 export async function setQuote(
   orderId: string,
@@ -941,23 +942,23 @@ export async function setQuote(
   }
   const current = await getOrderDetail(orderId);
   if (!current) throw new OrderError("NOT_FOUND", `Order ${orderId} not found.`);
-  if (current.status !== "pending" && current.status !== "in_review") {
+  if (current.status !== "pending") {
     throw new OrderError(
       "ILLEGAL_TRANSITION",
-      `A quote can only be set while an order is pending or in review (current: ${current.status}).`,
+      `A quote can only be set while an order is pending (current: ${current.status}).`,
     );
   }
 
   await db.transaction(async (tx) => {
     const [row] = await tx
       .update(orders)
-      .set({ status: "quoted", quotedPrice: quotedPrice.toFixed(2), updatedAt: new Date() })
+      .set({ status: "confirmed", quotedPrice: quotedPrice.toFixed(2), updatedAt: new Date() })
       .where(eq(orders.id, orderId))
       .returning({ id: orders.id });
     if (!row) throw new OrderError("NOT_FOUND", `Order ${orderId} not found.`);
     await addOrderEventOn(tx, orderId, {
       fromStatus: current.status,
-      toStatus: "quoted",
+      toStatus: "confirmed",
       note: opts.note ?? `Quoted at ${quotedPrice.toFixed(2)} ${current.currency}`,
       actorId: opts.actorId ?? null,
     });
@@ -988,6 +989,154 @@ export async function cancelOrder(
   opts: { actorId?: string | null; note?: string | null } = {},
 ): Promise<OrderDetail> {
   return transitionOrder(orderId, "cancelled", opts);
+}
+
+// ---- generic service sales (§2.9) ------------------------------------------------------
+//
+// Quick-create for offline/generic services: EXACTLY service name, customer
+// name, customer phone, note (optional), total amount, cost amount → an orders
+// row (type=service, source=manual, status=completed) with a verified payment
+// row for the full total (no gateway — counter sale).
+//
+// UI fulfillment mapping: Pending → pending, In progress → confirmed,
+// Completed → completed, Cancelled → cancelled.
+
+export type ServiceSaleInput = {
+  serviceName: string;
+  customerName: string;
+  customerPhone: string;
+  note?: string | null;
+  totalAmount: number;
+  costAmount: number;
+};
+
+export async function createServiceSaleOrder(
+  input: ServiceSaleInput,
+  opts: { actorId?: string | null } = {},
+): Promise<OrderDetail> {
+  if (!input.serviceName.trim()) throw new OrderError("VALIDATION", "Service name is required.");
+  if (!input.customerName.trim()) throw new OrderError("VALIDATION", "Customer name is required.");
+  if (input.customerPhone.trim().length < 5) {
+    throw new OrderError("VALIDATION", "Customer phone must be at least 5 characters.");
+  }
+  if (!Number.isFinite(input.totalAmount) || input.totalAmount <= 0) {
+    throw new OrderError("VALIDATION", "Total amount must be greater than zero.");
+  }
+  if (!Number.isFinite(input.costAmount) || input.costAmount < 0) {
+    throw new OrderError("VALIDATION", "Cost amount cannot be negative.");
+  }
+  const grossProfit = Math.round((input.totalAmount - input.costAmount) * 100) / 100;
+
+  const created = await insertOrderWithEvents(
+    (orderNo) => ({
+      orderNo,
+      userId: null,
+      customerSnapshot: {
+        name: input.customerName.trim(),
+        phone: input.customerPhone.trim(),
+        email: null,
+      },
+      listingId: null,
+      listingSnapshot: { kind: "service_sale", serviceName: input.serviceName.trim() },
+      type: "service" as const,
+      status: "completed" as const,
+      quotedPrice: input.totalAmount.toFixed(2),
+      finalPrice: input.totalAmount.toFixed(2),
+      costPrice: input.costAmount.toFixed(2),
+      grossProfit: grossProfit.toFixed(2),
+      paidAmount: input.totalAmount.toFixed(2),
+      paymentStatus: "paid" as const,
+      currency: "BDT",
+      specialRequests: input.note?.trim() ? input.note.trim() : null,
+      source: "manual" as const,
+      leadId: null,
+      createdBy: opts.actorId ?? null,
+    }),
+    async (tx, orderId) => {
+      await addOrderEventOn(tx, orderId, {
+        toStatus: "completed",
+        note: `Service sale: ${input.serviceName.trim()}`,
+        actorId: opts.actorId ?? null,
+      });
+      await tx.insert(payments).values({
+        orderId,
+        gatewayId: null,
+        amount: input.totalAmount.toFixed(2),
+        currency: "BDT",
+        status: "verified",
+        verifiedBy: opts.actorId ?? null,
+        note: `Counter payment for ${input.serviceName.trim()}`,
+      });
+    },
+  );
+
+  const detail = await getOrderDetail(created.id);
+  if (!detail) throw new OrderError("NOT_FOUND", `Order ${created.id} not found.`);
+  return detail;
+}
+
+// ---- travelers (any stage, §2.7) ------------------------------------------------------
+//
+// Travelers can be added/edited at ANY order stage — no status guard. Both the
+// admin detail page and the customer portal call these (authorization lives in
+// the actions layer); the order only needs to exist.
+
+export async function addTraveler(
+  orderId: string,
+  input: TravelerInput,
+): Promise<TravelerView> {
+  const order = await getOrderDetail(orderId);
+  if (!order) throw new OrderError("NOT_FOUND", `Order ${orderId} not found.`);
+  const [row] = await db
+    .insert(travelers)
+    .values({
+      orderId,
+      name: input.name.trim(),
+      passportNo: input.passportNo ?? null,
+      dob: input.dob ?? null,
+      relation: input.relation ?? null,
+    })
+    .returning({
+      id: travelers.id,
+      name: travelers.name,
+      passportNo: travelers.passportNo,
+      dob: travelers.dob,
+      relation: travelers.relation,
+    });
+  if (!row) throw new OrderError("NOT_FOUND", `Order ${orderId} not found.`);
+  return row;
+}
+
+export async function updateTraveler(
+  travelerId: string,
+  input: TravelerInput,
+): Promise<TravelerView> {
+  const [row] = await db
+    .update(travelers)
+    .set({
+      name: input.name.trim(),
+      passportNo: input.passportNo ?? null,
+      dob: input.dob ?? null,
+      relation: input.relation ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(travelers.id, travelerId))
+    .returning({
+      id: travelers.id,
+      name: travelers.name,
+      passportNo: travelers.passportNo,
+      dob: travelers.dob,
+      relation: travelers.relation,
+    });
+  if (!row) throw new OrderError("NOT_FOUND", `Traveler ${travelerId} not found.`);
+  return row;
+}
+
+export async function removeTraveler(travelerId: string): Promise<void> {
+  const deleted = await db.delete(travelers).where(eq(travelers.id, travelerId)).returning({
+    id: travelers.id,
+  });
+  if (deleted.length === 0) throw new OrderError("NOT_FOUND", `Traveler ${travelerId} not found.`);
 }
 
 // ---- lead conversion ----------------------------------------------------------------

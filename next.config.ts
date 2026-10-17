@@ -30,6 +30,14 @@ function readR2Hostname(): string | null {
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  async redirects() {
+    return [
+      // §2.3: evergreen pages moved /p/[slug] → /{slug}. Config-level
+      // permanent redirect so backlinks/search equity survive regardless of
+      // prerender behavior; unknown slugs 404 naturally at the root route.
+      { source: "/p/:slug*", destination: "/:slug*", permanent: true },
+    ];
+  },
   // Emit a self-contained .next/standalone bundle (server.js + traced
   // node_modules) for the Docker image, which copies it into its runner
   // stage (see Dockerfile). On Vercel the standalone folder is ignored AND

@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { requireSession } from "@/lib/auth-helpers";
 import { signOutAction } from "@/lib/auth-actions";
 import { AccountNav } from "./AccountNav";
+
+/** Customer portal is never indexed (§2.2). */
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export const instant = false;
 

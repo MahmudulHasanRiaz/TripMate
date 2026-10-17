@@ -7,8 +7,8 @@ import { expect, test, type Page } from "@playwright/test";
 //   1. Public booking on /packages/premium-hajj-2026 via BookingForm modal.
 //   2. Extract and assert unique orderNo from order-number-display.
 //   3. Sign in as admin.
-//   4. Verify order appears on /admin/orders board under in_review.
-//   5. Open /admin/orders/[id], compose and save quote (flips to quoted).
+//   4. Verify order appears on /admin/orders board under pending.
+//   5. Open /admin/orders/[id], compose and save quote (flips to confirmed).
 //   6. Record offline payment for full quote amount.
 //   7. Go to /admin/payments verification queue, verify the payment.
 //   8. Return to order detail: assert status is confirmed and paid total matches.
@@ -38,7 +38,7 @@ async function signInAsAdmin(page: Page) {
   await expect(page).toHaveURL(/\/$/, wait);
 }
 
-test("golden path: booking -> in_review -> quote -> pay -> verify -> confirmed -> expense -> P&L", async ({
+test("golden path: booking -> pending -> quote -> pay -> verify -> confirmed -> expense -> P&L", async ({
   page,
 }) => {
   const timestamp = Date.now();
@@ -105,11 +105,11 @@ test("golden path: booking -> in_review -> quote -> pay -> verify -> confirmed -
   await page.goto("/admin/orders");
   await expect(page.getByRole("heading", { level: 1, name: "Orders" })).toBeVisible(wait);
 
-  // Assert order appears under in_review column
-  const inReviewColumn = page.locator('[data-testid="board-column-in_review"]');
-  await expect(inReviewColumn).toBeVisible();
+  // Assert order appears under pending column
+  const pendingColumn = page.locator('[data-testid="board-column-pending"]');
+  await expect(pendingColumn).toBeVisible();
 
-  const orderBoardLink = inReviewColumn.locator(`a:has-text("${orderNo}")`);
+  const orderBoardLink = pendingColumn.locator(`a:has-text("${orderNo}")`);
   await expect(orderBoardLink).toBeVisible(wait);
 
   // Navigate to order detail
@@ -124,7 +124,7 @@ test("golden path: booking -> in_review -> quote -> pay -> verify -> confirmed -
   // ---------------------------------------------------------------------------
   // Step 4: Order Detail - Initial Status & Quote Composer
   // ---------------------------------------------------------------------------
-  await expect(page.getByTestId("order-status-badge")).toHaveText(/in review/i);
+  await expect(page.getByTestId("order-status-badge")).toHaveText(/pending/i);
 
   // Compose and issue quote
   const quotePriceInput = page.locator("#composer-price");
@@ -133,11 +133,11 @@ test("golden path: booking -> in_review -> quote -> pay -> verify -> confirmed -
 
   await page.getByRole("button", { name: /save & issue quote/i }).click();
 
-  // Wait for quote save feedback and status flip to quoted
+  // Wait for quote save feedback and status flip to confirmed
   await expect(
     page.getByText(/quoted price saved and quote-ready email sent/i),
   ).toBeVisible(wait);
-  await expect(page.getByTestId("order-status-badge")).toHaveText(/quoted/i);
+  await expect(page.getByTestId("order-status-badge")).toHaveText(/confirmed/i);
 
   // ---------------------------------------------------------------------------
   // Step 5: Record Offline Payment

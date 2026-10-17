@@ -2,23 +2,32 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   AlertCircle,
   Building2,
   CheckCircle2,
-  Globe,
+  CreditCard,
+  Database,
   Home,
   Loader2,
+  Mail,
   Palette,
   RotateCcw,
   Search,
+  ShieldAlert,
   Sliders,
 } from "lucide-react";
 import type { HomeSettings, SiteSettings } from "@/modules/settings/site-settings";
 import type { ThemeSettings } from "@/modules/settings/theme";
+import type { PaymentSettings } from "@/modules/payments/validation";
 import ThemeCustomizer from "@/components/admin/ThemeCustomizer";
+import HomeVisibilityCard from "./HomeVisibilityCard";
+import FooterSettingsCard from "./FooterSettingsCard";
+import SeoIndexingCard from "./SeoIndexingCard";
+import PaymentSettingsCard from "./PaymentSettingsCard";
 import {
   homeSettingsInputSchema,
   siteSettingsInputSchema,
@@ -52,6 +61,9 @@ type SettingsTabsViewProps = {
   initialSite: SiteSettings;
   initialHome: HomeSettings;
   initialTheme: ThemeSettings;
+  initialPaymentSettings: PaymentSettings;
+  storageDriver: string;
+  canManagePayments: boolean;
 };
 
 /** Parse a JSON array string from the homepage settings editor. Returns [] for a
@@ -70,10 +82,13 @@ export default function SettingsTabsView({
   initialSite,
   initialHome,
   initialTheme,
+  initialPaymentSettings,
+  storageDriver,
+  canManagePayments,
 }: SettingsTabsViewProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<string>("site");
+  const [activeTab, setActiveTab] = useState<string>("brand");
 
   // --- Site Settings Form ---
   const [siteSaving, startSiteTransition] = useTransition();
@@ -184,25 +199,43 @@ export default function SettingsTabsView({
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-md h-10">
-          <TabsTrigger value="site" className="text-xs font-semibold gap-2 min-h-[36px]">
-            <Globe className="size-3.5" aria-hidden="true" />
-            <span>Site Identity</span>
-          </TabsTrigger>
-          <TabsTrigger value="theme" className="text-xs font-semibold gap-2 min-h-[36px]">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 rounded-lg p-1">
+          <TabsTrigger value="brand" className="text-xs font-semibold gap-2 min-h-9">
             <Palette className="size-3.5" aria-hidden="true" />
-            <span>Theme & Styling</span>
+            <span>Brand &amp; Theme</span>
           </TabsTrigger>
-          <TabsTrigger value="home" className="text-xs font-semibold gap-2 min-h-[36px]">
+          <TabsTrigger value="content" className="text-xs font-semibold gap-2 min-h-9">
             <Home className="size-3.5" aria-hidden="true" />
-            <span>Home Hero</span>
+            <span>Site Content</span>
+          </TabsTrigger>
+          <TabsTrigger value="seo" className="text-xs font-semibold gap-2 min-h-9">
+            <Search className="size-3.5" aria-hidden="true" />
+            <span>SEO &amp; Indexing</span>
+          </TabsTrigger>
+          {canManagePayments ? (
+            <TabsTrigger value="payments" className="text-xs font-semibold gap-2 min-h-9">
+              <CreditCard className="size-3.5" aria-hidden="true" />
+              <span>Payments &amp; Gateways</span>
+            </TabsTrigger>
+          ) : null}
+          <TabsTrigger value="email" className="text-xs font-semibold gap-2 min-h-9">
+            <Mail className="size-3.5" aria-hidden="true" />
+            <span>Email</span>
+          </TabsTrigger>
+          <TabsTrigger value="storage" className="text-xs font-semibold gap-2 min-h-9">
+            <Database className="size-3.5" aria-hidden="true" />
+            <span>Storage</span>
+          </TabsTrigger>
+          <TabsTrigger value="danger" className="text-xs font-semibold gap-2 min-h-9">
+            <ShieldAlert className="size-3.5" aria-hidden="true" />
+            <span>Danger Zone</span>
           </TabsTrigger>
         </TabsList>
 
         {/* ==================================================================== */}
-        {/* SITE IDENTITY TAB                                                   */}
+        {/* BRAND & THEME                                                       */}
         {/* ==================================================================== */}
-        <TabsContent value="site" className="mt-4 space-y-6">
+        <TabsContent value="brand" className="mt-4 space-y-6">
           <Card className="shadow-xs border-border bg-card">
             <CardHeader className="p-4 sm:p-6 pb-4 border-b border-border/60">
               <div className="flex items-center justify-between">
@@ -655,19 +688,29 @@ export default function SettingsTabsView({
               </Form>
             </CardContent>
           </Card>
+
+          <Card className="shadow-xs border-border bg-card">
+            <CardHeader className="p-4 sm:p-6 pb-4 border-b border-border/60">
+              <div className="space-y-1">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Palette className="size-4 text-muted-foreground" aria-hidden="true" />
+                  <span>Theme &amp; Presets</span>
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  Gallery, custom preset builder with live preview, and AA contrast hints.
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6">
+              <ThemeCustomizer initialTheme={initialTheme} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ==================================================================== */}
-        {/* THEME & STYLING TAB                                                 */}
+        {/* SITE CONTENT                                                        */}
         {/* ==================================================================== */}
-        <TabsContent value="theme" className="mt-4 space-y-6">
-          <ThemeCustomizer initialTheme={initialTheme} />
-        </TabsContent>
-
-        {/* ==================================================================== */}
-        {/* HOME HERO TAB                                                       */}
-        {/* ==================================================================== */}
-        <TabsContent value="home" className="mt-4 space-y-6">
+        <TabsContent value="content" className="mt-4 space-y-6">
           <Card className="shadow-xs border-border bg-card">
             <CardHeader className="p-4 sm:p-6 pb-4 border-b border-border/60">
               <div className="flex items-center justify-between">
@@ -1059,6 +1102,88 @@ export default function SettingsTabsView({
                   </div>
                 </form>
               </Form>
+            </CardContent>
+          </Card>
+
+          <HomeVisibilityCard initial={initialHome} />
+          <FooterSettingsCard initial={initialSite} />
+        </TabsContent>
+
+        {/* ==================================================================== */}
+        {/* SEO & INDEXING                                                      */}
+        {/* ==================================================================== */}
+        <TabsContent value="seo" className="mt-4 space-y-6">
+          <SeoIndexingCard initial={initialSite.searchEngineVisibility} />
+          <Card className="shadow-xs border-border bg-card">
+            <CardContent className="p-4 sm:p-6 text-xs text-muted-foreground space-y-1.5">
+              <p>Off: robots.txt serves <span className="font-mono">Disallow: /</span>, sitemap.xml is empty, and every public page serves noindex.</p>
+              <p>Admin, login, signup and account pages are always noindex regardless of this switch.</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================================================================== */}
+        {/* PAYMENTS & GATEWAYS                                                 */}
+        {/* ==================================================================== */}
+        {canManagePayments ? (
+          <TabsContent value="payments" className="mt-4 space-y-6">
+            <PaymentSettingsCard initial={initialPaymentSettings} />
+          </TabsContent>
+        ) : null}
+
+        {/* ==================================================================== */}
+        {/* EMAIL                                                               */}
+        {/* ==================================================================== */}
+        <TabsContent value="email" className="mt-4 space-y-6">
+          <Card className="shadow-xs border-border bg-card">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-foreground">Email templates</p>
+                <p className="text-xs text-muted-foreground">
+                  Customer and staff notifications live under Email Templates.
+                </p>
+              </div>
+              <Button asChild variant="outline" size="sm" className="h-9 text-xs">
+                <Link href="/admin/email-templates">Open Email Templates</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================================================================== */}
+        {/* STORAGE                                                             */}
+        {/* ==================================================================== */}
+        <TabsContent value="storage" className="mt-4 space-y-6">
+          <Card className="shadow-xs border-border bg-card">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-foreground">Media storage</p>
+                <p className="text-xs text-muted-foreground">
+                  Active driver: <span className="font-mono">{storageDriver}</span>. Manage uploads in the Media Library.
+                </p>
+              </div>
+              <Button asChild variant="outline" size="sm" className="h-9 text-xs">
+                <Link href="/admin/media">Open Media Library</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ==================================================================== */}
+        {/* DANGER ZONE                                                         */}
+        {/* ==================================================================== */}
+        <TabsContent value="danger" className="mt-4 space-y-6">
+          <Card className="border-destructive/30 shadow-xs">
+            <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5">
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-foreground">Danger Zone</p>
+                <p className="text-xs text-muted-foreground">
+                  Wipe all content and re-initialize the database. Typed confirmation required.
+                </p>
+              </div>
+              <Button asChild variant="outline" size="sm" className="h-9 border-destructive/40 text-destructive hover:text-destructive">
+                <Link href="/admin/reset">Open Reset &amp; Re-initialize</Link>
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

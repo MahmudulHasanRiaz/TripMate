@@ -44,8 +44,8 @@ export default function LeadsFilters({
     if (nextAssigned) params.set("assignedTo", nextAssigned);
     else params.delete("assignedTo");
 
-    if (nextView === "list") params.set("view", "list");
-    else params.delete("view"); // default is board
+    if (nextView === "board") params.set("view", "board");
+    else params.delete("view"); // default is list (§3)
 
     params.delete("page");
     const qs = params.toString();

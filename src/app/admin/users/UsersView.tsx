@@ -15,9 +15,11 @@ import {
   MoreVertical,
   CheckCircle2,
   AlertTriangle,
+  KeyRound,
 } from "lucide-react";
 import type { UserView, UserRole } from "@/modules/users/service";
 import { updateUserRoleAction, toggleUserStatusAction } from "@/modules/users/actions";
+import SetPasswordDialog from "./SetPasswordDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -134,6 +136,9 @@ export default function UsersView({
   // Status dialog state
   const [statusUser, setStatusUser] = useState<UserView | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
+
+  // Set-password dialog state (§2.4)
+  const [passwordUser, setPasswordUser] = useState<UserView | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(total / perPage));
 
@@ -418,6 +423,11 @@ export default function UsersView({
                             Change Role
                           </DropdownMenuItem>
 
+                          <DropdownMenuItem onClick={() => setPasswordUser(user)}>
+                            <KeyRound className="mr-2 size-4" />
+                            Set password
+                          </DropdownMenuItem>
+
                           <DropdownMenuSeparator />
 
                           <DropdownMenuItem
@@ -578,6 +588,12 @@ export default function UsersView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <SetPasswordDialog
+        user={passwordUser}
+        open={!!passwordUser}
+        onOpenChange={(open) => !open && setPasswordUser(null)}
+      />
     </div>
   );
 }

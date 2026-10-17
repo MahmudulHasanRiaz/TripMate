@@ -14,13 +14,24 @@ export const LEAD_STATUSES = [
   "contacted",
   "qualified",
   "negotiating",
+  "follow_up",
   "converted",
   "lost",
 ] as const;
 export const leadStatusSchema = z.enum(LEAD_STATUSES);
 export type LeadStatus = z.infer<typeof leadStatusSchema>;
 
-export const LEAD_SOURCES = ["landing", "organic", "manual"] as const;
+export const LEAD_SOURCES = [
+  "landing",
+  "organic",
+  "manual",
+  "direct",
+  "referral",
+  "facebook",
+  "instagram",
+  "tiktok",
+  "other",
+] as const;
 export const leadSourceSchema = z.enum(LEAD_SOURCES);
 export type LeadSource = z.infer<typeof leadSourceSchema>;
 

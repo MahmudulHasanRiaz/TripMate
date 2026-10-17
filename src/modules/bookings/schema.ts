@@ -9,12 +9,10 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const orderTypeEnum = pgEnum("order_type", ["package", "inquiry"]);
+export const orderTypeEnum = pgEnum("order_type", ["package", "inquiry", "service"]);
 
 export const orderStatusEnum = pgEnum("order_status", [
   "pending",
-  "in_review",
-  "quoted",
   "confirmed",
   "cancelled",
   "completed",

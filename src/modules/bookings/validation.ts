@@ -13,8 +13,6 @@ import { formConfigSchema, leadSchemaFieldRules } from "@/modules/landing-pages/
 
 export const ORDER_STATUSES = [
   "pending",
-  "in_review",
-  "quoted",
   "confirmed",
   "cancelled",
   "completed",
@@ -22,7 +20,7 @@ export const ORDER_STATUSES = [
 export const orderStatusSchema = z.enum(ORDER_STATUSES);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
-export const ORDER_TYPES = ["package", "inquiry"] as const;
+export const ORDER_TYPES = ["package", "inquiry", "service"] as const;
 export const orderTypeSchema = z.enum(ORDER_TYPES);
 export type OrderType = z.infer<typeof orderTypeSchema>;
 
@@ -40,24 +38,19 @@ export const uuidSchema = z.string().uuid("Must be a valid UUID");
 
 // ---- the status machine -------------------------------------------------------
 //
-// The legal transition map, keyed by the CURRENT status:
-//   - pending    → in_review (review starts), quoted (quote without review), cancelled
-//   - in_review  → quoted, cancelled
-//   - quoted     → in_review (re-open review to revise the quote), confirmed, cancelled
+// The legal transition map, keyed by the CURRENT status (§2.7, 4-state):
+//   - pending    → confirmed (quote accepted / review passed), cancelled
 //   - confirmed  → completed, cancelled
 //   - cancelled  / completed — terminal, no outgoing edges
 //
-// Pinned rules (Plan 5 T1):
+// Pinned rules:
 //   - cancel is legal from every NON-terminal status,
-//   - complete is legal ONLY from confirmed,
-//   - quote (quoted as a destination) is legal ONLY from pending/in_review.
-// The quoted → in_review edge is the operator's revision path: a quote can be
-// re-opened for changes and re-quoted (setQuote's pending/in_review guard makes
-// that re-quote go through in_review, never quoted → quoted directly).
+//   - complete is legal ONLY from confirmed.
+// Set-quote (setQuote) stays legal from pending only and moves pending →
+// confirmed in one step (the old in_review/quoted intermediate states are
+// gone; quoting IS confirmation of the price).
 export const ORDER_STATUS_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
-  pending: ["in_review", "quoted", "cancelled"],
-  in_review: ["quoted", "cancelled"],
-  quoted: ["in_review", "confirmed", "cancelled"],
+  pending: ["confirmed", "cancelled"],
   confirmed: ["completed", "cancelled"],
   cancelled: [],
   completed: [],

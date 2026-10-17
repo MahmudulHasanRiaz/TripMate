@@ -36,11 +36,9 @@ import {
 const UUID = "3f3d5b1c-0000-4000-8000-000000000001";
 
 describe("order status enum", () => {
-  it("exposes the six pipeline statuses", () => {
+  it("exposes the four pipeline statuses (§2.7)", () => {
     expect(ORDER_STATUSES).toEqual([
       "pending",
-      "in_review",
-      "quoted",
       "confirmed",
       "cancelled",
       "completed",
@@ -62,8 +60,8 @@ describe("order status enum", () => {
 });
 
 describe("order type enum", () => {
-  it("exposes package / inquiry and rejects others", () => {
-    expect(ORDER_TYPES).toEqual(["package", "inquiry"]);
+  it("exposes package / inquiry / service and rejects others", () => {
+    expect(ORDER_TYPES).toEqual(["package", "inquiry", "service"]);
     for (const type of ORDER_TYPES) {
       expect(orderTypeSchema.safeParse(type).success).toBe(true);
     }
@@ -281,11 +279,7 @@ describe("convertLeadOrderInputSchema", () => {
 describe("status transition map", () => {
   it("allows the documented pipeline moves", () => {
     const legal: [string, string][] = [
-      ["pending", "in_review"],
-      ["pending", "quoted"],
-      ["in_review", "quoted"],
-      ["quoted", "in_review"],
-      ["quoted", "confirmed"],
+      ["pending", "confirmed"],
       ["confirmed", "completed"],
     ];
     for (const [from, to] of legal) {
@@ -294,7 +288,7 @@ describe("status transition map", () => {
   });
 
   it("allows cancel from every non-terminal status only", () => {
-    for (const from of ["pending", "in_review", "quoted", "confirmed"] as const) {
+    for (const from of ["pending", "confirmed"] as const) {
       expect(isLegalOrderTransition(from, "cancelled")).toBe(true);
     }
     expect(isLegalOrderTransition("cancelled", "cancelled")).toBe(false);
@@ -307,27 +301,13 @@ describe("status transition map", () => {
     }
   });
 
-  it("allows quote only from pending/in_review", () => {
-    for (const from of ORDER_STATUSES) {
-      expect(isLegalOrderTransition(from, "quoted")).toBe(
-        from === "pending" || from === "in_review",
-      );
-    }
-  });
-
   it("makes cancelled/completed terminal and blocks the illegal shortcuts", () => {
     expect(TERMINAL_ORDER_STATUSES).toEqual(["cancelled", "completed"]);
     const illegal: [string, string][] = [
-      ["pending", "confirmed"],
       ["pending", "completed"],
-      ["in_review", "confirmed"],
-      ["in_review", "completed"],
-      ["quoted", "completed"],
-      ["quoted", "quoted"],
-      ["confirmed", "quoted"],
-      ["confirmed", "in_review"],
+      ["confirmed", "pending"],
       ["cancelled", "pending"],
-      ["completed", "in_review"],
+      ["completed", "pending"],
     ];
     for (const [from, to] of illegal) {
       expect(isLegalOrderTransition(from as never, to as never)).toBe(false);

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { getSiteSettings } from "@/lib/site-settings";
+import { detailMetadata } from "@/lib/seo-meta";
 import { PackageCard } from "@/components/site/PackageCard";
 import { JsonLd } from "@/components/site/JsonLd";
 
@@ -38,10 +39,12 @@ export async function generateMetadata(
   if (!data) return { title: "Package not found" };
 
   const description = data.seoDescription || data.summary || undefined;
-  return {
+  return detailMetadata({
+    path: `/packages/${data.slug}`,
     title: data.seoTitle || data.title,
-    ...(description ? { description } : {}),
-  };
+    description,
+    image: data.cover,
+  });
 }
 
 export default function PackageDetailPage(props: PageProps<"/packages/[slug]">) {

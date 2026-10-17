@@ -50,7 +50,9 @@ import { renderPaymentRejected, renderPaymentVerified } from "@/modules/email/te
 import { sendEmail } from "@/modules/email/send";
 import {
   adminCreatePaymentInputSchema,
+  customerPaymentSubmitSchema,
   gatewayInputSchema,
+  paymentSettingsSchema,
   paymentSubmitInputSchema,
   uuidSchema,
 } from "./validation";
@@ -167,15 +169,27 @@ async function ownedOrderOrNone(
 export const submitMyPaymentAction = paymentAction<unknown, SubmitMyPaymentResult>(
   {},
   async (input, session) => {
-    const parsed = parsePaymentInput(paymentSubmitInputSchema, input);
-    if (!parsed.ok) return parsed;
     if (!session) return { ok: false, error: "UNAUTHORIZED" };
+    const { getPaymentSettings } = await import("./settings");
+    const paymentSettings = await getPaymentSettings();
+
+    // §2.8: txn id required only when the setting says so; screenshots are
+    // never collected in the customer flow (the column stays, unused).
+    const schema = paymentSettings.requireTxnId
+      ? paymentSubmitInputSchema
+      : customerPaymentSubmitSchema;
+    const parsed = parsePaymentInput(schema, input);
+    if (!parsed.ok) return parsed;
 
     const order = await ownedOrderOrNone(parsed.data.orderId, session);
     if (!order) return { ok: false, code: "NOT_FOUND", error: "Order not found." };
 
     const payment = await submitManualPayment({
-      ...parsed.data,
+      orderId: parsed.data.orderId,
+      gatewayId: parsed.data.gatewayId,
+      methodTxnId: parsed.data.methodTxnId?.trim() ? parsed.data.methodTxnId.trim() : null,
+      senderNumber: parsed.data.senderNumber,
+      note: parsed.data.note,
       actorUserId: session.user.id,
     });
     expireOrderPayments(order.id);
@@ -362,6 +376,19 @@ export const reorderGatewaysAction = paymentAction<unknown, PaymentActionResult>
     const parsed = parsePaymentInput(reorderGatewaysInput, input);
     if (!parsed.ok) return parsed;
     await reorderGateways(parsed.data.items);
+    expireGatewayTags();
+    return { ok: true };
+  },
+);
+
+/** Save the payments settings row (requireTxnId, partial payments) — §2.8. */
+export const savePaymentSettingsAction = paymentAction<unknown, PaymentActionResult>(
+  { permission: "settings.manage" },
+  async (input) => {
+    const parsed = parsePaymentInput(paymentSettingsSchema, input);
+    if (!parsed.ok) return parsed;
+    const { updatePaymentSettings } = await import("./settings");
+    await updatePaymentSettings(parsed.data);
     expireGatewayTags();
     return { ok: true };
   },

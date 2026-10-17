@@ -159,14 +159,14 @@ describe.skipIf(!integration)("payments service (integration — Postgres)", () 
     return ref;
   };
 
-  it("submit → verify confirms a quoted order; an unquoted one verifies without a status jump", async () => {
+  it("submit → verify confirms a pending order (§2.7 4-state machine)", async () => {
     const payments = await import("@/modules/payments/service");
     const bookings = await import("@/modules/bookings/service");
     const { publishedId: listingId } = await createListings();
     const ownerId = await createUser();
     const gatewayId = await createGateway();
 
-    // Package order starts in_review — its payable amount is the frozen
+    // Package order starts pending — its payable amount is the frozen
     // listing price until a quote lands.
     const order = track(
       await bookings.createPackageOrder(packageInput(listingId), { userId: ownerId }),
@@ -205,13 +205,13 @@ describe.skipIf(!integration)("payments service (integration — Postgres)", () 
     expect(queue.total).toBeGreaterThanOrEqual(1);
     expect(queue.items.some((p) => p.id === first.id)).toBe(true);
 
-    // Verifying while the order is still in_review: the payment verifies, the
-    // order does NOT jump to confirmed (the T1 status machine has no
-    // in_review → confirmed edge — documented service behavior).
+    // Verifying while the order is still pending: the payment verifies and
+    // the order jumps to confirmed (the §2.7 machine carries pending →
+    // confirmed).
     const verifiedFirst = await payments.verifyPayment(first.id, { verifiedBy: ownerId });
     expect(verifiedFirst.status).toBe("verified");
     expect(verifiedFirst.verifiedBy).toBe(ownerId);
-    expect((await bookings.getOrderDetail(order.id))?.status).toBe("in_review");
+    expect((await bookings.getOrderDetail(order.id))?.status).toBe("confirmed");
     expect(await payments.getOrderPaidTotal(order.id)).toBe(1200);
 
     // Re-verifying is refused.
@@ -219,25 +219,25 @@ describe.skipIf(!integration)("payments service (integration — Postgres)", () 
       code: "INVALID_STATE",
     });
 
-    // Quote → the payable amount becomes the quote; verifying confirms.
-    await bookings.setQuote(order.id, 1500);
+    // Further payments on the confirmed order: submission allowed,
+    // verification skips the (already-done) transition.
     const second = await payments.submitManualPayment({
       orderId: order.id,
       gatewayId,
       methodTxnId: `TXN-${marker}-2`,
     });
-    expect(second.amount).toBe(1500);
+    expect(second.amount).toBe(1200);
     await payments.verifyPayment(second.id, { verifiedBy: ownerId });
 
     const detail = await bookings.getOrderDetail(order.id);
     expect(detail?.status).toBe("confirmed");
     const confirmEvent = detail?.events.find((e) => e.toStatus === "confirmed");
     expect(confirmEvent).toMatchObject({
-      fromStatus: "quoted",
+      fromStatus: "pending",
       actorId: ownerId,
-      note: "Payment verified (1500.00 BDT)",
+      note: "Payment verified (1200.00 BDT)",
     });
-    expect(await payments.getOrderPaidTotal(order.id)).toBe(2700);
+    expect(await payments.getOrderPaidTotal(order.id)).toBe(2400);
 
     // Balance settlement on an already-confirmed order: submission allowed,
     // verification skips the (already-done) transition.
@@ -249,7 +249,7 @@ describe.skipIf(!integration)("payments service (integration — Postgres)", () 
     const verifiedThird = await payments.verifyPayment(third.id, { verifiedBy: ownerId });
     expect(verifiedThird.status).toBe("verified");
     expect((await bookings.getOrderDetail(order.id))?.status).toBe("confirmed");
-    expect(await payments.getOrderPaidTotal(order.id)).toBe(4200);
+    expect(await payments.getOrderPaidTotal(order.id)).toBe(3600);
 
     // The order's payment timeline is chronological.
     const forOrder = await payments.listForOrder(order.id);

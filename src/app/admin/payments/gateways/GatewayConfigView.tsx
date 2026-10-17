@@ -6,7 +6,9 @@ import {
   AlertCircle,
   ArrowDown,
   ArrowUp,
+  Check,
   CheckCircle2,
+  Copy,
   Edit2,
   Loader2,
   Plus,
@@ -18,6 +20,7 @@ import {
 } from "lucide-react";
 import type { GatewayView } from "@/modules/payments/service";
 import type { GatewayKind } from "@/modules/payments/validation";
+import { defaultGatewayInstructions } from "@/modules/payments/validation";
 import {
   reorderGatewaysAction,
   setGatewayActiveAction,
@@ -81,6 +84,39 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
   // Notices
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  /** Read one structured key out of the working config pairs. */
+  const pairValue = (key: string): string =>
+    configPairs.find((p) => p.key === key)?.value ?? "";
+  const setPairValue = (key: string, value: string) => {
+    setConfigPairs((prev) => {
+      const idx = prev.findIndex((p) => p.key === key);
+      if (idx >= 0) return prev.map((p, i) => (i === idx ? { ...p, value } : p));
+      return [...prev, { key, value }];
+    });
+  };
+  const mfsType = pairValue("mfsType") as "personal" | "agent" | "merchant" | "";
+  const previewInstructions =
+    instructions.trim() ||
+    defaultGatewayInstructions({
+      accountNumber: pairValue("accountNumber") || undefined,
+      accountHolder: pairValue("accountHolder") || undefined,
+      mfsType: mfsType || null,
+      bankName: pairValue("bankName") || null,
+    });
+  const previewNumber = pairValue("accountNumber") || pairValue("number") || "";
+
+  const copyPreviewNumber = async () => {
+    if (!previewNumber) return;
+    try {
+      await navigator.clipboard.writeText(previewNumber);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setErrorMessage("Could not copy — select and copy manually.");
+    }
+  };
 
   const openAddDialog = () => {
     setEditingId(null);
@@ -460,6 +496,82 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                   rows={2}
                   className="text-xs"
                 />
+              </div>
+            </div>
+
+            {/* Structured account fields (§2.8) */}
+            <div className="space-y-3 border-t border-border pt-3">
+              <div>
+                <h4 className="text-xs font-semibold text-foreground">Account details</h4>
+                <p className="text-[11px] text-muted-foreground">
+                  Structured display data. Instructions below preview live per account type.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Account number</Label>
+                  <Input
+                    placeholder="+880 1700-000000"
+                    value={pairValue("accountNumber")}
+                    onChange={(e) => setPairValue("accountNumber", e.target.value)}
+                    className="h-9 text-xs font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Account holder</Label>
+                  <Input
+                    placeholder="TripMate Travel"
+                    value={pairValue("accountHolder")}
+                    onChange={(e) => setPairValue("accountHolder", e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Account type</Label>
+                  <Select
+                    value={mfsType || "none"}
+                    onValueChange={(v) => setPairValue("mfsType", v === "none" ? "" : v)}
+                  >
+                    <SelectTrigger className="h-9 text-xs">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs">Not an MFS account</SelectItem>
+                      <SelectItem value="personal" className="text-xs">Personal (Send Money)</SelectItem>
+                      <SelectItem value="agent" className="text-xs">Agent (Cash Out)</SelectItem>
+                      <SelectItem value="merchant" className="text-xs">Merchant (Payment)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium">Bank name (for bank transfers)</Label>
+                  <Input
+                    placeholder="The City Bank PLC"
+                    value={pairValue("bankName")}
+                    onChange={(e) => setPairValue("bankName", e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Live instruction + copy-number preview */}
+              <div className="rounded-lg border border-border bg-secondary/30 p-3 space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Customer preview
+                </p>
+                <p className="text-xs leading-relaxed">{previewInstructions}</p>
+                {previewNumber ? (
+                  <button
+                    type="button"
+                    onClick={copyPreviewNumber}
+                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 font-mono text-xs font-bold hover:border-primary/40"
+                  >
+                    {copied ? <Check className="size-3.5 text-success" aria-hidden="true" /> : <Copy className="size-3.5" aria-hidden="true" />}
+                    {previewNumber}
+                  </button>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">Enter an account number to preview the copy button.</p>
+                )}
               </div>
             </div>
 

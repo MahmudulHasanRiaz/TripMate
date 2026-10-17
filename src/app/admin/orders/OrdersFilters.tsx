@@ -25,8 +25,6 @@ type OrdersFiltersProps = {
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Pending",
-  in_review: "In Review",
-  quoted: "Quoted",
   confirmed: "Confirmed",
   cancelled: "Cancelled",
   completed: "Completed",

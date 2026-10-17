@@ -15,5 +15,7 @@ export default async function AdminResetPage() {
   if (!hasPermission(session.user.role, null, "settings.manage")) {
     redirect("/admin");
   }
-  return <ResetDataClient />;
+  const { getSiteSettings } = await import("@/modules/settings/site-settings");
+  const site = await getSiteSettings();
+  return <ResetDataClient siteTitle={site.title || "TripMate"} />;
 }

@@ -49,6 +49,8 @@ export type BlogPostData = {
   /** Raw markdown body — rendered (sanitized) server-side via ProseMarkdown. */
   content: string;
   image: { url: string; alt: string } | null;
+  gallery: { url: string; alt: string }[];
+  videoUrl: string | null;
   author: string;
   category: string | null;
   /** ISO date of first publication. */
@@ -120,6 +122,8 @@ export async function getBlogPostData(slug: string): Promise<BlogPostData | null
     image: post.featuredImage
       ? { url: post.featuredImage.url, alt: post.featuredImage.alt ?? post.title }
       : null,
+    gallery: post.gallery.map((g) => ({ url: g.url, alt: g.alt ?? post.title })),
+    videoUrl: post.videoUrl,
     author: post.author?.name ?? "TripMate Team",
     category: post.category?.name ?? null,
     publishedAt: (post.publishedAt ?? post.createdAt).toISOString(),

@@ -6,23 +6,24 @@ import { AlertTriangle, DatabaseBackup, Loader2, RefreshCw } from "lucide-react"
 import { runResetAndReinitialize, type ResetReinitResult } from "@/modules/settings/reset-actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-export default function ResetDataClient() {
+/**
+ * Danger Zone (§2.5): typed hard verification replaces window.confirm.
+ * The operator must type the site title exactly to arm each wipe button.
+ */
+export default function ResetDataClient({ siteTitle }: { siteTitle: string }) {
   const router = useRouter();
   const [busyMode, setBusyMode] = useState<"demo" | "production" | null>(null);
   const [result, setResult] = useState<ResetReinitResult | null>(null);
+  const [confirmText, setConfirmText] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  const run = (mode: "demo" | "production") => {
-    const label = mode === "demo" ? "Demo showcase data" : "a clean production baseline";
-    if (
-      !window.confirm(
-        `WARNING: this permanently deletes ALL packages, destinations, visas, orders, payments, quotations, leads, posts and media files (including files on R2/local storage), then re-initializes with ${label}.\n\nYour admin account stays. This cannot be undone. Continue?`,
-      )
-    ) {
-      return;
-    }
+  const armed = confirmText.trim() === siteTitle.trim();
 
+  const run = (mode: "demo" | "production") => {
+    if (!armed || busyMode !== null) return;
     setBusyMode(mode);
     setResult(null);
     startTransition(async () => {
@@ -30,6 +31,7 @@ export default function ResetDataClient() {
       setResult(res);
       setBusyMode(null);
       if (res.ok) {
+        setConfirmText("");
         router.refresh();
       }
     });
@@ -55,38 +57,59 @@ export default function ResetDataClient() {
           </CardTitle>
           <CardDescription className="text-xs">
             Deletes every business/content row and every stored media object from the connected
-            storage (R2 or local), then runs the chosen seeder.
+            storage (R2 or local), then runs the chosen seeder. This cannot be undone.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row">
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => run("demo")}
-            disabled={busyMode !== null}
-            className="gap-2"
-          >
-            {busyMode === "demo" ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <DatabaseBackup className="size-4" aria-hidden="true" />
-            )}
-            Reset &amp; seed Demo data
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => run("production")}
-            disabled={busyMode !== null}
-            className="gap-2 border-destructive/40 text-destructive hover:text-destructive"
-          >
-            {busyMode === "production" ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <RefreshCw className="size-4" aria-hidden="true" />
-            )}
-            Reset to clean (Production)
-          </Button>
+        <CardContent className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="reset-confirm" className="text-sm">
+              Type <span className="font-mono font-semibold">{siteTitle}</span> to confirm
+            </Label>
+            <Input
+              id="reset-confirm"
+              type="text"
+              autoComplete="off"
+              placeholder={siteTitle}
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              className="h-10 max-w-sm"
+            />
+            {!armed && confirmText.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                Keep typing — the buttons arm only on an exact match.
+              </p>
+            ) : null}
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => run("demo")}
+              disabled={!armed || busyMode !== null}
+              className="gap-2"
+            >
+              {busyMode === "demo" ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <DatabaseBackup className="size-4" aria-hidden="true" />
+              )}
+              Reset &amp; seed Demo data
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => run("production")}
+              disabled={!armed || busyMode !== null}
+              className="gap-2 border-destructive/40 text-destructive hover:text-destructive"
+            >
+              {busyMode === "production" ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <RefreshCw className="size-4" aria-hidden="true" />
+              )}
+              Reset to clean (Production)
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

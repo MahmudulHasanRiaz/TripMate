@@ -1,41 +1,27 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
   Banknote,
   CheckCircle2,
+  CreditCard,
   ExternalLink,
   HelpCircle,
   Info,
-  Loader2,
-  Send,
   Users,
 } from "lucide-react";
 import type { MyOrderDetail } from "@/modules/portal/service";
 import type { GatewayView } from "@/modules/payments/service";
 import type { OrderStatus } from "@/modules/bookings/validation";
-import {
-  selectPayLaterAction,
-  submitMyPaymentAction,
-} from "@/modules/payments/actions";
+import GatewayPaymentDialog from "@/app/account/_components/GatewayPaymentDialog";
+import PortalTravelerForm from "@/app/account/_components/PortalTravelerForm";
 import { formatMoney } from "@/components/site/currency";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -52,8 +38,6 @@ type PortalOrderDetailClientProps = {
 
 const STATUS_TITLES: Record<OrderStatus, string> = {
   pending: "Pending Review",
-  in_review: "In Review",
-  quoted: "Quote Ready",
   confirmed: "Booking Confirmed",
   completed: "Completed",
   cancelled: "Cancelled",
@@ -64,8 +48,6 @@ const STATUS_BADGE_VARIANTS: Record<
   "secondary" | "info" | "default" | "warning" | "success" | "destructive"
 > = {
   pending: "secondary",
-  in_review: "info",
-  quoted: "info",
   confirmed: "success",
   completed: "default",
   cancelled: "destructive",
@@ -75,86 +57,13 @@ export default function PortalOrderDetailClient({
   order,
   gateways,
 }: PortalOrderDetailClientProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-
-  // Payment form state
-  const [selectedGatewayId, setSelectedGatewayId] = useState<string>(
-    gateways.length > 0 ? gateways[0].id : "",
-  );
-  const [methodTxnId, setMethodTxnId] = useState("");
-  const [senderNumber, setSenderNumber] = useState("");
-  const [screenshotUrl, setScreenshotUrl] = useState("");
-  const [note, setNote] = useState("");
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
 
   // Notices
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
-  const selectedGateway = gateways.find((g) => g.id === selectedGatewayId);
-  const isPayLater = selectedGateway?.kind === "paylater";
-  const isPayable = order.status === "quoted" || order.status === "confirmed";
-
-  const handleSubmitPayment = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-    setSuccessNotice(null);
-
-    if (!selectedGatewayId) {
-      setErrorMessage("Please select a payment gateway.");
-      return;
-    }
-
-    if (!methodTxnId.trim()) {
-      setErrorMessage("Transaction ID is required.");
-      return;
-    }
-
-    startTransition(async () => {
-      try {
-        const res = await submitMyPaymentAction({
-          orderId: order.id,
-          gatewayId: selectedGatewayId,
-          methodTxnId: methodTxnId.trim(),
-          senderNumber: senderNumber.trim() || undefined,
-          screenshotUrl: screenshotUrl.trim() || undefined,
-          note: note.trim() || undefined,
-        });
-
-        if (res.ok) {
-          setSuccessNotice("Your payment has been submitted for verification!");
-          setMethodTxnId("");
-          setSenderNumber("");
-          setScreenshotUrl("");
-          setNote("");
-          router.refresh();
-        } else {
-          setErrorMessage(res.error || "Failed to submit payment.");
-        }
-      } catch {
-        setErrorMessage("An unexpected error occurred while submitting payment.");
-      }
-    });
-  };
-
-  const handleSelectPayLater = () => {
-    setErrorMessage(null);
-    setSuccessNotice(null);
-
-    startTransition(async () => {
-      try {
-        const res = await selectPayLaterAction({ orderId: order.id });
-        if (res.ok) {
-          setSuccessNotice("Payment preference recorded: our team will contact you to coordinate offline payment.");
-          router.refresh();
-        } else {
-          setErrorMessage(res.error || "Failed to register pay later request.");
-        }
-      } catch {
-        setErrorMessage("An unexpected error occurred.");
-      }
-    });
-  };
+  const isPayable = order.status === "confirmed";
 
   return (
     <div className="space-y-6">
@@ -340,6 +249,8 @@ export default function PortalOrderDetailClient({
             </Card>
           ) : null}
 
+          {order.status !== "cancelled" ? <PortalTravelerForm orderId={order.id} /> : null}
+
           {/* Payment Block */}
           <Card className="shadow-xs border-primary/20">
             <CardHeader className="pb-3">
@@ -385,10 +296,10 @@ export default function PortalOrderDetailClient({
                 <div className="space-y-4 border-t border-border pt-4">
                   <div>
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-                      Select Payment Method
+                      Make a payment
                     </h4>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Choose how you would like to transfer funds.
+                      Choose a method, transfer, then submit your details.
                     </p>
                   </div>
 
@@ -397,147 +308,31 @@ export default function PortalOrderDetailClient({
                       No active payment gateways are available right now. Please reach out to your advisor directly.
                     </p>
                   ) : (
-                    <div className="space-y-4">
-                      {/* Gateway Select — only manually-payable kinds offer a txn
-                          submission; sslcommerz (automatic, not yet implemented)
-                          is shown disabled so the form never fails server-side. */}
-                      <Select value={selectedGatewayId} onValueChange={setSelectedGatewayId}>
-                        <SelectTrigger className="min-h-11 text-sm font-medium">
-                          <SelectValue placeholder="Choose payment method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {gateways.map((gw) => (
-                            <SelectItem
-                              key={gw.id}
-                              value={gw.id}
-                              disabled={gw.kind === "sslcommerz"}
-                            >
-                              {gw.name}
-                              {gw.kind === "sslcommerz" ? " (online payment coming soon)" : ""}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      {/* Instructions & Display Config */}
-                      {selectedGateway ? (
-                        <div className="rounded-lg border border-border bg-secondary/20 p-4 space-y-3">
-                          {selectedGateway.instructions ? (
-                            <p className="text-xs leading-relaxed text-foreground whitespace-pre-wrap">
-                              {selectedGateway.instructions}
-                            </p>
-                          ) : null}
-
-                          {Object.keys(selectedGateway.config || {}).length > 0 ? (
-                            <dl className="grid gap-2 sm:grid-cols-2 text-xs border-t border-border/50 pt-2 font-mono">
-                              {Object.entries(selectedGateway.config).map(([k, v]) => (
-                                <div key={k}>
-                                  <dt className="text-muted-foreground capitalize">{k}:</dt>
-                                  <dd className="font-bold text-foreground mt-0.5">{v}</dd>
-                                </div>
-                              ))}
-                            </dl>
-                          ) : null}
-                        </div>
+                    <div className="space-y-3">
+                      {errorMessage ? (
+                        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs font-medium text-destructive">
+                          {errorMessage}
+                        </p>
                       ) : null}
-
-                      {/* Pay Later Option */}
-                      {isPayLater ? (
-                        <div className="space-y-2 pt-1">
-                          <p className="text-xs text-muted-foreground">
-                            Opt to settle payment later with your advisor before ticket issuance.
-                          </p>
-                          <Button
-                            type="button"
-                            onClick={handleSelectPayLater}
-                            disabled={isPending}
-                            className="min-h-11 w-full bg-primary text-primary-foreground"
-                          >
-                            {isPending ? "Confirming..." : "Confirm Pay Later"}
-                          </Button>
-                        </div>
-                      ) : (
-                        /* Manual Payment Submission Form */
-                        <form onSubmit={handleSubmitPayment} className="space-y-3.5 pt-1">
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-1.5 sm:col-span-2">
-                              <Label htmlFor="cust-method-txnid" className="text-xs font-medium">
-                                Transaction ID / TrxID <span className="text-destructive">*</span>
-                              </Label>
-                              <Input
-                                id="cust-method-txnid"
-                                placeholder="e.g. 9J29DK12 or Bank Ref #"
-                                value={methodTxnId}
-                                onChange={(e) => setMethodTxnId(e.target.value)}
-                                className="min-h-11 font-mono text-sm"
-                                required
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="cust-sender-number" className="text-xs font-medium">
-                                Sender Mobile / Account Number (optional)
-                              </Label>
-                              <Input
-                                id="cust-sender-number"
-                                placeholder="+880 1700-000000"
-                                value={senderNumber}
-                                onChange={(e) => setSenderNumber(e.target.value)}
-                                className="min-h-11 font-mono text-sm"
-                              />
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <Label htmlFor="cust-screenshot-url" className="text-xs font-medium">
-                                Deposit Slip / Screenshot Link (optional)
-                              </Label>
-                              <Input
-                                id="cust-screenshot-url"
-                                placeholder="https://..."
-                                value={screenshotUrl}
-                                onChange={(e) => setScreenshotUrl(e.target.value)}
-                                className="min-h-11 text-sm"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <Label htmlFor="cust-note" className="text-xs font-medium">
-                              Note / Memo (optional)
-                            </Label>
-                            <Textarea
-                              id="cust-note"
-                              placeholder="Any specific instructions regarding this payment..."
-                              value={note}
-                              onChange={(e) => setNote(e.target.value)}
-                              rows={2}
-                              className="text-xs"
-                            />
-                          </div>
-
-                          <Button
-                            type="submit"
-                            disabled={isPending}
-                            className="min-h-11 w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-2"
-                          >
-                            {isPending ? (
-                              <>
-                                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
-                                Submitting for Verification...
-                              </>
-                            ) : (
-                              <>
-                                <Send className="mr-2 size-4" aria-hidden="true" />
-                                Submit Payment Proof
-                              </>
-                            )}
-                          </Button>
-                        </form>
-                      )}
+                      {successNotice ? (
+                        <p role="status" className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-xs font-medium text-success">
+                          {successNotice}
+                        </p>
+                      ) : null}
+                      <Button onClick={() => setPayDialogOpen(true)} className="min-h-11 w-full">
+                        <CreditCard className="mr-2 size-4" aria-hidden="true" />
+                        Pay now
+                      </Button>
+                      <GatewayPaymentDialog
+                        orderId={order.id}
+                        gateways={gateways}
+                        open={payDialogOpen}
+                        onOpenChange={setPayDialogOpen}
+                      />
                     </div>
                   )}
                 </div>
-              ) : order.status === "pending" || order.status === "in_review" ? (
+              ) : order.status === "pending" ? (
                 <div className="rounded-lg border border-border bg-secondary/30 p-4 text-xs text-muted-foreground flex items-start gap-2.5">
                   <Info className="size-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
                   <div>

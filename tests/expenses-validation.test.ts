@@ -586,8 +586,14 @@ describe.skipIf(!integration)("expenses service (integration — Postgres)", () 
 
     // --- P&L -----------------------------------------------------------------------------
     // Window A: from the first of the previous month — contains today (local AND
-    // UTC calendar), excludes the 1999-dated entry.
-    const windowA = { from: firstOfPreviousMonth(), to: today };
+    // UTC calendar), excludes the 1999-dated entry. `to` is the DATABASE's
+    // current_date (not the UTC calendar day): revenue buckets on
+    // date(updated_at) in the DB session timezone, so near midnight the two
+    // calendars can disagree by a day and a UTC `to` would exclude just-made rows.
+    const [{ dbToday }] = await db.execute(
+      (await import("drizzle-orm")).sql`select current_date::text as "dbToday"`,
+    ) as unknown as { dbToday: string }[];
+    const windowA = { from: firstOfPreviousMonth(), to: dbToday ?? today };
     const pl = await expensesService.getPLReport(windowA);
     expect(pl.from).toBe(windowA.from);
     expect(pl.to).toBe(windowA.to);
@@ -607,7 +613,7 @@ describe.skipIf(!integration)("expenses service (integration — Postgres)", () 
     expect(pl.net).toBe(pl.revenue - pl.expenseTotal);
 
     // Window B reaches back to 1999 — the old entry joins the report.
-    const plWide = await expensesService.getPLReport({ from: "1999-01-01", to: today });
+    const plWide = await expensesService.getPLReport({ from: "1999-01-01", to: dbToday ?? today });
     expect(plWide.expenseByCategory.find((c) => c.categoryId === oldCategory.id)?.amount).toBe(80);
 
     // Malformed ranges refuse with VALIDATION.
