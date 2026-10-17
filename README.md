@@ -134,13 +134,17 @@ defaults `DATABASE_URL` to that, so a dedicated deploy `.env` only needs
 **Schema auto-migrates on every (re)deploy.** The runner image applies pending
 `drizzle/` migrations at container start (`scripts/auto-migrate.mjs`, the same
 runtime migrator Vercel uses at build time) before the server boots — over
-`DATABASE_URL_MIGRATE` when set, else `DATABASE_URL`. Fresh deploys and
-Portainer redeploys therefore push schema changes automatically; re-runs are
-no-ops unless a new migration file was committed. `SKIP_DB_MIGRATE=1` opts
-out. Migrations only create/alter tables — they never seed demo content, so on
+`DATABASE_URL_MIGRATE` when set, else `DATABASE_URL` (a pooled URL in either
+slot fails the boot fast with an actionable error; DDL cannot run over
+PgBouncer). Fresh deploys and Portainer redeploys therefore push schema changes
+automatically; re-runs are no-ops unless a new migration file was committed,
+and the run is verified against `drizzle/meta/_journal.json` before the server
+starts. `SKIP_DB_MIGRATE=1` opts out (with a loud drift warning). Migrations
+only create/alter tables — they never seed demo content, so on
 a fresh database create the superadmin once at `/setup`. Health: the
 container self-checks `GET /api/health`
-(200 only when Postgres answers) — `docker compose --profile app ps`. Uploaded
+(200 only when Postgres answers; the payload reports `migrationsPending`) —
+`docker compose --profile app ps`. Uploaded
 media persists in the bind-mounted `./storage` directory across rebuilds.
 
 **Portainer** — Stacks → Add stack: either paste `docker-compose.yml` in the
@@ -165,26 +169,32 @@ prerender pages.
 
 1. **Create the Vercel project** (framework: Next.js). `vercel-build` is
    picked up automatically; no `vercel.json` or Build Command override needed.
-2. **Project environment variables** (two Supabase URLs, two jobs):
-   - `DATABASE_URL` — Supabase **Transaction pooler** (port **6543**,
-     `*.pooler.supabase.com`). Used by the app/build at runtime —
-     serverless-friendly, no session cap. `src/db/connection.ts` connects with
-     `prepare: false` for it.
-   - `DATABASE_URL_MIGRATE` — Supabase **Session pooler** (port **5432**) or
-     the **direct** connection. Used ONLY by the deploy-time migrate step
-     (`scripts/auto-migrate.mjs`); DDL needs a real session, so never point
-     this at 6543. Falls back to `DATABASE_URL` when unset.
-   - `APP_URL` — production URL, e.g. `https://tripmate.vercel.app`.
-   - `AUTH_SECRET` — 32+ chars (`openssl rand -base64 32`).
-   - Optional: `SMTP_*`, `STORAGE_DRIVER=r2` + `R2_*`, `UPSTASH_REDIS_*`.
-     With R2, also set `R2_PUBLIC_URL` (read at build time).
-   - `SKIP_DB_MIGRATE=1` — escape hatch to skip auto-migration for a deploy.
-3. **Deploy / re-deploy.** Pending migrations apply automatically first
-   (over `DATABASE_URL_MIGRATE`); re-deploys are no-ops unless a new
-   migration file was committed.
-4. **First deploy only:** open `<APP_URL>/setup` once to create the
+
+### Deploy env (Vercel + Supabase)
+
+| Variable | Value | Required for auto-migration? |
+| --- | --- | --- |
+| `DATABASE_URL` | Supabase **Transaction pooler**, port **6543** (`*.pooler.supabase.com`). Runtime + build — serverless-friendly, no session cap (`src/db/connection.ts` connects with `prepare: false`). | Yes — runtime; not used for DDL |
+| `DATABASE_URL_MIGRATE` | Supabase **DIRECT connection**, port **5432**: `postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres`. Used ONLY by `scripts/auto-migrate.mjs`; DDL needs a real session. | **Yes — required.** Without it, a pooled-only config fails the build fast with an actionable error |
+| `SKIP_DB_MIGRATE` | Unset by default. `1` = escape hatch that skips auto-migration for a deploy (prints a loud drift warning). | No — leaving it set disables the guarantee |
+| `APP_URL` | Production URL, e.g. `https://tripmate.vercel.app`. | — |
+| `AUTH_SECRET` | 32+ chars (`openssl rand -base64 32`). | — |
+| Optional | `SMTP_*`, `STORAGE_DRIVER=r2` + `R2_*` (also `R2_PUBLIC_URL`, read at build time), `UPSTASH_REDIS_*`. | — |
+
+**Pooled URLs fail fast.** Port 6543, a `*pooler*` hostname, or
+`?pgbouncer=true` in `DATABASE_URL_MIGRATE` (or in `DATABASE_URL` when the
+migrate var is missing) aborts the build with the exact fix instead of a
+cryptic mid-build DDL error. Non-pooled configs (Docker/Neon/local) keep the
+old fallback to `DATABASE_URL`.
+
+2. **Deploy / re-deploy.** Pending migrations apply automatically first
+   (over `DATABASE_URL_MIGRATE`); the build then verifies applied rows against
+   `drizzle/meta/_journal.json` — a mismatch fails the build naming the missing
+   migrations. Re-deploys are no-ops unless a new migration file was committed.
+3. **First deploy only:** open `<APP_URL>/setup` once to create the
    superadmin and base site settings. Demo catalog rows are NOT seeded on
    Vercel — add real packages under `/admin`.
+4. **Prove it migrated:** `curl <APP_URL>/api/health` → `migrationsPending: 0`.
 
 Notes:
 
