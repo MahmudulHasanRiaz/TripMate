@@ -6,12 +6,12 @@ import { describe, expect, it } from "vitest";
 // script (no DB needed): the fail-fast and skip paths exit before any
 // connection is attempted, which is exactly what we assert.
 //
-// Follow-up 02: a pooled-only config must fail the deploy build with an
-// actionable message instead of a cryptic mid-build DDL error, and
-// SKIP_DB_MIGRATE must shout before it skips.
+// Follow-up 02 (corrected by 03): a transaction-pooler-only config must fail
+// the deploy build with an actionable message instead of a cryptic mid-build
+// DDL error, and SKIP_DB_MIGRATE must shout before it skips.
 
 const ROOT = path.resolve(import.meta.dirname, "..");
-const POOLED_URL =
+const TRANSACTION_POOLER_URL =
   "postgresql://postgres:pw@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
 
 const run = (env: Record<string, string>) =>
@@ -29,28 +29,30 @@ const run = (env: Record<string, string>) =>
     timeout: 30_000,
   });
 
-describe("auto-migrate script — fail fast on pooled-only config", () => {
-  it("exits 1 with an actionable message when only a pooled DATABASE_URL is set", () => {
-    const res = run({ DATABASE_URL: POOLED_URL });
+describe("auto-migrate script — fail fast on transaction-pooler config", () => {
+  it("exits 1 with an actionable message when only a transaction-pooler DATABASE_URL is set", () => {
+    const res = run({ DATABASE_URL: TRANSACTION_POOLER_URL });
     expect(res.status).toBe(1);
     const out = `${res.stdout}\n${res.stderr}`;
     expect(out).toContain("DATABASE_URL_MIGRATE");
     expect(out).toContain("db.<ref>.supabase.co");
     expect(out).toContain("5432");
-    expect(out.toLowerCase()).toContain("pooled");
+    expect(out).toContain("6543");
+    expect(out.toLowerCase()).not.toContain("pooler hostname");
   }, 30_000);
 
-  it("exits 1 when DATABASE_URL_MIGRATE itself points at a pooler", () => {
+  it("exits 1 when DATABASE_URL_MIGRATE is a transaction pooler (6543)", () => {
     const res = run({
       DATABASE_URL: "postgresql://u:p@db.abcdefghijklmnop.supabase.co:5432/postgres",
       DATABASE_URL_MIGRATE:
-        "postgresql://u:p@aws-0-ap-south-1.pooler.supabase.com:5432/postgres",
+        "postgresql://u:p@aws-0-ap-south-1.pooler.supabase.com:6543/postgres",
     });
     expect(res.status).toBe(1);
     const out = `${res.stdout}\n${res.stderr}`;
     expect(out).toContain("DATABASE_URL_MIGRATE");
-    expect(out.toLowerCase()).toContain("pooled");
-    expect(out).toContain("db.<ref>.supabase.co");
+    expect(out).toContain("6543");
+    expect(out.toLowerCase()).toContain("session pooler");
+    expect(out.toLowerCase()).not.toContain("pooler hostname");
   }, 30_000);
 
   it("exits 1 when neither URL variable is set", () => {

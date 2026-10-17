@@ -134,9 +134,10 @@ defaults `DATABASE_URL` to that, so a dedicated deploy `.env` only needs
 **Schema auto-migrates on every (re)deploy.** The runner image applies pending
 `drizzle/` migrations at container start (`scripts/auto-migrate.mjs`, the same
 runtime migrator Vercel uses at build time) before the server boots — over
-`DATABASE_URL_MIGRATE` when set, else `DATABASE_URL` (a pooled URL in either
-slot fails the boot fast with an actionable error; DDL cannot run over
-PgBouncer). Fresh deploys and Portainer redeploys therefore push schema changes
+`DATABASE_URL_MIGRATE` when set, else `DATABASE_URL` (a transaction-pooler URL
+— port 6543 / `?pgbouncer=true` — in either slot fails the boot fast with an
+actionable error; port 5432 direct and session pooler are DDL-safe). Fresh
+deploys and Portainer redeploys therefore push schema changes
 automatically; re-runs are no-ops unless a new migration file was committed,
 and the run is verified against `drizzle/meta/_journal.json` before the server
 starts. `SKIP_DB_MIGRATE=1` opts out (with a loud drift warning). Migrations
@@ -175,17 +176,19 @@ prerender pages.
 | Variable | Value | Required for auto-migration? |
 | --- | --- | --- |
 | `DATABASE_URL` | Supabase **Transaction pooler**, port **6543** (`*.pooler.supabase.com`). Runtime + build — serverless-friendly, no session cap (`src/db/connection.ts` connects with `prepare: false`). | Yes — runtime; not used for DDL |
-| `DATABASE_URL_MIGRATE` | Supabase **DIRECT connection**, port **5432**: `postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres`. Used ONLY by `scripts/auto-migrate.mjs`; DDL needs a real session. | **Yes — required.** Without it, a pooled-only config fails the build fast with an actionable error |
+| `DATABASE_URL_MIGRATE` | DDL-capable connection, port **5432**: Supabase **direct** (`postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres`) **or session pooler** (`postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres`). Used ONLY by `scripts/auto-migrate.mjs`. **FORBIDDEN: transaction pooler `:6543` / `?pgbouncer=true`.** | **Yes — required.** Without it, a transaction-pooler-only config fails the build fast with an actionable error |
 | `SKIP_DB_MIGRATE` | Unset by default. `1` = escape hatch that skips auto-migration for a deploy (prints a loud drift warning). | No — leaving it set disables the guarantee |
 | `APP_URL` | Production URL, e.g. `https://tripmate.vercel.app`. | — |
 | `AUTH_SECRET` | 32+ chars (`openssl rand -base64 32`). | — |
 | Optional | `SMTP_*`, `STORAGE_DRIVER=r2` + `R2_*` (also `R2_PUBLIC_URL`, read at build time), `UPSTASH_REDIS_*`. | — |
 
-**Pooled URLs fail fast.** Port 6543, a `*pooler*` hostname, or
-`?pgbouncer=true` in `DATABASE_URL_MIGRATE` (or in `DATABASE_URL` when the
-migrate var is missing) aborts the build with the exact fix instead of a
-cryptic mid-build DDL error. Non-pooled configs (Docker/Neon/local) keep the
-old fallback to `DATABASE_URL`.
+**Transaction-pooler URLs fail fast.** Port **6543** or `?pgbouncer=true` in
+`DATABASE_URL_MIGRATE` (or in `DATABASE_URL` when the migrate var is missing)
+aborts the build with the exact fix instead of a cryptic mid-build DDL error.
+Port **5432** works either way: the direct connection and the session pooler
+(`aws-0-<region>.pooler.supabase.com:5432`) both give DDL-capable sessions.
+Non-Supabase configs (Docker/Neon/local) keep the old fallback to
+`DATABASE_URL`.
 
 2. **Deploy / re-deploy.** Pending migrations apply automatically first
    (over `DATABASE_URL_MIGRATE`); the build then verifies applied rows against

@@ -14,10 +14,11 @@
 //     never the dev-only drizzle-kit CLI.
 //   - After migrating it VERIFIES applied rows against drizzle/meta/_journal
 //     .json and fails the build on any mismatch — no silent skips, no drift.
-//   - Over DATABASE_URL_MIGRATE when set, else DATABASE_URL. A POOLED URL in
-//     either slot fails fast with an actionable message (DDL cannot run over
-//     PgBouncer — the #1 silent deploy killer). Set SKIP_DB_MIGRATE=1 to opt
-//     out (loudly warned).
+//   - Over DATABASE_URL_MIGRATE when set, else DATABASE_URL. A transaction-
+//     pooler URL (port 6543 / ?pgbouncer=true) in either slot fails fast with
+//     an actionable message — DDL cannot run over the transaction pooler. The
+//     session pooler (:5432) and direct (:5432) connections are DDL-safe and
+//     allowed. Set SKIP_DB_MIGRATE=1 to opt out (loudly warned).
 //
 // Supabase notes (two URLs, two jobs):
 //   - DATABASE_URL         = TRANSACTION pooler (port 6543), runtime/build.

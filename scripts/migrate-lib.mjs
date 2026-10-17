@@ -1,12 +1,23 @@
-// Pure helpers for scripts/auto-migrate.mjs (Follow-up 02). Kept dependency-
-// free and side-effect-free so vitest can unit-test the detection logic that
-// guards deploys: a pooled-only config must fail fast with an actionable
-// message instead of a cryptic mid-build DDL error.
+// Pure helpers for scripts/auto-migrate.mjs (Follow-up 02, corrected by 03).
+// Kept dependency-free and side-effect-free so vitest can unit-test the
+// detection logic that guards deploys: a transaction-pooler-only config must
+// fail fast with an actionable message instead of a cryptic mid-build DDL
+// error.
 
 /**
- * Why this URL looks like a PgBouncer/pooled connection, or null when it does
- * not. Pooled markers: port 6543 (Supabase transaction pooler), a pooler
- * hostname, or an explicit ?pgbouncer=true. DDL cannot run over PgBouncer.
+ * Why this URL cannot run DDL, or null when it can.
+ *
+ * ONLY two markers are forbidden (Follow-up 03):
+ *   - port 6543 — Supabase TRANSACTION pooler: PgBouncer hands each
+ *     statement a different server connection, so CREATE TYPE, enum
+ *     replacement and drizzle's transactional migrations break.
+ *   - ?pgbouncer=true — explicit transaction-pooling hint.
+ *
+ * A pooler HOSTNAME is NOT forbidden: the session pooler
+ * (aws-0-<region>.pooler.supabase.com:5432) gives each client a dedicated
+ * server connection for the session — DDL works, and it is a supported
+ * DATABASE_URL_MIGRATE value. The direct connection (db.<ref>.supabase.co:5432)
+ * equally works. Do not flag hostnames.
  *
  * @param {string} url
  * @returns {string | null}
@@ -26,11 +37,8 @@ export function pooledUrlReason(url) {
   if (parsed.port === "6543") {
     reasons.push("port 6543 (transaction pooler)");
   }
-  if (parsed.hostname.toLowerCase().includes("pooler")) {
-    reasons.push(`pooler hostname "${parsed.hostname}"`);
-  }
   if (parsed.searchParams.get("pgbouncer") === "true") {
-    reasons.push("pgbouncer=true");
+    reasons.push("?pgbouncer=true (transaction pooling)");
   }
   return reasons.length > 0 ? reasons.join(" + ") : null;
 }
@@ -43,18 +51,28 @@ export function isPooledUrl(url) {
   return pooledUrlReason(url) !== null;
 }
 
-const DIRECT_FIX_LINES = [
+const DDL_SAFE_EXPLAINER = [
+  "  The transaction pooler (port 6543 / ?pgbouncer=true) breaks DDL — CREATE",
+  "  TYPE, enum replacement and drizzle's transactional migrations fail there.",
+  "  DDL is safe over a DIRECT connection OR the SESSION pooler (port 5432).",
+];
+
+const FIX_LINES = [
+  "  FIX: point DATABASE_URL_MIGRATE at the Supabase DIRECT connection:",
   "      postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres",
-  "  (Supabase dashboard → Project Settings → Database → Connection string → Direct.)",
+  "  — or the SESSION pooler (also port 5432):",
+  "      postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres",
+  "  (Supabase dashboard → Project Settings → Database → Connection string → Direct / Session pooler.)",
 ];
 
 /**
  * Decide which URL the migration step may use.
  *
- * Rules (Follow-up 02 §1.1):
- *   - DATABASE_URL_MIGRATE set  → must be direct; pooled fails fast.
- *   - unset + pooled DATABASE_URL → fail fast (this was the silent killer).
- *   - unset + non-pooled DATABASE_URL → previous fallback behavior.
+ * Rules (Follow-up 02 §1.1, corrected by Follow-up 03):
+ *   - DATABASE_URL_MIGRATE set  → must be DDL-capable (no 6543 / pgbouncer);
+ *     direct :5432 and session-pooler :5432 are both fine.
+ *   - unset + transaction-pooler DATABASE_URL → fail fast (the silent killer).
+ *   - unset + DDL-capable DATABASE_URL → previous fallback behavior.
  *
  * @param {Record<string, string | undefined>} env
  * @returns {{ url: string, source: "DATABASE_URL_MIGRATE" | "DATABASE_URL" } | { error: string }}
@@ -68,11 +86,9 @@ export function resolveMigrationDatabaseUrl(env) {
     if (reason) {
       return {
         error: [
-          `[auto-migrate] FATAL: DATABASE_URL_MIGRATE looks like a POOLED connection (${reason}).`,
-          "  Migrations run DDL (CREATE TYPE, enum/table changes) which needs a real",
-          "  session — over PgBouncer it fails mid-deploy with cryptic errors.",
-          "  FIX: point DATABASE_URL_MIGRATE at the Supabase DIRECT connection:",
-          ...DIRECT_FIX_LINES,
+          `[auto-migrate] FATAL: DATABASE_URL_MIGRATE cannot run migrations (${reason}).`,
+          ...DDL_SAFE_EXPLAINER,
+          ...FIX_LINES,
         ].join("\n"),
       };
     }
@@ -84,13 +100,14 @@ export function resolveMigrationDatabaseUrl(env) {
     if (reason) {
       return {
         error: [
-          `[auto-migrate] FATAL: DATABASE_URL looks like a POOLED connection (${reason})`,
-          "  and DATABASE_URL_MIGRATE is NOT set. Migrations run DDL, which cannot",
-          "  execute over the transaction pooler — this deploy would fail with a",
-          "  cryptic mid-build error.",
+          `[auto-migrate] FATAL: DATABASE_URL cannot run migrations (${reason})`,
+          "  and DATABASE_URL_MIGRATE is NOT set.",
+          ...DDL_SAFE_EXPLAINER,
           "  FIX: set DATABASE_URL_MIGRATE in your Vercel project",
-          "  (Settings → Environment Variables) to the Supabase DIRECT connection:",
-          ...DIRECT_FIX_LINES,
+          "  (Settings → Environment Variables) — DIRECT connection:",
+          "      postgresql://postgres:<password>@db.<ref>.supabase.co:5432/postgres",
+          "  — or the SESSION pooler (also port 5432):",
+          "      postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres",
         ].join("\n"),
       };
     }

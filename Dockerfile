@@ -21,9 +21,10 @@
 # server boots — the same guarantee Vercel gets at build time. Re-deploys and
 # fresh deploys on Docker/Portainer therefore push schema changes
 # automatically. Migrations run over DATABASE_URL_MIGRATE when set, falling
-# back to DATABASE_URL; a POOLED URL in either slot fails the boot fast with an
-# actionable message (DDL cannot run over PgBouncer). Set SKIP_DB_MIGRATE=1 to
-# opt out (loudly warned).
+# back to DATABASE_URL; a transaction-pooler URL (port 6543 / ?pgbouncer=true)
+# in either slot fails the boot fast with an actionable message (DDL cannot run
+# over the transaction pooler; :5432 direct and session pooler are fine). Set
+# SKIP_DB_MIGRATE=1 to opt out (loudly warned).
 
 # --- deps: full dependency install (dev deps included — the builder needs
 # the Next/Turbopack + drizzle-kit/tsx toolchain; they never reach the runner).
