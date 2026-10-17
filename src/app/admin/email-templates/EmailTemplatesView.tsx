@@ -7,6 +7,7 @@ import {
   Eye,
   Info,
   Loader2,
+  Mail,
   RefreshCw,
   RotateCcw,
   Sparkles,
@@ -122,116 +123,130 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
   return (
     <div className="space-y-6">
       {/* Code-owned governance notice */}
-      <div className="flex items-start gap-3 rounded-xl border border-border bg-secondary/30 p-4 text-xs">
+      <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 text-sm shadow-xs">
         <Info className="size-4 text-primary shrink-0 mt-0.5" aria-hidden="true" />
         <div className="space-y-1">
           <p className="font-semibold text-foreground">
             Templates are code-owned — preview only.
           </p>
-          <p className="text-muted-foreground">
-            Transactional email templates are defined in code (<code className="font-mono text-[11px] text-foreground">src/modules/email/templates/</code>) to guarantee type safety and transactional reliability. Use this registry to preview formatting, verify dynamic merge variables, and test email layouts.
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Transactional email templates are defined in code (<code className="font-mono text-xs text-foreground bg-muted px-1.5 py-0.5 rounded">src/modules/email/templates/</code>) to guarantee type safety and transactional reliability. Use this registry to preview formatting, verify dynamic merge variables, and test email layouts.
           </p>
         </div>
       </div>
 
-      {/* 6 Templates Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {templates.map((template) => {
-          const isCustomer = template.audience === "customer";
+      {/* Templates Grid */}
+      {templates.length === 0 ? (
+        <Card className="rounded-xl border border-border bg-card shadow-xs p-16 text-center">
+          <div className="flex flex-col items-center justify-center space-y-3">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-muted/60 text-muted-foreground border border-border">
+              <Mail className="size-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-foreground">No email templates registered</p>
+              <p className="text-xs text-muted-foreground max-w-sm">
+                Transactional templates are loaded dynamically from the email engine.
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {templates.map((template) => {
+            const isCustomer = template.audience === "customer";
 
-          return (
-            <Card
-              key={template.id}
-              className="shadow-xs border-border bg-card flex flex-col justify-between hover:border-primary/40 transition-colors"
-            >
-              <CardHeader className="p-4 pb-2 space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge
-                    variant={isCustomer ? "secondary" : "info"}
-                    className="text-[10px] uppercase tracking-wider font-semibold gap-1 px-2 py-0.5"
-                  >
-                    {isCustomer ? (
-                      <User className="size-2.5" aria-hidden="true" />
-                    ) : (
-                      <Users className="size-2.5" aria-hidden="true" />
-                    )}
-                    <span>{template.audience}</span>
-                  </Badge>
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    {template.id}
-                  </span>
-                </div>
-                <CardTitle className="text-sm font-semibold tracking-tight text-foreground line-clamp-1">
-                  <h2 className="text-sm font-semibold tracking-tight text-foreground line-clamp-1">
-                    {template.name}
-                  </h2>
-                </CardTitle>
-                <CardDescription className="text-xs line-clamp-2 min-h-[32px]">
-                  {template.description}
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="p-4 pt-2 space-y-4">
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    Parameters ({template.params.length})
-                  </span>
-                  <div className="flex flex-wrap gap-1">
-                    {template.params.map((param) => (
-                      <span
-                        key={param.key}
-                        className="font-mono text-[10px] bg-secondary/80 text-secondary-foreground px-1.5 py-0.5 rounded-sm"
-                      >
-                        {param.key}
-                      </span>
-                    ))}
+            return (
+              <Card
+                key={template.id}
+                className="rounded-xl border border-border bg-card shadow-xs flex flex-col justify-between hover:border-primary/40 transition-colors"
+              >
+                <CardHeader className="p-5 pb-3 space-y-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge
+                      variant={isCustomer ? "secondary" : "info"}
+                      className="text-xs uppercase tracking-wider font-semibold gap-1 px-2.5 py-0.5"
+                    >
+                      {isCustomer ? (
+                        <User className="size-3" aria-hidden="true" />
+                      ) : (
+                        <Users className="size-3" aria-hidden="true" />
+                      )}
+                      <span>{template.audience}</span>
+                    </Badge>
+                    <span className="font-mono tabular-nums text-xs text-muted-foreground">
+                      {template.id}
+                    </span>
                   </div>
-                </div>
+                  <CardTitle className="text-base font-semibold tracking-tight text-foreground line-clamp-1">
+                    {template.name}
+                  </CardTitle>
+                  <CardDescription className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
+                    {template.description}
+                  </CardDescription>
+                </CardHeader>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleOpenPreview(template)}
-                  className="w-full min-h-[44px] text-xs font-medium gap-1.5"
-                >
-                  <Eye className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                  <span>Preview Template</span>
-                </Button>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                <CardContent className="p-5 pt-0 space-y-4">
+                  <div className="space-y-2">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Parameters ({template.params.length})
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {template.params.map((param) => (
+                        <span
+                          key={param.key}
+                          className="font-mono text-xs bg-muted text-foreground px-2 py-0.5 rounded-md border border-border"
+                        >
+                          {param.key}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenPreview(template)}
+                    className="w-full h-10 text-sm font-semibold rounded-lg gap-2"
+                  >
+                    <Eye className="size-4 text-muted-foreground" aria-hidden="true" />
+                    <span>Preview Template</span>
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Preview Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden border-border bg-card">
-          <DialogHeader className="p-4 pb-3 border-b border-border/60 bg-secondary/20 shrink-0">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-xl border border-border bg-card shadow-lg">
+          <DialogHeader className="p-5 pb-4 border-b border-border bg-muted/20 shrink-0">
             <div className="flex flex-wrap items-center justify-between gap-2 pr-6">
-              <div className="space-y-0.5">
+              <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <DialogTitle className="text-base font-semibold text-foreground">
                     {selectedTemplate?.name}
                   </DialogTitle>
                   <Badge
                     variant={selectedTemplate?.audience === "customer" ? "secondary" : "info"}
-                    className="text-[10px] uppercase font-mono px-1.5 py-0"
+                    className="text-xs uppercase font-mono px-2 py-0.5 font-semibold"
                   >
                     {selectedTemplate?.audience}
                   </Badge>
                 </div>
-                <DialogDescription className="text-xs text-muted-foreground line-clamp-1">
+                <DialogDescription className="text-sm text-muted-foreground line-clamp-1">
                   {selectedTemplate?.description}
                 </DialogDescription>
               </div>
-              <Badge variant="outline" className="text-[10px] font-mono">
+              <Badge variant="outline" className="text-xs font-mono tabular-nums">
                 {selectedTemplate?.id}
               </Badge>
             </div>
 
             {/* Subject line strip */}
-            <div className="mt-3 flex items-center gap-2 rounded-md bg-background px-3 py-2 border border-border">
+            <div className="mt-3 flex items-center gap-2.5 rounded-lg bg-muted/40 px-3.5 py-2.5 border border-border">
               <span className="text-xs font-semibold text-muted-foreground shrink-0">Subject:</span>
               <p className="font-mono text-xs font-semibold text-foreground truncate">
                 {previewLoading && !previewSubject ? (
@@ -246,13 +261,13 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
           {/* Dialog Body: Split layout (Preview on Left, Overrides on Right) */}
           <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 gap-0">
             {/* HTML Preview Frame */}
-            <div className="md:col-span-7 lg:col-span-8 p-4 flex flex-col gap-2 bg-muted/10 border-b md:border-b-0 md:border-r border-border/60">
+            <div className="md:col-span-7 lg:col-span-8 p-5 flex flex-col gap-2.5 bg-muted/10 border-b md:border-b-0 md:border-r border-border">
               <div className="flex items-center justify-between text-xs text-muted-foreground pb-1">
                 <span className="font-medium flex items-center gap-1.5">
-                  <Code2 className="size-3.5" aria-hidden="true" />
+                  <Code2 className="size-4" aria-hidden="true" />
                   Sandboxed HTML Output
                 </span>
-                <span className="font-mono text-[10px] text-muted-foreground">
+                <span className="font-mono text-xs text-muted-foreground">
                   sandbox=&quot;&quot; (inert, scripts disabled)
                 </span>
               </div>
@@ -261,17 +276,17 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
                 <div
                   role="alert"
                   aria-live="polite"
-                  className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive flex items-start gap-2"
+                  className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive flex items-start gap-2"
                 >
                   <AlertCircle className="size-4 shrink-0 mt-0.5" aria-hidden="true" />
                   <div className="space-y-1">
                     <p className="font-semibold">Failed to render preview</p>
-                    <p className="font-mono text-[11px]">{previewError}</p>
+                    <p className="font-mono text-xs">{previewError}</p>
                   </div>
                 </div>
               ) : null}
 
-              <div className="relative flex-1 min-h-[380px] rounded-lg border border-border bg-white overflow-hidden shadow-inner">
+              <div className="relative flex-1 min-h-[400px] rounded-lg border border-border bg-white overflow-hidden shadow-inner">
                 {previewLoading && (
                   <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-xs">
                     <div className="flex items-center gap-2 rounded-lg bg-card px-4 py-2 border border-border shadow-md text-xs font-medium">
@@ -284,33 +299,33 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
                   srcDoc={previewHtml}
                   sandbox=""
                   title={`Email preview for ${selectedTemplate?.name}`}
-                  className="w-full h-full min-h-[380px] border-0"
+                  className="w-full h-full min-h-[400px] border-0"
                 />
               </div>
             </div>
 
             {/* Overrides Mini-Form */}
-            <div className="md:col-span-5 lg:col-span-4 p-4 flex flex-col justify-between bg-card space-y-4">
+            <div className="md:col-span-5 lg:col-span-4 p-5 flex flex-col justify-between bg-card space-y-4">
               <div className="space-y-3">
                 <div className="space-y-0.5">
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                     <Sparkles className="size-3.5 text-primary" aria-hidden="true" />
                     <span>Variable Overrides</span>
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Test layout rendering with custom names, links, and prices.
                   </p>
                 </div>
 
                 <form id="overrides-form" onSubmit={handleUpdateOverrides} className="space-y-3 pt-1">
                   {selectedTemplate?.params.map((param) => (
-                    <div key={param.key} className="space-y-1">
+                    <div key={param.key} className="space-y-1.5">
                       <Label
                         htmlFor={`param-${param.key}`}
-                        className="text-xs font-mono font-medium flex items-center justify-between"
+                        className="text-[13px] font-mono font-medium flex items-center justify-between"
                       >
                         <span>{param.key}</span>
-                        <span className="text-[10px] text-muted-foreground font-sans font-normal">
+                        <span className="text-xs text-muted-foreground font-sans font-normal">
                           {param.type}
                         </span>
                       </Label>
@@ -324,7 +339,7 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
                             [param.key]: e.target.value,
                           }))
                         }
-                        className="h-8 text-xs font-mono"
+                        className="h-10 text-sm font-mono rounded-lg border-border"
                       />
                     </div>
                   ))}
@@ -332,17 +347,17 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
               </div>
 
               {/* Action buttons */}
-              <div className="space-y-2 pt-3 border-t border-border/60">
+              <div className="space-y-2.5 pt-4 border-t border-border">
                 <Button
                   type="submit"
                   form="overrides-form"
                   disabled={previewLoading}
-                  className="w-full min-h-[44px] text-xs font-semibold gap-1.5"
+                  className="w-full h-10 text-sm font-semibold rounded-lg gap-2"
                 >
                   {previewLoading ? (
-                    <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                    <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                   ) : (
-                    <RefreshCw className="size-3.5" aria-hidden="true" />
+                    <RefreshCw className="size-4" aria-hidden="true" />
                   )}
                   <span>Update Preview</span>
                 </Button>
@@ -352,9 +367,9 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
                   variant="outline"
                   disabled={previewLoading}
                   onClick={handleResetOverrides}
-                  className="w-full min-h-[44px] text-xs gap-1.5"
+                  className="w-full h-10 text-sm font-medium rounded-lg gap-2"
                 >
-                  <RotateCcw className="size-3.5" aria-hidden="true" />
+                  <RotateCcw className="size-4" aria-hidden="true" />
                   <span>Reset to Sample Defaults</span>
                 </Button>
               </div>

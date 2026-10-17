@@ -13,6 +13,7 @@ import {
   Filter,
   Loader2,
   Plus,
+  Receipt,
   Search,
   XCircle,
 } from "lucide-react";
@@ -250,48 +251,47 @@ export default function ExpenseEntriesView({
       {/* Header bar with Record Expense Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">Operational & Direct Costs</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Operational & Direct Costs</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Staff expense logs awaiting approval and realized financial outflows.
           </p>
         </div>
         <Button
           onClick={() => setSubmitDialogOpen(true)}
-          size="sm"
-          className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground"
+          className="h-10 text-sm font-semibold gap-2 rounded-lg bg-primary text-primary-foreground"
         >
-          <Plus className="size-3.5" aria-hidden="true" />
+          <Plus className="size-4" aria-hidden="true" />
           Record Expense
         </Button>
       </div>
 
       {/* Filter Toolbar */}
-      <form onSubmit={applyFilters} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-3 shadow-xs">
+      <form onSubmit={applyFilters} className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card p-4 shadow-xs">
         <div className="w-full sm:w-48">
-          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">Status</Label>
+          <Label className="text-[13px] font-medium text-foreground mb-1.5 block">Status</Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-10 text-sm rounded-lg border-border">
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs">All statuses</SelectItem>
-              <SelectItem value="pending" className="text-xs">Pending Review</SelectItem>
-              <SelectItem value="approved" className="text-xs">Approved</SelectItem>
-              <SelectItem value="rejected" className="text-xs">Rejected</SelectItem>
+              <SelectItem value="all" className="text-sm">All statuses</SelectItem>
+              <SelectItem value="pending" className="text-sm">Pending Review</SelectItem>
+              <SelectItem value="approved" className="text-sm">Approved</SelectItem>
+              <SelectItem value="rejected" className="text-sm">Rejected</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         <div className="w-full sm:w-48">
-          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">Category</Label>
+          <Label className="text-[13px] font-medium text-foreground mb-1.5 block">Category</Label>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-10 text-sm rounded-lg border-border">
               <SelectValue placeholder="All categories" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs">All categories</SelectItem>
+              <SelectItem value="all" className="text-sm">All categories</SelectItem>
               {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id} className="text-xs">
+                <SelectItem key={c.id} value={c.id} className="text-sm">
                   {c.name}
                 </SelectItem>
               ))}
@@ -299,41 +299,41 @@ export default function ExpenseEntriesView({
           </Select>
         </div>
 
-        <div className="w-full sm:w-36">
-          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">From Date</Label>
+        <div className="w-full sm:w-40">
+          <Label className="text-[13px] font-medium text-foreground mb-1.5 block">From Date</Label>
           <Input
             type="date"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            className="h-8 text-xs font-mono"
+            className="h-10 text-sm font-mono tabular-nums rounded-lg border-border"
           />
         </div>
 
-        <div className="w-full sm:w-36">
-          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">To Date</Label>
+        <div className="w-full sm:w-40">
+          <Label className="text-[13px] font-medium text-foreground mb-1.5 block">To Date</Label>
           <Input
             type="date"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            className="h-8 text-xs font-mono"
+            className="h-10 text-sm font-mono tabular-nums rounded-lg border-border"
           />
         </div>
 
-        <div className="flex-1 min-w-[180px]">
-          <Label className="text-[11px] font-medium text-muted-foreground mb-1 block">Search</Label>
+        <div className="flex-1 min-w-[200px]">
+          <Label className="text-[13px] font-medium text-foreground mb-1.5 block">Search</Label>
           <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Vendor or description..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 text-xs"
+              className="pl-9 h-10 text-sm rounded-lg border-border"
             />
           </div>
         </div>
 
-        <Button type="submit" variant="secondary" size="sm" className="h-8 text-xs gap-1">
-          <Filter className="size-3" aria-hidden="true" />
+        <Button type="submit" variant="secondary" className="h-10 text-sm font-semibold rounded-lg gap-1.5 px-4">
+          <Filter className="size-4" aria-hidden="true" />
           Filter
         </Button>
       </form>
@@ -343,7 +343,7 @@ export default function ExpenseEntriesView({
         <div
           role="alert"
           aria-live="polite"
-          className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+          className="flex items-center justify-between rounded-xl border border-destructive/40 bg-destructive/10 p-3.5 text-sm text-destructive"
         >
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
@@ -352,7 +352,7 @@ export default function ExpenseEntriesView({
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="font-semibold underline ml-2 hover:opacity-80"
+            className="font-semibold underline ml-2 hover:opacity-80 text-sm"
           >
             Dismiss
           </button>
@@ -363,7 +363,7 @@ export default function ExpenseEntriesView({
         <div
           role="status"
           aria-live="polite"
-          className="flex items-center justify-between rounded-lg border border-success/40 bg-success/10 p-3 text-xs text-success"
+          className="flex items-center justify-between rounded-xl border border-success/40 bg-success/10 p-3.5 text-sm text-success"
         >
           <div className="flex items-center gap-2">
             <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
@@ -372,7 +372,7 @@ export default function ExpenseEntriesView({
           <button
             type="button"
             onClick={() => setSuccessNotice(null)}
-            className="font-semibold underline ml-2 hover:opacity-80"
+            className="font-semibold underline ml-2 hover:opacity-80 text-sm"
           >
             Dismiss
           </button>
@@ -381,65 +381,94 @@ export default function ExpenseEntriesView({
 
       {/* Entries Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[110px] text-xs font-semibold">Date</TableHead>
-              <TableHead className="text-xs font-semibold">Category</TableHead>
-              <TableHead className="text-xs font-semibold">Description & Vendor</TableHead>
-              <TableHead className="text-xs font-semibold">Amount</TableHead>
-              <TableHead className="text-xs font-semibold">Linked Order</TableHead>
-              <TableHead className="text-xs font-semibold">Submitted By</TableHead>
-              <TableHead className="text-xs font-semibold">Status</TableHead>
-              {canApprove ? (
-                <TableHead className="w-[140px] text-right text-xs font-semibold">Actions</TableHead>
-              ) : null}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={canApprove ? 8 : 7} className="h-32 text-center text-xs text-muted-foreground">
-                  No expense entries found matching the filter criteria.
-                </TableCell>
-              </TableRow>
+        {items.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <Receipt className="size-6 text-muted-foreground" />
+            </div>
+            <h3 className="mt-4 text-base font-semibold text-foreground">No expense entries found</h3>
+            <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+              {search || statusFilter !== "all" || categoryFilter !== "all" || fromDate || toDate
+                ? "No expense records match the applied filters. Try adjusting your search criteria."
+                : "No operational or direct expenses recorded yet. Submit your first expense entry."}
+            </p>
+            {search || statusFilter !== "all" || categoryFilter !== "all" || fromDate || toDate ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setCategoryFilter("all");
+                  setFromDate("");
+                  setToDate("");
+                  setSearch("");
+                  router.push(pathname as Route);
+                }}
+                className="mt-5 h-9 rounded-lg text-sm font-semibold"
+              >
+                Reset Filters
+              </Button>
             ) : (
-              items.map((entry) => (
-                <TableRow key={entry.id} className="text-xs hover:bg-muted/30">
-                  <TableCell className="font-mono text-muted-foreground">
+              <Button
+                onClick={() => setSubmitDialogOpen(true)}
+                className="mt-5 h-10 gap-2 rounded-lg text-sm font-semibold"
+              >
+                <Plus className="size-4" /> Record Expense
+              </Button>
+            )}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="bg-muted/40">
+              <TableRow className="border-b border-border/80">
+                <TableHead className="w-[110px] text-[13px] font-semibold text-muted-foreground py-3.5 pl-6">Date</TableHead>
+                <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Category</TableHead>
+                <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Description & Vendor</TableHead>
+                <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Amount</TableHead>
+                <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Linked Order</TableHead>
+                <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Submitted By</TableHead>
+                <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Status</TableHead>
+                {canApprove ? (
+                  <TableHead className="w-[160px] text-right text-[13px] font-semibold text-muted-foreground py-3.5 pr-6">Actions</TableHead>
+                ) : null}
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-border/60">
+              {items.map((entry) => (
+                <TableRow key={entry.id} className="min-h-[52px] text-sm hover:bg-muted/30 transition-colors">
+                  <TableCell className="py-3.5 pl-6 font-mono text-sm tabular-nums text-muted-foreground">
                     {entry.date}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3.5">
                     <div className="font-semibold text-foreground">{entry.categoryName}</div>
-                    <Badge variant="outline" className="text-[10px] uppercase font-mono mt-0.5">
+                    <Badge variant="outline" className="text-xs uppercase font-mono mt-1">
                       {entry.categoryKind.replace(/_/g, " ")}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3.5">
                     <div className="text-foreground font-medium">{entry.description}</div>
                     {entry.vendor ? (
-                      <div className="text-[11px] text-muted-foreground">Vendor: {entry.vendor}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">Vendor: {entry.vendor}</div>
                     ) : null}
                     {entry.receiptUrl ? (
                       <a
                         href={entry.receiptUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5"
+                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
                       >
                         <ExternalLink className="size-3" aria-hidden="true" />
-                        Receipt Link
+                        Receipt Document
                       </a>
                     ) : null}
                   </TableCell>
-                  <TableCell className="font-mono font-semibold text-foreground">
+                  <TableCell className="py-3.5 font-mono font-semibold tabular-nums text-foreground">
                     {formatMoney(entry.amount, entry.currency)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3.5">
                     {entry.orderId ? (
                       <Link
                         href={`/admin/orders/${entry.orderId}` as Route}
-                        className="font-mono font-semibold text-primary hover:underline"
+                        className="font-mono font-semibold tabular-nums text-primary hover:underline"
                       >
                         {entry.orderNo || "Order"}
                       </Link>
@@ -447,24 +476,24 @@ export default function ExpenseEntriesView({
                       <span className="text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="py-3.5 text-muted-foreground text-sm">
                     {entry.createdByName || "Staff"}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(entry.status)} className="capitalize text-[10px]">
+                  <TableCell className="py-3.5">
+                    <Badge variant={getStatusBadgeVariant(entry.status)} className="capitalize text-xs font-medium">
                       {entry.status}
                     </Badge>
                   </TableCell>
                   {canApprove ? (
-                    <TableCell className="text-right">
+                    <TableCell className="py-3.5 pr-6 text-right">
                       {entry.status === "pending" ? (
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-2">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleApprove(entry.id)}
                             disabled={isPending}
-                            className="h-7 px-2 text-[11px] text-success border-success/30 hover:bg-success/10 hover:text-success"
+                            className="h-8 px-2.5 text-xs font-semibold text-success border-success/30 hover:bg-success/10 hover:text-success rounded-lg"
                           >
                             Approve
                           </Button>
@@ -476,31 +505,31 @@ export default function ExpenseEntriesView({
                               setRejectNote("");
                             }}
                             disabled={isPending}
-                            className="h-7 px-2 text-[11px] text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                            className="h-8 px-2.5 text-xs font-semibold text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive rounded-lg"
                           >
                             Reject
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground text-[11px]">
+                        <span className="text-muted-foreground text-xs font-medium">
                           {entry.status === "approved" ? "Approved" : "Rejected"}
                         </span>
                       )}
                     </TableCell>
                   ) : null}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {/* Pagination Footer */}
       {totalPages > 1 ? (
-        <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
+        <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
           <div>
-            Showing <span className="font-semibold text-foreground">{items.length}</span> of{" "}
-            <span className="font-semibold text-foreground">{total}</span> entries
+            Showing <span className="font-semibold tabular-nums text-foreground">{items.length}</span> of{" "}
+            <span className="font-semibold tabular-nums text-foreground">{total}</span> entries
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -508,14 +537,14 @@ export default function ExpenseEntriesView({
               variant="outline"
               size="sm"
               disabled={page <= 1}
-              className="h-8 gap-1 text-xs"
+              className="h-9 gap-1 text-sm rounded-lg font-medium"
             >
               <Link href={`/admin/expenses?${makePageParams(-1)}` as Route}>
-                <ChevronLeft className="size-3.5" aria-hidden="true" />
+                <ChevronLeft className="size-4" aria-hidden="true" />
                 Previous
               </Link>
             </Button>
-            <span className="text-xs">
+            <span className="text-sm tabular-nums font-medium">
               Page {page} of {totalPages}
             </span>
             <Button
@@ -536,24 +565,24 @@ export default function ExpenseEntriesView({
 
       {/* Record Expense Dialog */}
       <Dialog open={submitDialogOpen} onOpenChange={setSubmitDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-base font-semibold">Record New Expense</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
+            <DialogDescription className="text-sm text-muted-foreground">
               Submit an operational or order-linked cost for financial approval.
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmitExpense} className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label htmlFor="expense-category" className="text-xs font-medium">Expense Category *</Label>
+              <Label htmlFor="expense-category" className="text-[13px] font-medium text-foreground">Expense Category *</Label>
               <Select value={formCategoryId} onValueChange={setFormCategoryId}>
-                <SelectTrigger id="expense-category" className="h-9 text-xs">
+                <SelectTrigger id="expense-category" className="h-10 text-sm rounded-lg border-border">
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id} className="text-xs">
+                    <SelectItem key={c.id} value={c.id} className="text-sm">
                       {c.name} ({c.kind.replace(/_/g, " ")})
                     </SelectItem>
                   ))}
@@ -563,7 +592,7 @@ export default function ExpenseEntriesView({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="expense-amount" className="text-xs font-medium">Amount (BDT) *</Label>
+                <Label htmlFor="expense-amount" className="text-[13px] font-medium text-foreground">Amount (BDT) *</Label>
                 <Input
                   id="expense-amount"
                   type="number"
@@ -571,91 +600,89 @@ export default function ExpenseEntriesView({
                   placeholder="e.g. 15000"
                   value={formAmount}
                   onChange={(e) => setFormAmount(e.target.value)}
-                  className="h-9 text-xs font-mono"
+                  className="h-10 text-sm font-mono tabular-nums rounded-lg border-border"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="expense-date" className="text-xs font-medium">Business Date *</Label>
+                <Label htmlFor="expense-date" className="text-[13px] font-medium text-foreground">Business Date *</Label>
                 <Input
                   id="expense-date"
                   type="date"
                   max={todayIso()}
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
-                  className="h-9 text-xs font-mono"
+                  className="h-10 text-sm font-mono tabular-nums rounded-lg border-border"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="expense-description" className="text-xs font-medium">Description *</Label>
+              <Label htmlFor="expense-description" className="text-[13px] font-medium text-foreground">Description *</Label>
               <Input
                 id="expense-description"
                 placeholder="What was purchased or paid for..."
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
-                className="h-9 text-xs"
+                className="h-10 text-sm rounded-lg border-border"
                 required
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="expense-vendor" className="text-xs font-medium">Vendor / Payee (optional)</Label>
+                <Label htmlFor="expense-vendor" className="text-[13px] font-medium text-foreground">Vendor / Payee (optional)</Label>
                 <Input
                   id="expense-vendor"
                   placeholder="Airline, Hotel, Supplier..."
                   value={formVendor}
                   onChange={(e) => setFormVendor(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-10 text-sm rounded-lg border-border"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="expense-order-id" className="text-xs font-medium">Linked Order ID (optional)</Label>
+                <Label htmlFor="expense-order-id" className="text-[13px] font-medium text-foreground">Linked Order ID (optional)</Label>
                 <Input
                   id="expense-order-id"
                   placeholder="Order UUID if direct cost"
                   value={formOrderId}
                   onChange={(e) => setFormOrderId(e.target.value)}
-                  className="h-9 text-xs font-mono"
+                  className="h-10 text-sm font-mono rounded-lg border-border"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="expense-receipt-url" className="text-xs font-medium">Receipt Document URL (optional)</Label>
+              <Label htmlFor="expense-receipt-url" className="text-[13px] font-medium text-foreground">Receipt Document URL (optional)</Label>
               <Input
                 id="expense-receipt-url"
                 placeholder="https://..."
                 value={formReceiptUrl}
                 onChange={(e) => setFormReceiptUrl(e.target.value)}
-                className="h-9 text-xs"
+                className="h-10 text-sm rounded-lg border-border"
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="pt-2">
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="outline"
                 onClick={() => setSubmitDialogOpen(false)}
-                className="h-9 text-xs"
+                className="h-10 rounded-lg text-sm font-semibold"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                size="sm"
                 disabled={isPending}
-                className="h-9 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                className="h-10 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {isPending ? (
                   <>
-                    <Loader2 className="mr-2 size-3.5 animate-spin" aria-hidden="true" />
+                    <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
                     Submitting...
                   </>
                 ) : (
@@ -675,13 +702,13 @@ export default function ExpenseEntriesView({
               <XCircle className="size-4" aria-hidden="true" />
               Reject Expense Entry
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-muted-foreground">
+            <AlertDialogDescription className="text-sm text-muted-foreground">
               Are you sure you want to reject this expense of {rejectTarget ? formatMoney(rejectTarget.amount, rejectTarget.currency) : ""}? It will not count towards company P&L reports.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="space-y-2 py-2">
-            <Label htmlFor="expense-reject-note" className="text-xs font-medium">
+            <Label htmlFor="expense-reject-note" className="text-[13px] font-medium text-foreground">
               Internal Note (optional)
             </Label>
             <Textarea
@@ -690,18 +717,18 @@ export default function ExpenseEntriesView({
               value={rejectNote}
               onChange={(e) => setRejectNote(e.target.value)}
               rows={2}
-              className="text-xs"
+              className="text-sm rounded-lg border-border resize-none"
             />
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending} className="h-9 text-xs">
+          <AlertDialogFooter className="pt-2">
+            <AlertDialogCancel disabled={isPending} className="h-10 rounded-lg text-sm font-semibold">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleReject}
               disabled={isPending}
-              className="h-9 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="h-10 rounded-lg text-sm font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isPending ? "Rejecting..." : "Confirm Rejection"}
             </AlertDialogAction>

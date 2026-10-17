@@ -16,9 +16,9 @@ export default async function AdminEmailTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-0.5">
-        <h1 className="text-2xl font-semibold tracking-tight">Email Templates</h1>
-        <p className="text-xs text-muted-foreground">
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">Email Templates</h1>
+        <p className="text-sm text-muted-foreground">
           Preview transactional email templates dispatched across the booking and inquiry funnel.
         </p>
       </div>

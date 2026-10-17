@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { Route } from "next";
-import { Plus } from "lucide-react";
+import { Globe, Plus } from "lucide-react";
 import { listLandingPages } from "@/modules/landing-pages/service";
 import type { LandingPageStatus } from "@/modules/landing-pages/validation";
 import { statusSchema } from "@/modules/landing-pages/validation";
@@ -69,51 +69,70 @@ export default async function LandingPagesIndexPage({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">All Landing Pages</h2>
-          <p className="text-sm text-muted-foreground">
-            {total} {total === 1 ? "page" : "pages"} total
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Landing Pages</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {total} {total === 1 ? "page" : "pages"} configured for high-converting marketing campaigns
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="h-10 text-sm font-semibold gap-2 rounded-lg bg-primary text-primary-foreground">
           <Link href={"/admin/landing-pages/new" as Route}>
-            <Plus className="mr-1.5 size-4" aria-hidden="true" />
-            New landing page
+            <Plus className="size-4" aria-hidden="true" />
+            New Landing Page
           </Link>
         </Button>
       </div>
 
       <LandingFilters initialSearch={search} initialStatus={status ?? ""} />
 
-      <Card className="overflow-hidden">
+      <Card className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title &amp; Slug</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>FB Content ID</TableHead>
-                  <TableHead>Updated</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="py-12 text-center text-muted-foreground">
-                      No landing pages found. Click &ldquo;New landing page&rdquo; to create one.
-                    </TableCell>
-                  </TableRow>
+            {items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center">
+                <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                  <Globe className="size-6 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">No landing pages found</h3>
+                <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+                  {search || status
+                    ? "No landing pages match the active filters. Try adjusting your search query."
+                    : "No campaign landing pages created yet. Launch your first marketing funnel."}
+                </p>
+                {search || status ? (
+                  <Button asChild variant="outline" className="mt-5 h-9 rounded-lg text-sm font-semibold">
+                    <Link href={"/admin/landing-pages" as Route}>
+                      Clear Filters
+                    </Link>
+                  </Button>
                 ) : (
-                  items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="max-w-xs">
+                  <Button asChild className="mt-5 h-10 gap-2 rounded-lg text-sm font-semibold">
+                    <Link href={"/admin/landing-pages/new" as Route}>
+                      <Plus className="size-4" /> Create Landing Page
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="border-b border-border/80">
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5 pl-6">Title &amp; Slug</TableHead>
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Status</TableHead>
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">FB Content ID</TableHead>
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Updated</TableHead>
+                    <TableHead className="w-[120px] text-right text-[13px] font-semibold text-muted-foreground py-3.5 pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-border/60">
+                  {items.map((item) => (
+                    <TableRow key={item.id} className="min-h-[52px] text-sm hover:bg-muted/30 transition-colors">
+                      <TableCell className="max-w-xs py-3.5 pl-6">
                         <Link
                           href={`/admin/landing-pages/${item.id}/edit` as Route}
-                          className="font-medium text-foreground hover:underline"
+                          className="font-semibold text-foreground hover:underline"
                         >
                           {item.title}
                         </Link>
@@ -121,21 +140,21 @@ export default async function LandingPagesIndexPage({
                           <span>/l/{item.slug}</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3.5">
                         <Badge
                           variant={item.status === "published" ? "success" : "secondary"}
-                          className="capitalize text-xs"
+                          className="capitalize text-xs font-medium"
                         >
                           {item.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-xs font-mono text-muted-foreground">
+                      <TableCell className="py-3.5 text-xs font-mono text-muted-foreground">
                         {item.fbContentId ? item.fbContentId : "—"}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="py-3.5 text-sm font-mono tabular-nums text-muted-foreground">
                         {dateCell(item.updatedAt)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="py-3.5 pr-6 text-right">
                         <LandingRowActions
                           id={item.id}
                           slug={item.slug}
@@ -144,35 +163,39 @@ export default async function LandingPagesIndexPage({
                         />
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {totalPages > 1 ? (
-        <div className="flex items-center justify-between pt-2">
-          <p className="text-xs text-muted-foreground">
-            Page {page} of {totalPages}
-          </p>
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
+          <div>
+            Showing <span className="font-semibold tabular-nums text-foreground">{items.length}</span> of{" "}
+            <span className="font-semibold tabular-nums text-foreground">{total}</span> pages
+          </div>
+          <div className="flex items-center gap-2">
             <Button
               asChild
               variant="outline"
               size="sm"
               disabled={page <= 1}
-              className={page <= 1 ? "pointer-events-none opacity-50" : ""}
+              className={`h-9 gap-1 text-sm rounded-lg font-medium ${page <= 1 ? "pointer-events-none opacity-50" : ""}`}
             >
               <Link href={`/admin/landing-pages?${pageParams(-1)}` as Route}>Previous</Link>
             </Button>
+            <span className="text-sm tabular-nums font-medium">
+              Page {page} of {totalPages}
+            </span>
             <Button
               asChild
               variant="outline"
               size="sm"
               disabled={page >= totalPages}
-              className={page >= totalPages ? "pointer-events-none opacity-50" : ""}
+              className={`h-9 gap-1 text-sm rounded-lg font-medium ${page >= totalPages ? "pointer-events-none opacity-50" : ""}`}
             >
               <Link href={`/admin/landing-pages?${pageParams(1)}` as Route}>Next</Link>
             </Button>

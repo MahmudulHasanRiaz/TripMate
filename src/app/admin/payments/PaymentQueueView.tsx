@@ -173,8 +173,8 @@ export default function PaymentQueueView({
               asChild
               variant={isSelected ? "secondary" : "ghost"}
               size="sm"
-              className={`h-8 text-xs font-medium ${
-                isSelected ? "bg-secondary text-foreground shadow-xs font-semibold" : "text-muted-foreground"
+              className={`h-9 px-3.5 rounded-lg text-sm font-medium transition-all duration-150 ease-out ${
+                isSelected ? "bg-secondary text-foreground shadow-xs font-semibold" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <Link href={`/admin/payments?${makeParams(f.value, 1)}` as Route}>
@@ -230,71 +230,86 @@ export default function PaymentQueueView({
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[130px] text-xs font-semibold">Order #</TableHead>
-              <TableHead className="text-xs font-semibold">Customer</TableHead>
-              <TableHead className="text-xs font-semibold">Gateway</TableHead>
-              <TableHead className="text-xs font-semibold">Amount</TableHead>
-              <TableHead className="text-xs font-semibold">Transaction ID</TableHead>
-              <TableHead className="text-xs font-semibold">Sender Number</TableHead>
-              <TableHead className="text-xs font-semibold">Proof</TableHead>
-              <TableHead className="text-xs font-semibold">Submitted</TableHead>
-              <TableHead className="text-xs font-semibold">Status</TableHead>
-              <TableHead className="w-[140px] text-right text-xs font-semibold">Actions</TableHead>
+            <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+              <TableHead className="h-11 w-[130px] text-xs font-semibold uppercase tracking-wider text-muted-foreground">Order #</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Customer</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Gateway</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Amount</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Transaction ID</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sender Number</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Proof</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Submitted</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+              <TableHead className="h-11 w-[150px] text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="h-32 text-center text-xs text-muted-foreground">
-                  No payments found in this queue.
+                <TableCell colSpan={10} className="py-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                      <ShieldCheck className="size-6" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-semibold text-foreground">No payments found</h4>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        All payments in this category have been processed or no submissions match.
+                      </p>
+                    </div>
+                    {currentStatus && currentStatus !== "all" ? (
+                      <Button asChild variant="outline" size="sm" className="mt-2 h-9 rounded-lg text-sm">
+                        <Link href={"/admin/payments" as Route}>View All Submissions</Link>
+                      </Button>
+                    ) : null}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
               items.map((p) => (
-                <TableRow key={p.id} className="text-xs hover:bg-muted/30">
-                  <TableCell className="font-mono font-bold">
+                <TableRow key={p.id} className="min-h-[52px] border-b border-border transition-colors hover:bg-muted/30">
+                  <TableCell className="py-3.5 font-mono text-sm font-semibold tabular-nums">
                     <Link
                       href={`/admin/orders/${p.orderId}` as Route}
-                      className="hover:text-primary transition-colors flex items-center gap-1"
+                      className="hover:text-primary transition-colors flex items-center gap-1.5"
                     >
                       {p.orderNo}
                       <ExternalLink className="size-3 text-muted-foreground" aria-hidden="true" />
                     </Link>
                   </TableCell>
-                  <TableCell className="font-medium text-foreground">{p.customerName}</TableCell>
-                  <TableCell>
-                    <div className="font-medium">{p.gatewayName || "Manual Entry"}</div>
+                  <TableCell className="py-3.5 text-sm font-medium text-foreground">{p.customerName}</TableCell>
+                  <TableCell className="py-3.5">
+                    <div className="text-sm font-medium text-foreground">{p.gatewayName || "Manual Entry"}</div>
                     {p.gatewayKind ? (
-                      <span className="text-[10px] text-muted-foreground capitalize">
+                      <span className="text-xs text-muted-foreground capitalize">
                         {p.gatewayKind}
                       </span>
                     ) : null}
                   </TableCell>
-                  <TableCell className="font-mono font-semibold text-foreground">
+                  <TableCell className="py-3.5 font-mono text-sm font-bold text-foreground tabular-nums">
                     {formatMoney(p.amount, p.currency)}
                   </TableCell>
-                  <TableCell className="font-mono text-[11px] font-semibold">
+                  <TableCell className="py-3.5 font-mono text-xs font-semibold tabular-nums text-foreground">
                     {p.methodTxnId || "—"}
                   </TableCell>
-                  <TableCell className="font-mono text-[11px] text-muted-foreground">
+                  <TableCell className="py-3.5 font-mono text-xs tabular-nums text-muted-foreground">
                     {p.senderNumber || "—"}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-3.5">
                     {p.screenshotUrl ? (
                       <button
                         type="button"
                         onClick={() => setScreenshotPreviewUrl(p.screenshotUrl)}
-                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                       >
                         <ImageIcon className="size-3.5" aria-hidden="true" />
                         View Slip
                       </button>
                     ) : (
-                      <span className="text-muted-foreground text-[11px]">—</span>
+                      <span className="text-muted-foreground text-xs">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="py-3.5 text-sm text-muted-foreground tabular-nums">
                     {new Date(p.createdAt).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "short",
@@ -302,12 +317,12 @@ export default function PaymentQueueView({
                       minute: "2-digit",
                     })}
                   </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(p.status)} className="capitalize text-[10px]">
+                  <TableCell className="py-3.5">
+                    <Badge variant={getStatusBadgeVariant(p.status)} className="capitalize text-xs font-medium px-2 py-0.5">
                       {p.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="py-3.5 text-right">
                     {p.status === "submitted" || p.status === "pending" ? (
                       <div className="flex items-center justify-end gap-1.5">
                         <Button
@@ -318,7 +333,7 @@ export default function PaymentQueueView({
                             setVerifyNote("");
                           }}
                           disabled={isPending}
-                          className="h-7 px-2 text-[11px] text-success border-success/30 hover:bg-success/10 hover:text-success"
+                          className="h-8 px-2.5 rounded-md text-xs font-medium text-success border-success/30 hover:bg-success/10 hover:text-success"
                         >
                           Verify
                         </Button>
@@ -330,13 +345,13 @@ export default function PaymentQueueView({
                             setRejectNote("");
                           }}
                           disabled={isPending}
-                          className="h-7 px-2 text-[11px] text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                          className="h-8 px-2.5 rounded-md text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                         >
                           Reject
                         </Button>
                       </div>
                     ) : (
-                      <span className="text-muted-foreground text-[11px]">
+                      <span className="text-muted-foreground text-xs">
                         {p.status === "verified" ? "Confirmed" : "Closed"}
                       </span>
                     )}
@@ -426,7 +441,7 @@ export default function PaymentQueueView({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="verify-note" className="text-xs font-medium">
+                <Label htmlFor="verify-note" className="text-[13px] font-medium text-foreground">
                   Verification Note <span className="text-muted-foreground font-normal">(optional)</span>
                 </Label>
                 <Textarea
@@ -435,7 +450,7 @@ export default function PaymentQueueView({
                   value={verifyNote}
                   onChange={(e) => setVerifyNote(e.target.value)}
                   rows={2}
-                  className="text-xs"
+                  className="text-sm rounded-lg border-border"
                 />
               </div>
             </div>
@@ -444,10 +459,10 @@ export default function PaymentQueueView({
           <DialogFooter>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => setVerifyTarget(null)}
-              className="h-9 text-xs"
+              className="h-10 px-4 rounded-lg text-sm font-medium"
             >
               Cancel
             </Button>
@@ -456,7 +471,7 @@ export default function PaymentQueueView({
               size="sm"
               onClick={handleVerify}
               disabled={isPending}
-              className="h-9 text-xs bg-success text-success-foreground hover:bg-success/90"
+              className="h-10 px-4 rounded-lg text-sm font-semibold bg-success text-success-foreground hover:bg-success/90 shadow-xs"
             >
               {isPending ? "Verifying..." : "Confirm Verification"}
             </Button>
@@ -472,13 +487,13 @@ export default function PaymentQueueView({
               <XCircle className="size-4" aria-hidden="true" />
               Reject Payment Submission
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-muted-foreground">
+            <AlertDialogDescription className="text-sm text-muted-foreground">
               Provide a mandatory rejection reason. The customer will receive this explanation via email so they can rectify and resubmit.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="space-y-2 py-2">
-            <Label htmlFor="queue-reject-note" className="text-xs font-medium">
+            <Label htmlFor="queue-reject-note" className="text-[13px] font-medium text-foreground">
               Rejection Reason <span className="text-destructive">*</span>
             </Label>
             <Textarea
@@ -487,19 +502,19 @@ export default function PaymentQueueView({
               value={rejectNote}
               onChange={(e) => setRejectNote(e.target.value)}
               rows={3}
-              className="text-xs"
+              className="text-sm rounded-lg border-border"
               required
             />
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending} className="h-9 text-xs">
+            <AlertDialogCancel disabled={isPending} className="h-10 rounded-lg text-sm font-medium">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleReject}
               disabled={!rejectNote.trim() || isPending}
-              className="h-9 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="h-10 rounded-lg text-sm font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs"
             >
               {isPending ? "Rejecting..." : "Reject Payment"}
             </AlertDialogAction>

@@ -45,9 +45,9 @@ export default function LandingFilters({
   };
 
   return (
-    <form onSubmit={submitSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <form onSubmit={submitSearch} className="flex flex-col gap-3 sm:flex-row sm:items-end rounded-xl border border-border bg-card p-4 shadow-xs">
       <div className="w-full sm:max-w-sm">
-        <Label htmlFor="landing-search" className="mb-1.5 block text-sm font-medium">
+        <Label htmlFor="landing-search" className="mb-1.5 block text-[13px] font-medium text-foreground">
           Search
         </Label>
         <div className="relative">
@@ -59,28 +59,28 @@ export default function LandingFilters({
             id="landing-search"
             type="search"
             placeholder="Search by title..."
-            className="pl-9 h-10"
+            className="pl-9 h-10 text-sm rounded-lg border-border"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="w-full sm:w-44">
-        <Label htmlFor="landing-status-filter" className="mb-1.5 block text-sm font-medium">
+      <div className="w-full sm:w-48">
+        <Label htmlFor="landing-status-filter" className="mb-1.5 block text-[13px] font-medium text-foreground">
           Filter by status
         </Label>
         <Select
           value={initialStatus || "all"}
           onValueChange={(v) => navigate(search.trim(), v === "all" ? "" : v)}
         >
-          <SelectTrigger id="landing-status-filter" className="w-full h-10">
+          <SelectTrigger id="landing-status-filter" className="w-full h-10 text-sm rounded-lg border-border">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all" className="text-sm">All statuses</SelectItem>
             {LANDING_PAGE_STATUSES.map((s) => (
-              <SelectItem key={s} value={s} className="capitalize">
+              <SelectItem key={s} value={s} className="capitalize text-sm">
                 {s}
               </SelectItem>
             ))}
@@ -88,7 +88,7 @@ export default function LandingFilters({
         </Select>
       </div>
 
-      <Button type="submit" variant="secondary" className="h-10 sm:mb-px">
+      <Button type="submit" variant="secondary" className="h-10 text-sm font-semibold rounded-lg px-4 sm:mb-px">
         Search
       </Button>
     </form>

@@ -63,15 +63,16 @@ export default function ListingRowActions({
   };
 
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className="flex items-center justify-end gap-1.5">
       <Button
         type="button"
         variant={isPublished ? "outline" : "default"}
         size="sm"
         disabled={busy !== null}
         onClick={() => void run("publish")}
+        className="h-8 px-3 rounded-md text-xs font-medium"
       >
-        {busy === "publish" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+        {busy === "publish" && <Loader2 className="mr-1.5 size-3.5 animate-spin" aria-hidden="true" />}
         {isPublished ? "Unpublish" : "Publish"}
       </Button>
 
@@ -83,6 +84,7 @@ export default function ListingRowActions({
         aria-label={`Configure SEO for ${title}`}
         title="SEO Configuration"
         onClick={() => setSeoOpen(true)}
+        className="size-8 rounded-md"
       >
         <Globe className="size-4" />
       </Button>
@@ -106,31 +108,31 @@ export default function ListingRowActions({
             size="icon"
             disabled={busy !== null}
             aria-label={`Trash ${title}`}
-            className="text-muted-foreground hover:text-destructive"
+            className="size-8 rounded-md text-muted-foreground hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4" aria-hidden="true" />
+            <Trash2 className="size-4" aria-hidden="true" />
           </Button>
         </AlertDialogTrigger>
-        <AlertDialogContent>
+        <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle>Trash this listing?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-base font-semibold">Trash this listing?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground">
               &ldquo;{title}&rdquo; will be hidden everywhere. You can re-create a
               listing with the same slug later — it will get a suffix if the old
               slug is still in the trash.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel className="h-10 px-4 rounded-lg text-sm font-medium">Cancel</AlertDialogCancel>
             <AlertDialogAction
               disabled={busy === "trash"}
               onClick={(e) => {
                 e.preventDefault();
                 void run("trash");
               }}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="h-10 px-4 rounded-lg text-sm font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-xs"
             >
-              {busy === "trash" && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+              {busy === "trash" && <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />}
               Trash listing
             </AlertDialogAction>
           </AlertDialogFooter>

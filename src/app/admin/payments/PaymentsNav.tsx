@@ -21,9 +21,9 @@ export function PaymentsNav({ canManageGateways }: PaymentsNavProps) {
       <Link
         href={"/admin/payments" as Route}
         className={cn(
-          "flex items-center gap-2 border-b-2 py-3 text-xs font-semibold transition-colors",
+          "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
           isQueue
-            ? "border-primary text-primary"
+            ? "border-primary text-primary font-semibold"
             : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
         )}
       >
@@ -35,9 +35,9 @@ export function PaymentsNav({ canManageGateways }: PaymentsNavProps) {
         <Link
           href={"/admin/payments/gateways" as Route}
           className={cn(
-            "flex items-center gap-2 border-b-2 py-3 text-xs font-semibold transition-colors",
+            "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
             isGateways
-              ? "border-primary text-primary"
+              ? "border-primary text-primary font-semibold"
               : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
           )}
         >

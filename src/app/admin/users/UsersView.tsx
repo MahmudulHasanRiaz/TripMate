@@ -243,45 +243,45 @@ export default function UsersView({
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-2xl font-bold tracking-tight">
-              Users & Customers
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Users &amp; Customers
             </h1>
-            <Badge variant="secondary">{total} Total</Badge>
+            <Badge variant="secondary" className="text-xs font-semibold tabular-nums">{total} Total</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Manage user accounts, roles, and access status across staff, admins, and portal customers.
           </p>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="flex flex-col gap-3 rounded-lg border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between shadow-xs">
         <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, or phone..."
-            className="pl-9"
+            className="pl-9 h-10 text-sm rounded-lg border-border"
           />
         </form>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* Role Filter */}
           <Select
             value={currentRole ?? "all"}
             onValueChange={(val) => updateFilters({ role: val, page: 1 })}
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[150px] h-10 text-sm rounded-lg border-border">
               <SelectValue placeholder="All Roles" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="superadmin">Superadmin</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="staff">Staff</SelectItem>
-              <SelectItem value="customer">Customer</SelectItem>
+              <SelectItem value="all" className="text-sm">All Roles</SelectItem>
+              <SelectItem value="superadmin" className="text-sm">Superadmin</SelectItem>
+              <SelectItem value="admin" className="text-sm">Admin</SelectItem>
+              <SelectItem value="staff" className="text-sm">Staff</SelectItem>
+              <SelectItem value="customer" className="text-sm">Customer</SelectItem>
             </SelectContent>
           </Select>
 
@@ -290,24 +290,25 @@ export default function UsersView({
             value={currentStatus ?? "all"}
             onValueChange={(val) => updateFilters({ status: val, page: 1 })}
           >
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-[150px] h-10 text-sm rounded-lg border-border">
               <SelectValue placeholder="All Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="all" className="text-sm">All Status</SelectItem>
+              <SelectItem value="active" className="text-sm">Active</SelectItem>
+              <SelectItem value="suspended" className="text-sm">Suspended</SelectItem>
             </SelectContent>
           </Select>
 
           {(currentSearch || currentRole || currentStatus) && (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => {
                 setSearch("");
                 router.push("/admin/users" as Route);
               }}
+              className="h-10 px-3.5 rounded-lg text-sm font-medium shadow-xs"
             >
               Reset
             </Button>
@@ -316,26 +317,45 @@ export default function UsersView({
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border bg-card">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-              <TableHead>Contact</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead className="w-[70px] text-right">Actions</TableHead>
+            <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">User</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contact</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Role</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Joined</TableHead>
+              <TableHead className="h-11 w-[80px] text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <Users className="size-8 text-muted-foreground/40" />
-                    <p className="font-medium">No users found</p>
-                    <p className="text-xs">Try adjusting your search or filters.</p>
+                <TableCell colSpan={6} className="py-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                      <Users className="size-6" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-semibold text-foreground">No users found</h4>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Try adjusting your search query, role filter, or account status.
+                      </p>
+                    </div>
+                    {(currentSearch || currentRole || currentStatus) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSearch("");
+                          router.push("/admin/users" as Route);
+                        }}
+                        className="mt-2 h-9 rounded-lg text-sm"
+                      >
+                        Reset Filters
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -343,8 +363,8 @@ export default function UsersView({
               items.map((user) => {
                 const isSelf = user.id === currentUser.id;
                 return (
-                  <TableRow key={user.id}>
-                    <TableCell>
+                  <TableRow key={user.id} className="min-h-[52px] border-b border-border transition-colors hover:bg-muted/30">
+                    <TableCell className="py-3.5">
                       <div className="flex items-center gap-3">
                         <Avatar className="size-9">
                           <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
@@ -352,10 +372,10 @@ export default function UsersView({
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <div className="flex items-center gap-1.5 font-medium">
+                          <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                             <span>{user.name.trim() || "Nameless User"}</span>
                             {isSelf && (
-                              <Badge variant="outline" className="text-[10px] py-0 px-1">
+                              <Badge variant="outline" className="text-[10px] py-0 px-1 font-mono">
                                 You
                               </Badge>
                             )}
@@ -365,8 +385,8 @@ export default function UsersView({
                       </div>
                     </TableCell>
 
-                    <TableCell>
-                      <div className="text-sm">
+                    <TableCell className="py-3.5">
+                      <div className="text-sm font-mono tabular-nums text-foreground">
                         {user.phone ? (
                           <span>{user.phone}</span>
                         ) : (
@@ -375,27 +395,27 @@ export default function UsersView({
                       </div>
                     </TableCell>
 
-                    <TableCell>{roleBadge(user.role)}</TableCell>
+                    <TableCell className="py-3.5">{roleBadge(user.role)}</TableCell>
 
-                    <TableCell>
+                    <TableCell className="py-3.5">
                       {user.status === "active" ? (
                         <Badge
                           variant="outline"
-                          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                          className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-medium px-2 py-0.5"
                         >
                           <CheckCircle2 className="mr-1 size-3" /> Active
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
-                          className="border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400"
+                          className="border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400 text-xs font-medium px-2 py-0.5"
                         >
                           <UserX className="mr-1 size-3" /> Suspended
                         </Badge>
                       )}
                     </TableCell>
 
-                    <TableCell className="text-sm text-muted-foreground">
+                    <TableCell className="py-3.5 text-sm text-muted-foreground tabular-nums">
                       {new Date(user.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
@@ -403,15 +423,15 @@ export default function UsersView({
                       })}
                     </TableCell>
 
-                    <TableCell className="text-right">
+                    <TableCell className="py-3.5 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
+                          <Button variant="ghost" size="icon" className="size-8 rounded-md">
                             <MoreVertical className="size-4" />
                             <span className="sr-only">Open menu</span>
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
+                        <DropdownMenuContent align="end" className="w-48 text-sm">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuItem
                             onClick={() => {
@@ -433,7 +453,7 @@ export default function UsersView({
                           <DropdownMenuItem
                             disabled={isSelf}
                             onClick={() => setStatusUser(user)}
-                            className={user.status === "active" ? "text-rose-600 focus:text-rose-600" : ""}
+                            className={user.status === "active" ? "text-destructive focus:text-destructive" : ""}
                           >
                             {user.status === "active" ? (
                               <>
@@ -491,10 +511,10 @@ export default function UsersView({
 
       {/* Role Change Dialog */}
       <Dialog open={!!roleUser} onOpenChange={(open) => !open && setRoleUser(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Change User Role</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base font-semibold">Change User Role</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
               Assign a new role to{" "}
               <strong className="font-semibold text-foreground">
                 {roleUser?.name || roleUser?.email}
@@ -503,18 +523,18 @@ export default function UsersView({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 space-y-3">
-            <label className="text-sm font-medium">Select Role</label>
+          <div className="py-4 space-y-2">
+            <label className="text-[13px] font-medium text-foreground">Select Role</label>
             <Select
               value={selectedRole}
               onValueChange={(val) => setSelectedRole(val as UserRole)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-10 text-sm rounded-lg border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {ROLE_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
+                  <SelectItem key={opt.value} value={opt.value} className="text-sm">
                     {opt.label}
                   </SelectItem>
                 ))}
@@ -527,10 +547,11 @@ export default function UsersView({
               variant="outline"
               onClick={() => setRoleUser(null)}
               disabled={roleLoading}
+              className="h-10 px-4 rounded-lg text-sm font-medium"
             >
               Cancel
             </Button>
-            <Button onClick={handleRoleChangeSubmit} disabled={roleLoading}>
+            <Button onClick={handleRoleChangeSubmit} disabled={roleLoading} className="h-10 px-4 rounded-lg text-sm font-semibold shadow-xs">
               {roleLoading ? "Saving..." : "Save Role"}
             </Button>
           </DialogFooter>
@@ -539,13 +560,13 @@ export default function UsersView({
 
       {/* Suspend / Activate Dialog */}
       <Dialog open={!!statusUser} onOpenChange={(open) => !open && setStatusUser(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
               <AlertTriangle className="size-5 text-amber-500" />
               {statusUser?.status === "active" ? "Suspend Account" : "Activate Account"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm text-muted-foreground">
               {statusUser?.status === "active" ? (
                 <>
                   Are you sure you want to suspend{" "}
@@ -571,6 +592,7 @@ export default function UsersView({
               variant="outline"
               onClick={() => setStatusUser(null)}
               disabled={statusLoading}
+              className="h-10 px-4 rounded-lg text-sm font-medium"
             >
               Cancel
             </Button>
@@ -578,6 +600,7 @@ export default function UsersView({
               variant={statusUser?.status === "active" ? "destructive" : "default"}
               onClick={handleToggleStatusSubmit}
               disabled={statusLoading}
+              className="h-10 px-4 rounded-lg text-sm font-semibold shadow-xs"
             >
               {statusLoading
                 ? "Processing..."

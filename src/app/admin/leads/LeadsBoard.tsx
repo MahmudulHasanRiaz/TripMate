@@ -236,20 +236,21 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
                     variant={STATUS_BADGE_VARIANTS[status]}
                     className="size-2.5 rounded-full p-0"
                   />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                  <span className="text-sm font-semibold text-foreground">
                     {STATUS_TITLES[status]}
                   </span>
                 </div>
-                <span className="flex size-5 items-center justify-center rounded-full bg-background text-[11px] font-semibold text-muted-foreground shadow-xs">
+                <span className="flex size-5 items-center justify-center rounded-full bg-background text-xs font-semibold tabular-nums text-muted-foreground shadow-xs">
                   {count}
                 </span>
               </div>
 
               {/* Column Card List */}
-              <div className="flex-1 space-y-3 min-h-[200px]">
+              <div className="flex-1 space-y-3 min-h-[220px]">
                 {columnItems.length === 0 ? (
-                  <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border/70 text-xs text-muted-foreground">
-                    No leads in this stage
+                  <div className="flex h-36 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-border/70 p-4 text-center">
+                    <User className="size-5 text-muted-foreground/60" aria-hidden="true" />
+                    <p className="text-xs text-muted-foreground">No leads in this stage</p>
                   </div>
                 ) : (
                   columnItems.map((lead) => {
@@ -261,7 +262,7 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
                         key={lead.id}
                         draggable
                         onDragStart={() => onDragStart(lead.id)}
-                        className="group relative flex flex-col justify-between rounded-lg border border-border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing"
+                        className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-xs transition-all duration-150 ease-out hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing"
                       >
                         <div>
                           {/* Top card row: Name + Overflow menu */}

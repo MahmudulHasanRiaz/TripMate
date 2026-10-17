@@ -12,6 +12,7 @@ import {
   MoreVertical,
   Phone,
   MessageCircle,
+  PackageOpen,
 } from "lucide-react";
 import type { OrderListItem } from "@/modules/bookings/service";
 import {
@@ -100,26 +101,28 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
       return;
     }
 
-    let snapshot: OrderListItem[] = [];
-    setItems((prev) => {
-      snapshot = prev;
-      return prev.map((item) =>
-        item.id === orderId ? { ...item, status: targetStatus } : item,
-      );
-    });
+    // Optimistic UI update
+    setItems((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: targetStatus } : o)),
+    );
 
     startTransition(async () => {
       try {
         const res = await updateOrderStatusAction({ id: orderId, status: targetStatus });
-        if (res.ok) {
-          router.refresh();
-        } else {
-          setItems(snapshot);
+        if (!res.ok) {
+          // Revert on failure
+          setItems((prev) =>
+            prev.map((o) => (o.id === orderId ? { ...o, status: order.status } : o)),
+          );
           setErrorMessage(res.error || "Failed to update order status.");
+        } else {
+          router.refresh();
         }
       } catch {
-        setItems(snapshot);
-        setErrorMessage("An unexpected error occurred while moving order.");
+        setItems((prev) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: order.status } : o)),
+        );
+        setErrorMessage("An unexpected network error occurred.");
       }
     });
   };
@@ -133,10 +136,9 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
   };
 
   const onDrop = (targetStatus: OrderStatus) => {
-    if (draggedId) {
-      handleStatusChange(draggedId, targetStatus);
-      setDraggedId(null);
-    }
+    if (!draggedId) return;
+    handleStatusChange(draggedId, targetStatus);
+    setDraggedId(null);
   };
 
   return (
@@ -145,7 +147,7 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
         <div
           role="alert"
           aria-live="polite"
-          className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+          className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3.5 text-sm text-destructive"
         >
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
@@ -154,7 +156,7 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="font-semibold underline ml-2 hover:opacity-80"
+            className="font-semibold underline ml-2 hover:opacity-80 text-xs"
           >
             Dismiss
           </button>
@@ -172,29 +174,30 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
               data-testid={`board-column-${status}`}
               onDragOver={onDragOver}
               onDrop={() => onDrop(status)}
-              className="flex w-full md:w-80 shrink-0 flex-col rounded-xl border border-border bg-secondary/20 p-3"
+              className="flex w-full md:w-80 shrink-0 flex-col rounded-xl border border-border bg-muted/20 p-3.5"
             >
               {/* Column Header */}
-              <div className="flex items-center justify-between px-1 pb-3">
+              <div className="flex items-center justify-between px-1 pb-3.5">
                 <div className="flex items-center gap-2">
                   <Badge
                     variant={STATUS_BADGE_VARIANTS[status]}
                     className="size-2.5 rounded-full p-0"
                   />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-foreground">
+                  <span className="text-sm font-semibold tracking-tight text-foreground">
                     {STATUS_TITLES[status]}
                   </span>
                 </div>
-                <span className="flex size-5 items-center justify-center rounded-full bg-background text-[11px] font-semibold text-muted-foreground shadow-xs">
+                <span className="flex size-6 items-center justify-center rounded-full bg-background text-xs font-semibold text-muted-foreground shadow-xs tabular-nums">
                   {count}
                 </span>
               </div>
 
               {/* Column Card List */}
-              <div className="flex-1 space-y-3 min-h-[200px]">
+              <div className="flex-1 space-y-3 min-h-[220px]">
                 {columnItems.length === 0 ? (
-                  <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border/70 text-xs text-muted-foreground">
-                    No orders in this stage
+                  <div className="flex flex-col h-36 items-center justify-center rounded-lg border border-dashed border-border/70 p-4 text-center bg-card/40">
+                    <PackageOpen className="size-6 text-muted-foreground/60 mb-1.5" />
+                    <p className="text-xs text-muted-foreground font-medium">No orders in this stage</p>
                   </div>
                 ) : (
                   columnItems.map((order) => {
@@ -209,7 +212,7 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
                         key={order.id}
                         draggable
                         onDragStart={() => onDragStart(order.id)}
-                        className="group relative flex flex-col justify-between rounded-lg border border-border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing"
+                        className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-4 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md cursor-grab active:cursor-grabbing"
                       >
                         <div>
                           {/* Top row: OrderNo + Badge + Overflow menu */}
@@ -217,11 +220,11 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
                             <div className="flex items-center gap-2">
                               <Link
                                 href={`/admin/orders/${order.id}` as Route}
-                                className="font-mono text-xs font-bold text-foreground hover:text-primary transition-colors"
+                                className="font-mono text-sm font-bold text-foreground hover:text-primary transition-colors"
                               >
                                 {order.orderNo}
                               </Link>
-                              <Badge variant="outline" className="text-[10px] uppercase px-1.5 py-0">
+                              <Badge variant="outline" className="text-[10px] uppercase font-semibold px-1.5 py-0">
                                 {order.type}
                               </Badge>
                             </div>
@@ -233,7 +236,7 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
                                   variant="ghost"
                                   size="icon"
                                   aria-label="Order actions"
-                                  className="size-8 -mr-2 -mt-2 inline-flex items-center justify-center text-muted-foreground hover:text-foreground"
+                                  className="size-8 -mr-1.5 -mt-1.5 inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground"
                                 >
                                   <MoreVertical className="size-4" aria-hidden="true" />
                                   <span className="sr-only">Order actions</span>
@@ -255,12 +258,12 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
                                         <ArrowRight className="mr-2 size-3.5" aria-hidden="true" />
                                         Move to Status
                                       </DropdownMenuSubTrigger>
-                                      <DropdownMenuSubContent className="w-44">
+                                      <DropdownMenuSubContent className="w-40">
                                         {legalTargets.map((target) => (
                                           <DropdownMenuItem
                                             key={target}
                                             onClick={() => handleStatusChange(order.id, target)}
-                                            className="capitalize text-xs"
+                                            className="capitalize text-xs cursor-pointer"
                                           >
                                             {STATUS_TITLES[target]}
                                           </DropdownMenuItem>
@@ -273,64 +276,55 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
                             </DropdownMenu>
                           </div>
 
-                          {/* Customer Name */}
-                          <p className="mt-2 text-sm font-semibold text-foreground line-clamp-1">
-                            {order.customerName || "Anonymous Customer"}
-                          </p>
-
-                          {/* Listing title */}
-                          {order.listingTitle ? (
-                            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
-                              {order.listingTitle}
+                          {/* Customer & Package info */}
+                          <div className="mt-2.5 space-y-1">
+                            <p className="text-sm font-semibold text-foreground truncate">
+                              {order.customerName}
                             </p>
-                          ) : null}
-
-                          {/* Price */}
-                          <div className="mt-2 flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">Price:</span>
-                            <span className="font-semibold text-foreground">
-                              {order.quotedPrice != null
-                                ? formatMoney(order.quotedPrice, order.currency)
-                                : "Not quoted"}
-                            </span>
-                          </div>
-
-                          {/* Phone & Contact Buttons */}
-                          <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/50 pt-2.5">
-                            <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-mono truncate">
-                              <Phone className="size-3 shrink-0" aria-hidden="true" />
-                              <span className="truncate">{order.customerPhone || "No phone"}</span>
-                            </div>
-
-                            <div className="flex items-center gap-1 shrink-0">
-                              {telHref ? (
-                                <a
-                                  href={telHref}
-                                  title="Call phone"
-                                  className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                                >
-                                  <Phone className="size-3" aria-hidden="true" />
-                                </a>
-                              ) : null}
-                              {waHref ? (
-                                <a
-                                  href={waHref}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title="Chat WhatsApp"
-                                  className="inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                                >
-                                  <MessageCircle className="size-3" aria-hidden="true" />
-                                </a>
-                              ) : null}
-                            </div>
+                            <p className="text-xs text-muted-foreground truncate" title={order.listingTitle ?? ""}>
+                              {order.listingTitle || "General Travel Inquiry"}
+                            </p>
                           </div>
                         </div>
 
-                        {/* Card footer: timestamp */}
-                        <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-                          <Clock className="size-3" aria-hidden="true" />
-                          <span>{formatRelativeTime(order.createdAt)}</span>
+                        {/* Bottom row: Price, Date & Fast Actions */}
+                        <div className="mt-3.5 flex items-center justify-between border-t border-border/60 pt-3">
+                          <div>
+                            <span className="text-xs font-semibold text-primary font-mono tabular-nums">
+                              {order.quotedPrice != null
+                                ? formatMoney(order.quotedPrice, order.currency)
+                                : "Quote Pending"}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            {telHref ? (
+                              <a
+                                href={telHref}
+                                title="Call customer"
+                                className="inline-flex size-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                              >
+                                <Phone className="size-3.5" aria-hidden="true" />
+                              </a>
+                            ) : null}
+
+                            {waHref ? (
+                              <a
+                                href={waHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Message on WhatsApp"
+                                className="inline-flex size-7 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                              >
+                                <MessageCircle className="size-3.5" aria-hidden="true" />
+                              </a>
+                            ) : null}
+
+                            <div className="ml-1.5 flex items-center text-[11px] text-muted-foreground tabular-nums">
+                              <Clock className="mr-1 size-3" aria-hidden="true" />
+                              {formatRelativeTime(order.createdAt)}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     );

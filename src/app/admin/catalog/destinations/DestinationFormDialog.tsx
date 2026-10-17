@@ -113,27 +113,28 @@ export default function DestinationFormDialog({
     <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit destination" : "New destination"}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-base font-semibold">{editing ? "Edit destination" : "New destination"}</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             {editing ? `Update “${row.name}” — the save is a full replace.` : "Add a travel destination to the public catalog."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="destination-name">Name</Label>
+        <form onSubmit={submit} noValidate className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="destination-name" className="text-[13px] font-medium text-foreground">Name</Label>
             <Input
               id="destination-name"
               value={name}
               onChange={(e) => handleName(e.target.value)}
-              placeholder="e.g. Cox&apos;s Bazar"
+              placeholder="e.g. Cox's Bazar"
+              className="h-10 text-sm rounded-lg border-border"
             />
             {errors.name ? (
-              <p className="text-sm font-medium text-destructive">{errors.name}</p>
+              <p className="text-xs font-medium text-destructive">{errors.name}</p>
             ) : null}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="destination-slug">Slug</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="destination-slug" className="text-[13px] font-medium text-foreground">Slug</Label>
             <Input
               id="destination-slug"
               value={slug}
@@ -142,15 +143,16 @@ export default function DestinationFormDialog({
                 setSlug(e.target.value);
               }}
               placeholder="coxs-bazar"
+              className="h-10 text-sm rounded-lg border-border font-mono"
             />
             {errors.slug ? (
-              <p className="text-sm font-medium text-destructive">{errors.slug}</p>
+              <p className="text-xs font-medium text-destructive">{errors.slug}</p>
             ) : (
-              <p className="text-sm text-muted-foreground">Lowercase, dash-separated; used in URLs.</p>
+              <p className="text-xs text-muted-foreground">Lowercase, dash-separated; used in URLs.</p>
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <MediaPickerField
               label="Destination Image"
               value={image}
@@ -158,44 +160,45 @@ export default function DestinationFormDialog({
               placeholder="/media/..."
             />
             {errors.image ? (
-              <p className="text-sm font-medium text-destructive">{errors.image}</p>
+              <p className="text-xs font-medium text-destructive">{errors.image}</p>
             ) : null}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="destination-desc">Editorial Description</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="destination-desc" className="text-[13px] font-medium text-foreground">Editorial Description</Label>
             <Textarea
               id="destination-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Overview of this travel destination, attractions, and cultural highlights..."
               rows={3}
-              className="resize-none"
+              className="text-sm rounded-lg border-border resize-none"
             />
             {errors.description ? (
-              <p className="text-sm font-medium text-destructive">{errors.description}</p>
+              <p className="text-xs font-medium text-destructive">{errors.description}</p>
             ) : null}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="destination-order">Sort Order</Label>
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="destination-order" className="text-[13px] font-medium text-foreground">Sort Order</Label>
               <Input
                 id="destination-order"
                 type="number"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(Number(e.target.value) || 0)}
                 min={0}
+                className="h-10 text-sm rounded-lg border-border font-mono tabular-nums"
               />
               {errors.sortOrder ? (
-                <p className="text-sm font-medium text-destructive">{errors.sortOrder}</p>
+                <p className="text-xs font-medium text-destructive">{errors.sortOrder}</p>
               ) : null}
             </div>
 
             <div className="flex flex-col justify-end">
-              <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">
+              <div className="flex items-center justify-between rounded-xl border border-border px-3.5 py-3 shadow-xs">
                 <div>
-                  <p className="text-sm font-medium leading-none">Featured</p>
+                  <p className="text-sm font-medium leading-none text-foreground">Featured</p>
                   <p className="mt-1 text-xs text-muted-foreground">Homepage highlight</p>
                 </div>
                 <Switch checked={isFeatured} onCheckedChange={setIsFeatured} aria-label="Featured destination" />
@@ -203,9 +206,9 @@ export default function DestinationFormDialog({
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">
+          <div className="flex items-center justify-between rounded-xl border border-border px-3.5 py-3 shadow-xs">
             <div>
-              <p className="text-sm font-medium leading-none">Active</p>
+              <p className="text-sm font-medium leading-none text-foreground">Active</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Inactive destinations can&apos;t accept new listings.
               </p>
@@ -214,17 +217,17 @@ export default function DestinationFormDialog({
           </div>
 
           {rootError ? (
-            <p role="alert" className="text-sm font-medium text-destructive">
+            <p role="alert" className="text-xs font-medium text-destructive">
               {rootError}
             </p>
           ) : null}
 
           <DialogFooter>
-            <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
+            <Button type="button" variant="outline" disabled={busy} onClick={onCancel} className="h-10 px-4 rounded-lg text-sm font-medium">
               Cancel
             </Button>
-            <Button type="submit" disabled={busy}>
-              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            <Button type="submit" disabled={busy} className="h-10 px-4 rounded-lg text-sm font-semibold shadow-xs">
+              {busy && <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />}
               {editing ? "Save changes" : "Create destination"}
             </Button>
           </DialogFooter>

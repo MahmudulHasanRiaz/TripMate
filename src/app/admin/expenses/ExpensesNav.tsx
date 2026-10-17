@@ -22,7 +22,7 @@ export function ExpensesNav({ canApprove }: ExpensesNavProps) {
       <Link
         href={"/admin/expenses" as Route}
         className={cn(
-          "flex items-center gap-2 border-b-2 py-3 text-xs font-semibold transition-colors",
+          "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
           isEntries
             ? "border-primary text-primary"
             : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
@@ -36,7 +36,7 @@ export function ExpensesNav({ canApprove }: ExpensesNavProps) {
         <Link
           href={"/admin/expenses/categories" as Route}
           className={cn(
-            "flex items-center gap-2 border-b-2 py-3 text-xs font-semibold transition-colors",
+            "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
             isCategories
               ? "border-primary text-primary"
               : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
@@ -50,7 +50,7 @@ export function ExpensesNav({ canApprove }: ExpensesNavProps) {
       <Link
         href={"/admin/expenses/reports" as Route}
         className={cn(
-          "flex items-center gap-2 border-b-2 py-3 text-xs font-semibold transition-colors",
+          "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
           isReports
             ? "border-primary text-primary"
             : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",

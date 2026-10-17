@@ -142,27 +142,28 @@ export default function CategoryFormDialog({
     <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit category" : "New category"}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-base font-semibold">{editing ? "Edit category" : "New category"}</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             {editing ? `Update “${row.name}” — the save is a full replace.` : "Add a service category to the public catalog."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="category-name">Name</Label>
+        <form onSubmit={submit} noValidate className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="category-name" className="text-[13px] font-medium text-foreground">Name</Label>
             <Input
               id="category-name"
               value={name}
               onChange={(e) => handleName(e.target.value)}
               placeholder="e.g. Beach Tours"
+              className="h-10 text-sm rounded-lg border-border"
             />
             {errors.name ? (
-              <p className="text-sm font-medium text-destructive">{errors.name}</p>
+              <p className="text-xs font-medium text-destructive">{errors.name}</p>
             ) : null}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="category-slug">Slug</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="category-slug" className="text-[13px] font-medium text-foreground">Slug</Label>
             <Input
               id="category-slug"
               value={slug}
@@ -171,76 +172,80 @@ export default function CategoryFormDialog({
                 setSlug(e.target.value);
               }}
               placeholder="beach-tours"
+              className="h-10 text-sm rounded-lg border-border font-mono"
             />
             {errors.slug ? (
-              <p className="text-sm font-medium text-destructive">{errors.slug}</p>
+              <p className="text-xs font-medium text-destructive">{errors.slug}</p>
             ) : (
-              <p className="text-sm text-muted-foreground">Lowercase, dash-separated; used in URLs.</p>
+              <p className="text-xs text-muted-foreground">Lowercase, dash-separated; used in URLs.</p>
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label>Kind</Label>
+          <div className="space-y-1.5">
+            <Label className="text-[13px] font-medium text-foreground">Kind</Label>
             <Select value={kind} onValueChange={(v) => setKind(v as ServiceKind)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full h-10 text-sm rounded-lg border-border">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {SERVICE_KINDS.map((k) => (
-                  <SelectItem key={k} value={k}>
+                  <SelectItem key={k} value={k} className="text-sm">
                     {CATEGORY_KIND_META[k].label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-sm text-muted-foreground">{kindHint}</p>
+            <p className="text-xs text-muted-foreground">{kindHint}</p>
           </div>
 
           {kind === "redirect" ? (
-            <div className="space-y-2">
-              <Label htmlFor="category-redirect">Redirect URL</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="category-redirect" className="text-[13px] font-medium text-foreground">Redirect URL</Label>
               <Input
                 id="category-redirect"
                 value={redirectUrl}
                 onChange={(e) => setRedirectUrl(e.target.value)}
                 placeholder="https://partner.example.com/tours"
+                className="h-10 text-sm rounded-lg border-border"
               />
               {errors.redirectUrl ? (
-                <p className="text-sm font-medium text-destructive">{errors.redirectUrl}</p>
+                <p className="text-xs font-medium text-destructive">{errors.redirectUrl}</p>
               ) : null}
             </div>
           ) : null}
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="category-sort">Sort order</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="category-sort" className="text-[13px] font-medium text-foreground">Sort order</Label>
               <Input
                 id="category-sort"
                 inputMode="numeric"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value)}
+                className="h-10 text-sm rounded-lg border-border font-mono tabular-nums"
               />
               {errors.sortOrder ? (
-                <p className="text-sm font-medium text-destructive">{errors.sortOrder}</p>
+                <p className="text-xs font-medium text-destructive">{errors.sortOrder}</p>
               ) : null}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="category-icon">Icon (optional)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="category-icon" className="text-[13px] font-medium text-foreground">Icon (optional)</Label>
               <Input
                 id="category-icon"
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
                 placeholder="e.g. waves"
+                className="h-10 text-sm rounded-lg border-border"
               />
               {errors.icon ? (
-                <p className="text-sm font-medium text-destructive">{errors.icon}</p>
+                <p className="text-xs font-medium text-destructive">{errors.icon}</p>
               ) : null}
             </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-md border border-border px-3 py-2.5">
+          <div className="flex items-center justify-between rounded-xl border border-border px-3.5 py-3 shadow-xs">
             <div>
-              <p className="text-sm font-medium leading-none">Active</p>
+              <p className="text-sm font-medium leading-none text-foreground">Active</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Inactive categories can&apos;t accept new listings.
               </p>
@@ -249,17 +254,17 @@ export default function CategoryFormDialog({
           </div>
 
           {rootError ? (
-            <p role="alert" className="text-sm font-medium text-destructive">
+            <p role="alert" className="text-xs font-medium text-destructive">
               {rootError}
             </p>
           ) : null}
 
           <DialogFooter>
-            <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
+            <Button type="button" variant="outline" disabled={busy} onClick={onCancel} className="h-10 px-4 rounded-lg text-sm font-medium">
               Cancel
             </Button>
-            <Button type="submit" disabled={busy}>
-              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+            <Button type="submit" disabled={busy} className="h-10 px-4 rounded-lg text-sm font-semibold shadow-xs">
+              {busy && <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />}
               {editing ? "Save changes" : "Create category"}
             </Button>
           </DialogFooter>

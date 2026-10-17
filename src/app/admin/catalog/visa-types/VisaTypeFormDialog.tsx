@@ -92,18 +92,19 @@ export default function VisaTypeFormDialog({
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="typeName">Type Name *</Label>
+            <Label htmlFor="typeName" className="text-[13px] font-medium text-foreground">Type Name *</Label>
             <Input
               id="typeName"
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               placeholder="e.g. Tourist Visa"
+              className="h-10 text-sm rounded-lg border-border"
               required
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="typeSlug">URL Slug *</Label>
+            <Label htmlFor="typeSlug" className="text-[13px] font-medium text-foreground">URL Slug *</Label>
             <Input
               id="typeSlug"
               value={slug}
@@ -112,40 +113,44 @@ export default function VisaTypeFormDialog({
                 setSlugTouched(true);
               }}
               placeholder="e.g. tourist-visa"
+              className="h-10 text-sm rounded-lg border-border"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="typeIcon">Icon Identifier</Label>
+              <Label htmlFor="typeIcon" className="text-[13px] font-medium text-foreground">Icon Identifier</Label>
               <Input
                 id="typeIcon"
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
                 placeholder="e.g. passport, plane"
+                className="h-10 text-sm rounded-lg border-border"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="typeSort">Sort Order</Label>
+              <Label htmlFor="typeSort" className="text-[13px] font-medium text-foreground">Sort Order</Label>
               <Input
                 id="typeSort"
                 type="number"
                 min="0"
                 value={sortOrder}
                 onChange={(e) => setSortOrder(parseInt(e.target.value, 10) || 0)}
+                className="h-10 text-sm rounded-lg border-border"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="typeDesc">Description</Label>
+            <Label htmlFor="typeDesc" className="text-[13px] font-medium text-foreground">Description</Label>
             <Textarea
               id="typeDesc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               placeholder="Short blurb explaining this visa class..."
+              className="text-sm rounded-lg border-border resize-none"
             />
           </div>
 
@@ -159,16 +164,17 @@ export default function VisaTypeFormDialog({
             <Switch checked={isActive} onCheckedChange={setIsActive} />
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isPending}
+              className="h-10 rounded-lg text-sm font-semibold"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending}>
+            <Button type="submit" disabled={isPending} className="h-10 rounded-lg text-sm font-semibold">
               {isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
               {type ? "Save Changes" : "Create Visa Type"}
             </Button>

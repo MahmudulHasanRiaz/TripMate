@@ -89,23 +89,36 @@ export default function LeadsList({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Contact</TableHead>
-              <TableHead>Landing Page</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Assignee</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+            <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contact</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Landing Page</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Assignee</TableHead>
+              <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Submitted</TableHead>
+              <TableHead className="h-11 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                  No leads found matching current filters.
+                <TableCell colSpan={6} className="py-16 text-center">
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                      <UserCheck className="size-6" aria-hidden="true" />
+                    </div>
+                    <div>
+                      <h4 className="text-base font-semibold text-foreground">No leads found</h4>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        No customer inquiries match your current search or assignee filters.
+                      </p>
+                    </div>
+                    <Button asChild variant="outline" size="sm" className="mt-2 h-9 rounded-lg text-sm">
+                      <Link href={"/admin/leads" as Route}>Reset Filters</Link>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -114,41 +127,41 @@ export default function LeadsList({
                 const waPhone = lead.phone ? lead.phone.replace(/[^\d]/g, "") : "";
 
                 return (
-                  <TableRow key={lead.id}>
-                    <TableCell>
+                  <TableRow key={lead.id} className="min-h-[52px] border-b border-border transition-colors hover:bg-muted/30">
+                    <TableCell className="py-3.5">
                       <Link
                         href={`/admin/leads/${lead.id}` as Route}
-                        className="font-medium text-foreground hover:underline"
+                        className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                       >
                         {lead.name.trim() || "Anonymous Inquiry"}
                       </Link>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                        <span className="font-mono">{lead.phone}</span>
+                        <span className="font-mono tabular-nums">{lead.phone}</span>
                         {lead.email ? <span>&bull; {lead.email}</span> : null}
                       </div>
                     </TableCell>
 
-                    <TableCell className="text-xs text-muted-foreground max-w-xs truncate">
-                      {lead.landingTitle || "Direct"}
+                    <TableCell className="py-3.5 text-sm text-muted-foreground max-w-xs truncate">
+                      {lead.landingTitle || "Direct Inquiry"}
                     </TableCell>
 
-                    <TableCell>
+                    <TableCell className="py-3.5">
                       <Badge
                         variant={STATUS_BADGE_VARIANTS[lead.status]}
-                        className="capitalize text-xs"
+                        className="capitalize text-xs font-medium px-2.5 py-0.5"
                       >
-                        {lead.status}
+                        {lead.status.replace(/_/g, " ")}
                       </Badge>
                     </TableCell>
 
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="py-3.5 text-sm text-muted-foreground">
                       <span className="inline-flex items-center gap-1.5">
-                        <User className="size-3" aria-hidden="true" />
+                        <User className="size-3.5 text-muted-foreground" aria-hidden="true" />
                         {lead.assignedToName || "Unassigned"}
                       </span>
                     </TableCell>
 
-                    <TableCell className="text-xs text-muted-foreground">
+                    <TableCell className="py-3.5 text-sm tabular-nums text-muted-foreground">
                       {new Date(lead.createdAt).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
@@ -156,17 +169,17 @@ export default function LeadsList({
                       })}
                     </TableCell>
 
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <TableCell className="py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-1.5">
                         {cleanPhone ? (
                           <Button
                             asChild
                             variant="ghost"
                             size="icon"
-                            className="size-7 text-muted-foreground hover:text-foreground"
+                            className="size-8 rounded-md text-muted-foreground hover:text-foreground"
                           >
                             <a href={`tel:${cleanPhone}`} title="Call phone">
-                              <Phone className="size-3.5" aria-hidden="true" />
+                              <Phone className="size-4" aria-hidden="true" />
                             </a>
                           </Button>
                         ) : null}
@@ -176,7 +189,7 @@ export default function LeadsList({
                             asChild
                             variant="ghost"
                             size="icon"
-                            className="size-7 text-muted-foreground hover:text-success"
+                            className="size-8 rounded-md text-muted-foreground hover:text-success"
                           >
                             <a
                               href={`https://wa.me/${waPhone}`}
@@ -184,7 +197,7 @@ export default function LeadsList({
                               rel="noopener noreferrer"
                               title="Chat on WhatsApp"
                             >
-                              <MessageCircle className="size-3.5" aria-hidden="true" />
+                              <MessageCircle className="size-4" aria-hidden="true" />
                             </a>
                           </Button>
                         ) : null}
@@ -194,54 +207,54 @@ export default function LeadsList({
                             asChild
                             variant="ghost"
                             size="icon"
-                            className="size-7 text-muted-foreground hover:text-foreground"
+                            className="size-8 rounded-md text-muted-foreground hover:text-foreground"
                           >
                             <a href={`mailto:${lead.email}`} title="Send email">
-                              <Mail className="size-3.5" aria-hidden="true" />
+                              <Mail className="size-4" aria-hidden="true" />
                             </a>
                           </Button>
                         ) : null}
 
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-7">
-                              <MoreVertical className="size-3.5" aria-hidden="true" />
+                            <Button variant="ghost" size="icon" className="size-8 rounded-md">
+                              <MoreVertical className="size-4" aria-hidden="true" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44 text-xs">
+                          <DropdownMenuContent align="end" className="w-48 text-sm">
                             <DropdownMenuItem asChild>
                               <Link href={`/admin/leads/${lead.id}` as Route}>
-                                <ExternalLink className="mr-2 size-3.5" aria-hidden="true" />
+                                <ExternalLink className="mr-2 size-4" aria-hidden="true" />
                                 View Details
                               </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuSub>
-                              <DropdownMenuSubTrigger className="text-xs">
-                                <ArrowRight className="mr-2 size-3.5" aria-hidden="true" />
+                              <DropdownMenuSubTrigger className="text-sm">
+                                <ArrowRight className="mr-2 size-4" aria-hidden="true" />
                                 Move Status
                               </DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent className="w-40">
+                              <DropdownMenuSubContent className="w-44">
                                 {LEAD_STATUSES.filter((s) => s !== lead.status).map((target) => (
                                   <DropdownMenuItem
                                     key={target}
                                     onClick={() => handleStatusChange(lead.id, target)}
-                                    className="capitalize text-xs"
+                                    className="capitalize text-sm"
                                   >
-                                    {target}
+                                    {target.replace(/_/g, " ")}
                                   </DropdownMenuItem>
                                 ))}
                               </DropdownMenuSubContent>
                             </DropdownMenuSub>
                             <DropdownMenuSub>
-                              <DropdownMenuSubTrigger className="text-xs">
-                                <UserCheck className="mr-2 size-3.5" aria-hidden="true" />
+                              <DropdownMenuSubTrigger className="text-sm">
+                                <UserCheck className="mr-2 size-4" aria-hidden="true" />
                                 Assign Staff
                               </DropdownMenuSubTrigger>
-                              <DropdownMenuSubContent className="w-44">
+                              <DropdownMenuSubContent className="w-48">
                                 <DropdownMenuItem
                                   onClick={() => handleAssign(lead.id, null)}
-                                  className="text-xs text-muted-foreground"
+                                  className="text-sm text-muted-foreground"
                                 >
                                   Unassigned
                                 </DropdownMenuItem>
@@ -250,7 +263,7 @@ export default function LeadsList({
                                   <DropdownMenuItem
                                     key={staff.id}
                                     onClick={() => handleAssign(lead.id, staff.id)}
-                                    className="text-xs"
+                                    className="text-sm"
                                   >
                                     {staff.name}
                                   </DropdownMenuItem>

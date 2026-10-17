@@ -62,14 +62,14 @@ export default function VisaServicesView({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
-            Visa Services & Offerings
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
+            Visa Services &amp; Offerings
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Manage destination-specific visa packages, embassy checklists, and commercial margins.
           </p>
         </div>
-        <Button onClick={handleOpenAdd} className="gap-2">
+        <Button onClick={handleOpenAdd} className="h-10 px-4 rounded-lg text-sm font-semibold gap-2 shadow-xs">
           <Plus className="size-4" />
           Add Visa Offering
         </Button>
@@ -78,19 +78,19 @@ export default function VisaServicesView({
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search visa offerings, countries..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="pl-9 h-10 text-sm rounded-lg border-border"
           />
         </div>
 
         <select
           value={selectedDest}
           onChange={(e) => setSelectedDest(e.target.value)}
-          className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="flex h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <option value="">All Destinations</option>
           {destinations.map((d) => (
@@ -103,7 +103,7 @@ export default function VisaServicesView({
         <select
           value={selectedType}
           onChange={(e) => setSelectedType(e.target.value)}
-          className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="flex h-10 rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         >
           <option value="">All Visa Types</option>
           {visaTypes.map((vt) => (
@@ -115,33 +115,49 @@ export default function VisaServicesView({
       </div>
 
       {/* Offerings Table */}
-      <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
+      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs font-medium uppercase text-muted-foreground">
+            <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <tr>
-                <th className="px-4 py-3">Offering / Destination</th>
-                <th className="px-4 py-3">Visa Type</th>
-                <th className="px-4 py-3">Processing</th>
-                <th className="px-4 py-3 text-right">Selling Price</th>
-                <th className="px-4 py-3 text-right">Cost (COGS)</th>
-                <th className="px-4 py-3 text-right">Gross Margin</th>
-                <th className="px-4 py-3 text-center">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="h-11 px-4 py-3">Offering / Destination</th>
+                <th className="h-11 px-4 py-3">Visa Type</th>
+                <th className="h-11 px-4 py-3">Processing</th>
+                <th className="h-11 px-4 py-3 text-right">Selling Price</th>
+                <th className="h-11 px-4 py-3 text-right">Cost (COGS)</th>
+                <th className="h-11 px-4 py-3 text-right">Gross Margin</th>
+                <th className="h-11 px-4 py-3 text-center">Status</th>
+                <th className="h-11 px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
-                    No visa offerings found matching your criteria.
+                  <td colSpan={8} className="py-16 text-center">
+                    <div className="flex flex-col items-center justify-center gap-3">
+                      <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                        <Plus className="size-6" aria-hidden="true" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-semibold text-foreground">No visa offerings found</h4>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {search || selectedDest || selectedType
+                            ? "Try adjusting your search criteria or destination filter."
+                            : "Create your first visa offering to publish visa services to travelers."}
+                        </p>
+                      </div>
+                      <Button onClick={handleOpenAdd} size="sm" className="mt-2 h-10 px-4 rounded-lg text-sm font-semibold shadow-xs">
+                        <Plus className="size-4" aria-hidden="true" />
+                        Add Visa Offering
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filtered.map((item) => (
-                  <tr key={item.id} className="transition-colors hover:bg-muted/40">
+                  <tr key={item.id} className="min-h-[52px] border-b border-border transition-colors hover:bg-muted/30">
                     <td className="px-4 py-3.5">
-                      <div className="font-medium text-foreground">{item.title}</div>
+                      <div className="text-sm font-semibold text-foreground">{item.title}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                         <span className="font-semibold text-primary">{item.destination.name}</span>
                         <span>•</span>
@@ -155,38 +171,38 @@ export default function VisaServicesView({
                       </Badge>
                     </td>
 
-                    <td className="px-4 py-3.5 text-xs text-muted-foreground">
+                    <td className="px-4 py-3.5 text-sm text-muted-foreground">
                       <div>{item.processingTime || "Standard"}</div>
-                      {item.validity && <div className="text-[11px] opacity-80">Val: {item.validity}</div>}
+                      {item.validity && <div className="text-xs opacity-80">Val: {item.validity}</div>}
                     </td>
 
-                    <td className="px-4 py-3.5 text-right font-medium">
+                    <td className="px-4 py-3.5 text-right font-mono text-sm font-bold text-foreground tabular-nums">
                       ৳{item.price.toLocaleString()}
                     </td>
 
-                    <td className="px-4 py-3.5 text-right text-xs text-muted-foreground">
+                    <td className="px-4 py-3.5 text-right font-mono text-xs text-muted-foreground tabular-nums">
                       {item.costPrice ? `৳${item.costPrice.toLocaleString()}` : "—"}
                     </td>
 
                     <td className="px-4 py-3.5 text-right">
                       {item.grossProfit !== null ? (
                         <div>
-                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                          <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                             ৳{item.grossProfit.toLocaleString()}
                           </span>
-                          <span className="text-[11px] text-muted-foreground ml-1">
+                          <span className="text-xs text-muted-foreground ml-1 tabular-nums">
                             ({item.marginPercent}%)
                           </span>
                         </div>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-muted-foreground text-sm">—</span>
                       )}
                     </td>
 
                     <td className="px-4 py-3.5 text-center">
                       <Badge
                         variant={item.isActive ? "default" : "secondary"}
-                        className="text-xs"
+                        className="text-xs font-medium px-2 py-0.5"
                       >
                         {item.isActive ? "Active" : "Inactive"}
                       </Badge>

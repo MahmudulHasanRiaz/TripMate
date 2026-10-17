@@ -11,6 +11,8 @@ import {
   ChevronRight,
   ExternalLink,
   MoreVertical,
+  PackageOpen,
+  RotateCcw,
 } from "lucide-react";
 import type { OrderListItem } from "@/modules/bookings/service";
 import {
@@ -105,7 +107,7 @@ export default function OrdersList({
         <div
           role="alert"
           aria-live="polite"
-          className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+          className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3.5 text-sm text-destructive"
         >
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
@@ -114,7 +116,7 @@ export default function OrdersList({
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="font-semibold underline ml-2 hover:opacity-80"
+            className="font-semibold underline ml-2 hover:opacity-80 text-xs"
           >
             Dismiss
           </button>
@@ -123,23 +125,54 @@ export default function OrdersList({
 
       <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[140px] text-xs font-semibold">Order #</TableHead>
-              <TableHead className="text-xs font-semibold">Type</TableHead>
-              <TableHead className="text-xs font-semibold">Customer</TableHead>
-              <TableHead className="text-xs font-semibold">Listing / Service</TableHead>
-              <TableHead className="text-xs font-semibold">Quoted Price</TableHead>
-              <TableHead className="text-xs font-semibold">Status</TableHead>
-              <TableHead className="text-xs font-semibold">Date</TableHead>
-              <TableHead className="w-[60px] text-right text-xs font-semibold">Actions</TableHead>
+          <TableHeader className="bg-muted/40">
+            <TableRow className="border-b border-border">
+              <TableHead className="w-[140px] text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 pl-6">
+                Order #
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 px-3">
+                Type
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 px-3">
+                Customer
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 px-3">
+                Listing / Service
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 px-3">
+                Quoted Price
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 px-3">
+                Status
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 px-3">
+                Date
+              </TableHead>
+              <TableHead className="w-[70px] text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground py-3.5 pr-6">
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="divide-y divide-border">
             {items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-32 text-center text-xs text-muted-foreground">
-                  No orders found matching the filter criteria.
+                <TableCell colSpan={8} className="py-12 text-center">
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3">
+                    <PackageOpen className="size-6" aria-hidden="true" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground">No orders found</h3>
+                  <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+                    No orders match your filter criteria. Try adjusting your search query or reset filters.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push("/admin/orders" as Route)}
+                    className="mt-4 h-9 rounded-lg text-xs gap-1.5"
+                  >
+                    <RotateCcw className="size-3.5" />
+                    Reset Filters
+                  </Button>
                 </TableCell>
               </TableRow>
             ) : (
@@ -149,49 +182,52 @@ export default function OrdersList({
                 );
 
                 return (
-                  <TableRow key={order.id} className="text-xs hover:bg-muted/30">
-                    <TableCell className="font-mono font-bold">
+                  <TableRow
+                    key={order.id}
+                    className="min-h-[52px] text-sm hover:bg-muted/30 transition-colors"
+                  >
+                    <TableCell className="font-mono font-semibold py-3.5 pl-6">
                       <Link
                         href={`/admin/orders/${order.id}` as Route}
-                        className="hover:text-primary transition-colors"
+                        className="text-foreground hover:text-primary transition-colors inline-block"
                       >
                         {order.orderNo}
                       </Link>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[10px] uppercase font-semibold">
+                    <TableCell className="py-3.5 px-3">
+                      <Badge variant="outline" className="text-[11px] uppercase font-semibold">
                         {order.type}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-3.5 px-3">
                       <div className="font-medium text-foreground">{order.customerName}</div>
                       {order.customerPhone ? (
-                        <div className="text-[11px] text-muted-foreground font-mono">
+                        <div className="text-xs text-muted-foreground font-mono mt-0.5">
                           {order.customerPhone}
                         </div>
                       ) : null}
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
+                    <TableCell className="py-3.5 px-3 max-w-[220px] truncate text-muted-foreground">
                       {order.listingTitle || "General Inquiry"}
                     </TableCell>
-                    <TableCell className="font-semibold">
+                    <TableCell className="py-3.5 px-3 font-semibold font-mono tabular-nums text-foreground">
                       {order.quotedPrice != null
                         ? formatMoney(order.quotedPrice, order.currency)
                         : "—"}
                     </TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_BADGE_VARIANTS[order.status]} className="capitalize">
+                    <TableCell className="py-3.5 px-3">
+                      <Badge variant={STATUS_BADGE_VARIANTS[order.status]} className="capitalize text-xs">
                         {STATUS_TITLES[order.status]}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="py-3.5 px-3 text-muted-foreground tabular-nums text-xs">
                       {new Date(order.createdAt).toLocaleDateString("en-GB", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
                       })}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="py-3.5 pr-6 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -199,12 +235,12 @@ export default function OrdersList({
                             variant="ghost"
                             size="icon"
                             aria-label="Order actions"
-                            className="size-8 text-muted-foreground hover:text-foreground"
+                            className="size-8 rounded-lg text-muted-foreground hover:text-foreground"
                           >
                             <MoreVertical className="size-4" aria-hidden="true" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44 text-xs">
+                        <DropdownMenuContent align="end" className="w-48 text-xs">
                           <DropdownMenuItem asChild>
                             <Link href={`/admin/orders/${order.id}` as Route}>
                               <ExternalLink className="mr-2 size-3.5" aria-hidden="true" />
@@ -225,7 +261,7 @@ export default function OrdersList({
                                     <DropdownMenuItem
                                       key={target}
                                       onClick={() => handleStatusChange(order.id, target)}
-                                      className="capitalize text-xs"
+                                      className="capitalize text-xs cursor-pointer"
                                     >
                                       {STATUS_TITLES[target]}
                                     </DropdownMenuItem>
@@ -249,8 +285,8 @@ export default function OrdersList({
       {totalPages > 1 ? (
         <div className="flex items-center justify-between px-1 text-xs text-muted-foreground">
           <div>
-            Showing <span className="font-semibold text-foreground">{items.length}</span> of{" "}
-            <span className="font-semibold text-foreground">{total}</span> orders
+            Showing <span className="font-semibold text-foreground tabular-nums">{items.length}</span> of{" "}
+            <span className="font-semibold text-foreground tabular-nums">{total}</span> orders
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -258,14 +294,14 @@ export default function OrdersList({
               variant="outline"
               size="sm"
               disabled={page <= 1}
-              className="h-8 gap-1 text-xs"
+              className="h-9 gap-1 text-xs rounded-lg"
             >
               <Link href={`/admin/orders?${makePageParams(-1)}` as Route}>
                 <ChevronLeft className="size-3.5" aria-hidden="true" />
                 Previous
               </Link>
             </Button>
-            <span className="text-xs">
+            <span className="text-xs tabular-nums">
               Page {page} of {totalPages}
             </span>
             <Button
@@ -273,7 +309,7 @@ export default function OrdersList({
               variant="outline"
               size="sm"
               disabled={page >= totalPages}
-              className="h-8 gap-1 text-xs"
+              className="h-9 gap-1 text-xs rounded-lg"
             >
               <Link href={`/admin/orders?${makePageParams(1)}` as Route}>
                 Next

@@ -294,9 +294,9 @@ export default function OrderDetailClient({
       {/* Top Header / Breadcrumb */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 text-xs text-muted-foreground">
+          <Button asChild variant="ghost" size="sm" className="h-9 gap-1.5 text-sm text-muted-foreground hover:text-foreground rounded-lg">
             <Link href="/admin/orders">
-              <ArrowLeft className="size-3.5" aria-hidden="true" />
+              <ArrowLeft className="size-4" aria-hidden="true" />
               Back to Orders
             </Link>
           </Button>
@@ -381,7 +381,7 @@ export default function OrderDetailClient({
                   </p>
                 </div>
               </div>
-              <Button asChild variant="outline" size="sm" className="h-8 text-xs gap-1.5">
+              <Button asChild variant="outline" size="sm" className="h-9 text-xs gap-1.5 rounded-lg shadow-xs">
                 <Link href={`/admin/leads/${order.leadId}` as Route}>
                   <ExternalLink className="size-3.5" aria-hidden="true" />
                   View Lead
@@ -633,7 +633,7 @@ export default function OrderDetailClient({
               {canVerifyPayments ? (
                 <Dialog open={recordDialogOpen} onOpenChange={setRecordDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5">
+                    <Button size="sm" variant="outline" className="h-9 text-xs rounded-lg gap-1.5 shadow-xs">
                       <PlusCircle className="size-3.5" aria-hidden="true" />
                       Record Payment
                     </Button>
@@ -650,7 +650,7 @@ export default function OrderDetailClient({
                       <div className="space-y-1.5">
                         <Label className="text-xs font-medium">Payment Gateway</Label>
                         <Select value={recordGatewayId} onValueChange={setRecordGatewayId}>
-                          <SelectTrigger className="h-9 text-xs">
+                          <SelectTrigger className="h-10 text-sm rounded-lg border-border">
                             <SelectValue placeholder="Select gateway" />
                           </SelectTrigger>
                           <SelectContent>
@@ -665,7 +665,7 @@ export default function OrderDetailClient({
 
                       <div className="space-y-1.5">
                         <Label className="text-xs font-medium">Amount ({order.currency})</Label>
-                        <p className="rounded-md border border-border bg-muted/50 px-3 py-2 text-xs font-mono text-muted-foreground">
+                        <p className="rounded-lg border border-border bg-muted/50 px-3.5 py-2.5 text-xs font-mono text-muted-foreground tabular-nums">
                           {order.quotedPrice != null
                             ? `${order.quotedPrice.toLocaleString()} — recorded in full (partial deposits: split via multiple quotes)`
                             : "Set a quote first — the quote amount is what gets recorded."}
@@ -679,7 +679,7 @@ export default function OrderDetailClient({
                           placeholder="e.g. BKASH-TXN-12345"
                           value={recordTxnId}
                           onChange={(e) => setRecordTxnId(e.target.value)}
-                          className="h-9 text-xs font-mono"
+                          className="h-10 text-sm font-mono rounded-lg border-border"
                           required
                         />
                       </div>
@@ -691,7 +691,7 @@ export default function OrderDetailClient({
                           placeholder="+880 1700-000000"
                           value={recordSenderNumber}
                           onChange={(e) => setRecordSenderNumber(e.target.value)}
-                          className="h-9 text-xs font-mono"
+                          className="h-10 text-sm font-mono rounded-lg border-border"
                         />
                       </div>
 
@@ -702,7 +702,7 @@ export default function OrderDetailClient({
                           value={recordNote}
                           onChange={(e) => setRecordNote(e.target.value)}
                           rows={2}
-                          className="text-xs"
+                          className="text-sm rounded-lg min-h-[60px]"
                         />
                       </div>
 
@@ -712,7 +712,7 @@ export default function OrderDetailClient({
                           variant="ghost"
                           size="sm"
                           onClick={() => setRecordDialogOpen(false)}
-                          className="h-9 text-xs"
+                          className="h-10 text-xs rounded-lg"
                         >
                           Cancel
                         </Button>
@@ -720,7 +720,7 @@ export default function OrderDetailClient({
                           type="submit"
                           size="sm"
                           disabled={isPending}
-                          className="h-9 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                          className="h-10 text-xs font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
                         >
                           {isPending ? (
                             <>
@@ -902,7 +902,7 @@ export default function OrderDetailClient({
                     value={selectedNextStatus}
                     onValueChange={(val) => setSelectedNextStatus(val as OrderStatus)}
                   >
-                    <SelectTrigger id="order-next-status" className="h-9 text-xs">
+                    <SelectTrigger id="order-next-status" className="h-10 text-sm rounded-lg border-border">
                       <SelectValue placeholder="Choose target status" />
                     </SelectTrigger>
                     <SelectContent>
@@ -914,7 +914,7 @@ export default function OrderDetailClient({
                     </SelectContent>
                   </Select>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <Label htmlFor="order-status-note" className="text-xs font-medium">
                       Status Note <span className="text-muted-foreground font-normal">(optional)</span>
                     </Label>
@@ -924,7 +924,7 @@ export default function OrderDetailClient({
                       value={statusNote}
                       onChange={(e) => setStatusNote(e.target.value)}
                       rows={2}
-                      className="text-xs"
+                      className="text-sm rounded-lg min-h-[60px]"
                     />
                   </div>
 
@@ -932,7 +932,7 @@ export default function OrderDetailClient({
                     type="button"
                     onClick={handleStatusUpdate}
                     disabled={!selectedNextStatus || isPending}
-                    className="w-full h-9 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="w-full h-10 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
                   >
                     {isPending ? (
                       <>
@@ -982,7 +982,7 @@ export default function OrderDetailClient({
                       placeholder="e.g. 850000"
                       value={quotedPriceInput}
                       onChange={(e) => setQuotedPriceInput(e.target.value)}
-                      className="h-9 text-sm font-mono"
+                      className="h-10 text-sm font-mono tabular-nums rounded-lg border-border"
                       required
                     />
                   </div>
@@ -990,7 +990,7 @@ export default function OrderDetailClient({
                   <Button
                     type="submit"
                     disabled={isPending}
-                    className="w-full h-9 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                    className="w-full h-10 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
                   >
                     {isPending ? (
                       <>
@@ -1102,13 +1102,13 @@ export default function OrderDetailClient({
           </div>
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending} className="h-9 text-xs">
+            <AlertDialogCancel disabled={isPending} className="h-10 text-sm rounded-lg">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRejectPayment}
               disabled={!rejectReason.trim() || isPending}
-              className="h-9 text-xs bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="h-10 text-sm font-medium rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isPending ? "Rejecting..." : "Confirm Rejection"}
             </AlertDialogAction>

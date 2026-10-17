@@ -262,16 +262,16 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">Configured Payment Methods</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Configured Payment Methods</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Gateways visible to customers at checkout and in the customer portal. Display data only.
           </p>
         </div>
-        <Button onClick={openAddDialog} size="sm" className="h-8 text-xs gap-1.5 bg-primary text-primary-foreground">
-          <Plus className="size-3.5" aria-hidden="true" />
+        <Button onClick={openAddDialog} size="sm" className="h-10 px-4 rounded-lg text-sm font-semibold gap-2 bg-primary text-primary-foreground shadow-xs">
+          <Plus className="size-4" aria-hidden="true" />
           Add Gateway
         </Button>
       </div>
@@ -281,7 +281,7 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
         <div
           role="alert"
           aria-live="polite"
-          className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+          className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
         >
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
@@ -301,7 +301,7 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
         <div
           role="status"
           aria-live="polite"
-          className="flex items-center justify-between rounded-lg border border-success/40 bg-success/10 p-3 text-xs text-success"
+          className="flex items-center justify-between rounded-lg border border-success/40 bg-success/10 p-3 text-sm text-success"
         >
           <div className="flex items-center gap-2">
             <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
@@ -318,44 +318,56 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
       ) : null}
 
       {/* Gateway Cards List */}
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         {gateways.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-xs text-muted-foreground">
-            No gateways configured yet. Click &quot;Add Gateway&quot; to configure payment channels.
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-card p-12 text-center shadow-xs">
+            <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+              <CreditCard className="size-6" aria-hidden="true" />
+            </div>
+            <div>
+              <h4 className="text-base font-semibold text-foreground">No gateways configured</h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Set up manual bank transfers, bKash, or Nagad so customers can submit payments.
+              </p>
+            </div>
+            <Button onClick={openAddDialog} size="sm" className="mt-2 h-10 px-4 rounded-lg text-sm font-semibold gap-2 shadow-xs">
+              <Plus className="size-4" aria-hidden="true" />
+              Add Gateway
+            </Button>
           </div>
         ) : (
           gateways.map((gw, idx) => (
-            <Card key={gw.id} className="shadow-xs overflow-hidden">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/30">
+            <Card key={gw.id} className="rounded-xl border border-border bg-card shadow-xs overflow-hidden transition-all duration-150 ease-out hover:border-primary/30">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-5 gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-secondary/40 text-primary">
                     {getKindIcon(gw.kind)}
                   </div>
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-foreground">{gw.name}</h3>
-                      <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                    <div className="flex items-center gap-2.5">
+                      <h3 className="text-base font-semibold text-foreground">{gw.name}</h3>
+                      <Badge variant="outline" className="text-xs uppercase font-mono px-2 py-0.5">
                         {gw.kind}
                       </Badge>
                       {gw.kind === "sslcommerz" ? (
-                        <Badge variant="secondary" className="text-[10px]">
+                        <Badge variant="secondary" className="text-xs">
                           Not Implemented
                         </Badge>
                       ) : null}
                     </div>
                     {gw.instructions ? (
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-1 max-w-xl">
+                      <p className="mt-1 text-sm text-muted-foreground line-clamp-1 max-w-xl">
                         {gw.instructions}
                       </p>
                     ) : null}
 
                     {/* Display Config Badges */}
                     {Object.keys(gw.config || {}).length > 0 ? (
-                      <div className="mt-2 flex flex-wrap gap-2 text-[11px] font-mono">
+                      <div className="mt-2.5 flex flex-wrap gap-2 text-xs font-mono tabular-nums">
                         {Object.entries(gw.config).map(([k, v]) => (
                           <span
                             key={k}
-                            className="inline-flex items-center gap-1 rounded bg-secondary/50 px-2 py-0.5 border border-border/50 text-foreground"
+                            className="inline-flex items-center gap-1.5 rounded-md bg-secondary/50 px-2.5 py-1 border border-border text-foreground"
                           >
                             <span className="text-muted-foreground">{k}:</span>
                             <span className="font-semibold">{v}</span>
@@ -366,7 +378,7 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t border-border/50 sm:border-0">
+                <div className="flex items-center justify-between sm:justify-end gap-3.5 shrink-0 pt-3 sm:pt-0 border-t border-border/50 sm:border-0">
                   {/* Reorder buttons */}
                   <div className="flex items-center gap-1">
                     <Button
@@ -376,9 +388,9 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                       disabled={idx === 0 || isPending}
                       onClick={() => handleMove(idx, "up")}
                       aria-label="Move up"
-                      className="size-7 text-muted-foreground hover:text-foreground"
+                      className="size-8 rounded-md text-muted-foreground hover:text-foreground"
                     >
-                      <ArrowUp className="size-3.5" aria-hidden="true" />
+                      <ArrowUp className="size-4" aria-hidden="true" />
                     </Button>
                     <Button
                       type="button"
@@ -387,21 +399,21 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                       disabled={idx === gateways.length - 1 || isPending}
                       onClick={() => handleMove(idx, "down")}
                       aria-label="Move down"
-                      className="size-7 text-muted-foreground hover:text-foreground"
+                      className="size-8 rounded-md text-muted-foreground hover:text-foreground"
                     >
-                      <ArrowDown className="size-3.5" aria-hidden="true" />
+                      <ArrowDown className="size-4" aria-hidden="true" />
                     </Button>
                   </div>
 
                   {/* Active Toggle Switch */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <Switch
                       id={`gw-active-${gw.id}`}
                       checked={gw.isActive}
                       onCheckedChange={(checked) => handleToggleActive(gw.id, checked)}
                       disabled={isPending}
                     />
-                    <Label htmlFor={`gw-active-${gw.id}`} className="text-xs font-medium cursor-pointer">
+                    <Label htmlFor={`gw-active-${gw.id}`} className="text-sm font-medium cursor-pointer">
                       {gw.isActive ? "Active" : "Inactive"}
                     </Label>
                   </div>
@@ -412,9 +424,9 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                     variant="outline"
                     size="sm"
                     onClick={() => openEditDialog(gw)}
-                    className="h-8 text-xs gap-1"
+                    className="h-9 px-3 rounded-lg text-sm font-medium gap-1.5 shadow-xs"
                   >
-                    <Edit2 className="size-3" aria-hidden="true" />
+                    <Edit2 className="size-3.5" aria-hidden="true" />
                     Edit
                   </Button>
                 </div>
@@ -439,25 +451,25 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
           <form onSubmit={handleSaveGateway} className="space-y-4 pt-2">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
-                <Label className="text-xs font-medium">Gateway Name *</Label>
+                <Label className="text-[13px] font-medium text-foreground">Gateway Name *</Label>
                 <Input
                   placeholder="e.g. bKash Personal or City Bank Gulshan Branch"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-10 text-sm rounded-lg border-border"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Gateway Kind *</Label>
+                <Label className="text-[13px] font-medium text-foreground">Gateway Kind *</Label>
                 <Select value={kind} onValueChange={(val) => setKind(val as GatewayKind)}>
-                  <SelectTrigger className="h-9 text-xs">
+                  <SelectTrigger className="h-10 text-sm rounded-lg border-border">
                     <SelectValue placeholder="Select kind" />
                   </SelectTrigger>
                   <SelectContent>
                     {GATEWAY_KINDS.map((k) => (
-                      <SelectItem key={k.kind} value={k.kind} className="text-xs">
+                      <SelectItem key={k.kind} value={k.kind} className="text-sm">
                         {k.label}
                       </SelectItem>
                     ))}
@@ -466,124 +478,124 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium">Sort Order</Label>
+                <Label className="text-[13px] font-medium text-foreground">Sort Order</Label>
                 <Input
                   type="number"
                   min={0}
                   max={99}
                   value={sortOrder}
                   onChange={(e) => setSortOrder(Number(e.target.value))}
-                  className="h-9 text-xs font-mono"
+                  className="h-10 text-sm rounded-lg border-border font-mono tabular-nums"
                 />
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <Label className="text-xs font-medium">Logo URL (optional)</Label>
+                <Label className="text-[13px] font-medium text-foreground">Logo URL (optional)</Label>
                 <Input
                   placeholder="https://example.com/logo.png"
                   value={logoUrl}
                   onChange={(e) => setLogoUrl(e.target.value)}
-                  className="h-9 text-xs"
+                  className="h-10 text-sm rounded-lg border-border"
                 />
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">
-                <Label className="text-xs font-medium">Customer Instructions</Label>
+                <Label className="text-[13px] font-medium text-foreground">Customer Instructions</Label>
                 <Textarea
                   placeholder="Step-by-step transfer instructions shown to the customer at checkout..."
                   value={instructions}
                   onChange={(e) => setInstructions(e.target.value)}
                   rows={2}
-                  className="text-xs"
+                  className="text-sm rounded-lg border-border resize-none"
                 />
               </div>
             </div>
 
             {/* Structured account fields (§2.8) */}
-            <div className="space-y-3 border-t border-border pt-3">
+            <div className="space-y-3.5 border-t border-border pt-4">
               <div>
-                <h4 className="text-xs font-semibold text-foreground">Account details</h4>
-                <p className="text-[11px] text-muted-foreground">
+                <h4 className="text-sm font-semibold text-foreground">Account details</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
                   Structured display data. Instructions below preview live per account type.
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="grid gap-3.5 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Account number</Label>
+                  <Label className="text-[13px] font-medium text-foreground">Account number</Label>
                   <Input
                     placeholder="+880 1700-000000"
                     value={pairValue("accountNumber")}
                     onChange={(e) => setPairValue("accountNumber", e.target.value)}
-                    className="h-9 text-xs font-mono"
+                    className="h-10 text-sm rounded-lg border-border font-mono tabular-nums"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Account holder</Label>
+                  <Label className="text-[13px] font-medium text-foreground">Account holder</Label>
                   <Input
                     placeholder="TripMate Travel"
                     value={pairValue("accountHolder")}
                     onChange={(e) => setPairValue("accountHolder", e.target.value)}
-                    className="h-9 text-xs"
+                    className="h-10 text-sm rounded-lg border-border"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Account type</Label>
+                  <Label className="text-[13px] font-medium text-foreground">Account type</Label>
                   <Select
                     value={mfsType || "none"}
                     onValueChange={(v) => setPairValue("mfsType", v === "none" ? "" : v)}
                   >
-                    <SelectTrigger className="h-9 text-xs">
+                    <SelectTrigger className="h-10 text-sm rounded-lg border-border">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none" className="text-xs">Not an MFS account</SelectItem>
-                      <SelectItem value="personal" className="text-xs">Personal (Send Money)</SelectItem>
-                      <SelectItem value="agent" className="text-xs">Agent (Cash Out)</SelectItem>
-                      <SelectItem value="merchant" className="text-xs">Merchant (Payment)</SelectItem>
+                      <SelectItem value="none" className="text-sm">Not an MFS account</SelectItem>
+                      <SelectItem value="personal" className="text-sm">Personal (Send Money)</SelectItem>
+                      <SelectItem value="agent" className="text-sm">Agent (Cash Out)</SelectItem>
+                      <SelectItem value="merchant" className="text-sm">Merchant (Payment)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-medium">Bank name (for bank transfers)</Label>
+                  <Label className="text-[13px] font-medium text-foreground">Bank name (for bank transfers)</Label>
                   <Input
                     placeholder="The City Bank PLC"
                     value={pairValue("bankName")}
                     onChange={(e) => setPairValue("bankName", e.target.value)}
-                    className="h-9 text-xs"
+                    className="h-10 text-sm rounded-lg border-border"
                   />
                 </div>
               </div>
 
               {/* Live instruction + copy-number preview */}
-              <div className="rounded-lg border border-border bg-secondary/30 p-3 space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-2.5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Customer preview
                 </p>
-                <p className="text-xs leading-relaxed">{previewInstructions}</p>
+                <p className="text-sm leading-relaxed text-foreground">{previewInstructions}</p>
                 {previewNumber ? (
                   <button
                     type="button"
                     onClick={copyPreviewNumber}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 font-mono text-xs font-bold hover:border-primary/40"
+                    className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-border bg-card px-3 font-mono text-sm font-semibold hover:border-primary/40 shadow-xs tabular-nums"
                   >
-                    {copied ? <Check className="size-3.5 text-success" aria-hidden="true" /> : <Copy className="size-3.5" aria-hidden="true" />}
+                    {copied ? <Check className="size-4 text-success" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
                     {previewNumber}
                   </button>
                 ) : (
-                  <p className="text-[11px] text-muted-foreground">Enter an account number to preview the copy button.</p>
+                  <p className="text-xs text-muted-foreground">Enter an account number to preview the copy button.</p>
                 )}
               </div>
             </div>
 
             {/* Display Config Key-Value Editor */}
-            <div className="space-y-3 border-t border-border pt-3">
+            <div className="space-y-3.5 border-t border-border pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    <Info className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                    <Info className="size-4 text-muted-foreground" aria-hidden="true" />
                     Display Configuration Data
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Public attributes displayed to the customer (account numbers, account type, bank branch).
                   </p>
                 </div>
@@ -592,14 +604,14 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                   variant="outline"
                   size="sm"
                   onClick={() => setConfigPairs((prev) => [...prev, { key: "", value: "" }])}
-                  className="h-7 text-xs gap-1"
+                  className="h-8 text-xs font-medium gap-1 rounded-md"
                 >
-                  <Plus className="size-3" aria-hidden="true" />
+                  <Plus className="size-3.5" aria-hidden="true" />
                   Add Field
                 </Button>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {configPairs.map((pair, index) => (
                   <div key={index} className="flex items-center gap-2">
                     <Input
@@ -611,7 +623,7 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                           prev.map((p, i) => (i === index ? { ...p, key: val } : p)),
                         );
                       }}
-                      className="h-8 text-xs font-mono w-1/3"
+                      className="h-10 text-sm rounded-lg border-border font-mono w-1/3"
                     />
                     <Input
                       placeholder="Value (e.g. +880 1700-000000)"
@@ -622,42 +634,42 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                           prev.map((p, i) => (i === index ? { ...p, value: val } : p)),
                         );
                       }}
-                      className="h-8 text-xs font-mono flex-1"
+                      className="h-10 text-sm rounded-lg border-border font-mono flex-1 tabular-nums"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       onClick={() => setConfigPairs((prev) => prev.filter((_, i) => i !== index))}
-                      className="size-8 text-muted-foreground hover:text-destructive"
+                      className="size-10 rounded-lg text-muted-foreground hover:text-destructive"
                       aria-label="Remove configuration field"
                     >
-                      <Trash2 className="size-3.5" aria-hidden="true" />
+                      <Trash2 className="size-4" aria-hidden="true" />
                     </Button>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-border pt-3">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between border-t border-border pt-4">
+              <div className="flex items-center gap-2.5">
                 <Switch
                   id="dialog-gw-active"
                   checked={isActive}
                   onCheckedChange={setIsActive}
                 />
-                <Label htmlFor="dialog-gw-active" className="text-xs font-medium cursor-pointer">
+                <Label htmlFor="dialog-gw-active" className="text-sm font-medium cursor-pointer">
                   Active (available for customer payments)
                 </Label>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setDialogOpen(false)}
-                  className="h-9 text-xs"
+                  className="h-10 px-4 rounded-lg text-sm font-medium"
                 >
                   Cancel
                 </Button>
@@ -665,11 +677,11 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
                   type="submit"
                   size="sm"
                   disabled={isPending}
-                  className="h-9 text-xs bg-primary text-primary-foreground hover:bg-primary/90"
+                  className="h-10 px-4 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs"
                 >
                   {isPending ? (
                     <>
-                      <Loader2 className="mr-2 size-3.5 animate-spin" aria-hidden="true" />
+                      <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
                       Saving...
                     </>
                   ) : (

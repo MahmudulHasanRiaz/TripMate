@@ -57,14 +57,14 @@ export default function ServiceOptionsView({
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
             Service Options & Tiers
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             Manage granular service tiers, passport turnaround packages, and commercial profit margins.
           </p>
         </div>
-        <Button onClick={handleOpenAdd} className="gap-2">
+        <Button onClick={handleOpenAdd} className="h-10 gap-2 shrink-0 rounded-lg text-sm font-semibold">
           <Plus className="size-4" />
           Add Service Option
         </Button>
@@ -78,14 +78,15 @@ export default function ServiceOptionsView({
             placeholder="Search service options..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
+            className="h-10 pl-9 text-sm rounded-lg border-border"
           />
         </div>
 
         <select
           value={selectedCat}
           onChange={(e) => setSelectedCat(e.target.value)}
-          className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          aria-label="Filter by category"
+          className="flex h-10 rounded-lg border border-border bg-background px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring sm:w-56"
         >
           <option value="">All Categories</option>
           {categories.map((c) => (
@@ -97,33 +98,53 @@ export default function ServiceOptionsView({
       </div>
 
       {/* Table */}
-      <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/50 text-xs font-medium uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-3">Option / Service</th>
-                <th className="px-4 py-3">Duration / Pages</th>
-                <th className="px-4 py-3">Delivery Time</th>
-                <th className="px-4 py-3 text-right">Selling Price</th>
-                <th className="px-4 py-3 text-right">Direct Cost</th>
-                <th className="px-4 py-3 text-right">Gross Margin</th>
-                <th className="px-4 py-3 text-center">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filtered.length === 0 ? (
+      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <Plus className="size-6 text-muted-foreground" />
+            </div>
+            <h3 className="mt-4 text-base font-semibold text-foreground">No service options found</h3>
+            <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+              {search || selectedCat ? "No options match your filter criteria. Try resetting your search." : "No service options or tiers configured yet."}
+            </p>
+            {search || selectedCat ? (
+              <Button
+                variant="outline"
+                onClick={() => { setSearch(""); setSelectedCat(""); }}
+                className="mt-5 h-9 rounded-lg text-sm font-semibold"
+              >
+                Reset Filters
+              </Button>
+            ) : (
+              <Button
+                onClick={handleOpenAdd}
+                className="mt-5 h-10 gap-2 rounded-lg text-sm font-semibold"
+              >
+                <Plus className="size-4" /> Add Service Option
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border bg-muted/40 text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <td colSpan={8} className="px-4 py-12 text-center text-muted-foreground">
-                    No service options found matching your criteria.
-                  </td>
+                  <th className="px-4 py-3.5">Option / Service</th>
+                  <th className="px-4 py-3.5">Duration / Pages</th>
+                  <th className="px-4 py-3.5">Delivery Time</th>
+                  <th className="px-4 py-3.5 text-right">Selling Price</th>
+                  <th className="px-4 py-3.5 text-right">Direct Cost</th>
+                  <th className="px-4 py-3.5 text-right">Gross Margin</th>
+                  <th className="px-4 py-3.5 text-center">Status</th>
+                  <th className="px-4 py-3.5 text-right">Actions</th>
                 </tr>
-              ) : (
-                filtered.map((item) => (
-                  <tr key={item.id} className="transition-colors hover:bg-muted/40">
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {filtered.map((item) => (
+                  <tr key={item.id} className="min-h-[52px] transition-colors hover:bg-muted/30">
                     <td className="px-4 py-3.5">
-                      <div className="font-medium text-foreground">{item.title}</div>
+                      <div className="font-semibold text-foreground">{item.title}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                         <span className="font-semibold text-primary">{item.category.name}</span>
                         <span>•</span>
@@ -131,29 +152,29 @@ export default function ServiceOptionsView({
                       </div>
                     </td>
 
-                    <td className="px-4 py-3.5 text-xs text-muted-foreground">
+                    <td className="px-4 py-3.5 text-sm text-muted-foreground">
                       {item.duration || "Standard"}
                     </td>
 
-                    <td className="px-4 py-3.5 text-xs text-muted-foreground">
+                    <td className="px-4 py-3.5 text-sm text-muted-foreground">
                       {item.deliveryTime || "Standard turnaround"}
                     </td>
 
-                    <td className="px-4 py-3.5 text-right font-medium">
+                    <td className="px-4 py-3.5 text-right font-semibold font-mono tabular-nums text-foreground">
                       ৳{item.price.toLocaleString()}
                     </td>
 
-                    <td className="px-4 py-3.5 text-right text-xs text-muted-foreground">
+                    <td className="px-4 py-3.5 text-right text-sm font-mono tabular-nums text-muted-foreground">
                       {item.costPrice ? `৳${item.costPrice.toLocaleString()}` : "—"}
                     </td>
 
                     <td className="px-4 py-3.5 text-right">
                       {item.grossProfit !== null ? (
                         <div>
-                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                          <span className="font-semibold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                             ৳{item.grossProfit.toLocaleString()}
                           </span>
-                          <span className="text-[11px] text-muted-foreground ml-1">
+                          <span className="text-xs font-mono tabular-nums text-muted-foreground ml-1.5">
                             ({item.marginPercent}%)
                           </span>
                         </div>
@@ -164,8 +185,10 @@ export default function ServiceOptionsView({
 
                     <td className="px-4 py-3.5 text-center">
                       <Badge
-                        variant={item.isActive ? "default" : "secondary"}
-                        className="text-xs"
+                        variant="outline"
+                        className={item.isActive
+                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium"
+                          : "border-muted-foreground/30 text-muted-foreground font-medium"}
                       >
                         {item.isActive ? "Active" : "Inactive"}
                       </Badge>
@@ -175,11 +198,11 @@ export default function ServiceOptionsView({
                       <ServiceOptionRowActions option={item} onEdit={() => handleEdit(item)} />
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {dialogOpen && (

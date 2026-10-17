@@ -163,13 +163,13 @@ export default function ServiceOptionFormDialog({
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="categoryId">Parent Category</Label>
+            <Label htmlFor="categoryId" className="text-[13px] font-medium text-foreground">Parent Category</Label>
             <select
               id="categoryId"
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
               disabled={busy}
-              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="">Select category...</option>
               {categories.map((c) => (
@@ -183,19 +183,20 @@ export default function ServiceOptionFormDialog({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="title">Option Title</Label>
+              <Label htmlFor="title" className="text-[13px] font-medium text-foreground">Option Title</Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => handleTitle(e.target.value)}
                 placeholder="e.g. 5 Years Validity (48 Pages)"
+                className="h-10 text-sm rounded-lg border-border"
                 disabled={busy}
               />
               {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="slug">Slug</Label>
+              <Label htmlFor="slug" className="text-[13px] font-medium text-foreground">Slug</Label>
               <Input
                 id="slug"
                 value={slug}
@@ -204,6 +205,7 @@ export default function ServiceOptionFormDialog({
                   setSlug(e.target.value);
                 }}
                 placeholder="passport-5y-48p"
+                className="h-10 text-sm rounded-lg border-border"
                 disabled={busy}
               />
               {errors.slug && <p className="text-xs text-destructive">{errors.slug}</p>}
@@ -211,13 +213,13 @@ export default function ServiceOptionFormDialog({
           </div>
 
           {/* Pricing & Commercial Margins */}
-          <div className="rounded-lg border border-border bg-muted/30 p-4">
+          <div className="rounded-xl border border-border bg-muted/30 p-4">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Commercial Pricing & Profitability
             </h4>
             <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="price">Selling Price (BDT)</Label>
+                <Label htmlFor="price" className="text-[13px] font-medium text-foreground">Selling Price (BDT)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -225,13 +227,14 @@ export default function ServiceOptionFormDialog({
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="5500"
+                  className="h-10 text-sm rounded-lg border-border tabular-nums"
                   disabled={busy}
                 />
                 {errors.price && <p className="text-xs text-destructive">{errors.price}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="costPrice">Direct Cost / Gov Fee (BDT)</Label>
+                <Label htmlFor="costPrice" className="text-[13px] font-medium text-foreground">Direct Cost / Gov Fee (BDT)</Label>
                 <Input
                   id="costPrice"
                   type="number"
@@ -239,6 +242,7 @@ export default function ServiceOptionFormDialog({
                   value={costPrice}
                   onChange={(e) => setCostPrice(e.target.value)}
                   placeholder="4025"
+                  className="h-10 text-sm rounded-lg border-border tabular-nums"
                   disabled={busy}
                 />
                 <p className="text-xs text-muted-foreground">Official government/vendor cost</p>
@@ -246,9 +250,9 @@ export default function ServiceOptionFormDialog({
             </div>
 
             {grossProfit !== null && (
-              <div className="mt-3 flex items-center justify-between rounded-md bg-background px-3 py-2 text-xs">
+              <div className="mt-3 flex items-center justify-between rounded-lg bg-background p-3 text-xs border border-border/50">
                 <span className="text-muted-foreground">Projected Gross Profit:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                <span className="font-semibold font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                   ৳{grossProfit.toLocaleString()} ({marginPercent}% margin)
                 </span>
               </div>
@@ -257,23 +261,25 @@ export default function ServiceOptionFormDialog({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="duration">Duration / Validity</Label>
+              <Label htmlFor="duration" className="text-[13px] font-medium text-foreground">Duration / Validity</Label>
               <Input
                 id="duration"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
                 placeholder="5 Years / 10 Years"
+                className="h-10 text-sm rounded-lg border-border"
                 disabled={busy}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="deliveryTime">Delivery Timeline</Label>
+              <Label htmlFor="deliveryTime" className="text-[13px] font-medium text-foreground">Delivery Timeline</Label>
               <Input
                 id="deliveryTime"
                 value={deliveryTime}
                 onChange={(e) => setDeliveryTime(e.target.value)}
                 placeholder="15-21 Working Days"
+                className="h-10 text-sm rounded-lg border-border"
                 disabled={busy}
               />
             </div>
@@ -282,16 +288,16 @@ export default function ServiceOptionFormDialog({
           {/* Requirements Checklist */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Required Documents Checklist</Label>
+              <Label className="text-[13px] font-medium text-foreground">Required Documents Checklist</Label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={addRequirement}
                 disabled={busy}
-                className="h-7 text-xs"
+                className="h-8 text-xs font-semibold rounded-lg"
               >
-                <Plus className="mr-1 size-3" /> Add Item
+                <Plus className="mr-1 size-3.5" /> Add Item
               </Button>
             </div>
             <div className="space-y-2">
@@ -301,6 +307,7 @@ export default function ServiceOptionFormDialog({
                     value={req}
                     onChange={(e) => handleRequirementChange(idx, e.target.value)}
                     placeholder="e.g. National ID Card / Online Birth Certificate"
+                    className="h-10 text-sm rounded-lg border-border"
                     disabled={busy}
                   />
                   <Button
@@ -309,7 +316,7 @@ export default function ServiceOptionFormDialog({
                     size="icon"
                     onClick={() => removeRequirement(idx)}
                     disabled={busy || requirements.length === 1}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="h-10 w-10 shrink-0 text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="size-4" />
                   </Button>
@@ -319,20 +326,21 @@ export default function ServiceOptionFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="description">Overview Notes</Label>
+            <Label htmlFor="description" className="text-[13px] font-medium text-foreground">Overview Notes</Label>
             <Textarea
               id="description"
               rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Important notes, jurisdiction guidelines, or inclusions..."
+              className="text-sm rounded-lg border-border resize-none"
               disabled={busy}
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between rounded-xl border border-border p-3.5">
             <div>
-              <p className="text-sm font-medium">Active Status</p>
+              <p className="text-sm font-medium text-foreground">Active Status</p>
               <p className="text-xs text-muted-foreground">
                 Available for customer selection and quotation calculation
               </p>
@@ -341,10 +349,16 @@ export default function ServiceOptionFormDialog({
           </div>
 
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={busy}
+              className="h-10 rounded-lg text-sm font-semibold"
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy} className="h-10 rounded-lg text-sm font-semibold">
               {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
               {editing ? "Save Changes" : "Create Option"}
             </Button>

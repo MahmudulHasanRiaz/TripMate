@@ -44,28 +44,28 @@ export default function CategoriesView({ rows }: { rows: CategoryRow[] }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Categories</h2>
-          <p className="text-sm text-muted-foreground">
-            {rows.length} {rows.length === 1 ? "category" : "categories"} · {activeCount} active
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Categories</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            <span className="tabular-nums font-medium text-foreground">{rows.length}</span> {rows.length === 1 ? "category" : "categories"} · <span className="tabular-nums font-medium text-foreground">{activeCount}</span> active
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" aria-hidden="true" />
+        <Button onClick={openCreate} className="h-10 px-4 rounded-lg text-sm font-semibold gap-2 shadow-xs">
+          <Plus className="size-4" aria-hidden="true" />
           New category
         </Button>
       </div>
 
-      <Card className="overflow-hidden">
+      <Card className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Kind</TableHead>
-                  <TableHead className="text-right">Order</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">
+                <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category</TableHead>
+                  <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kind</TableHead>
+                  <TableHead className="h-11 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Order</TableHead>
+                  <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                  <TableHead className="h-11 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     <span className="sr-only">Actions</span>
                   </TableHead>
                 </TableRow>
@@ -73,30 +73,41 @@ export default function CategoriesView({ rows }: { rows: CategoryRow[] }) {
               <TableBody>
                 {rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-32 text-center">
-                      <p className="font-medium text-muted-foreground">No categories yet.</p>
-                      <Button variant="link" className="mt-1" onClick={openCreate}>
-                        Create your first category
-                      </Button>
+                    <TableCell colSpan={5} className="py-16 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                          <Plus className="size-6" aria-hidden="true" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-foreground">No categories yet</h4>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Create categories to organize your tour packages and travel services.
+                          </p>
+                        </div>
+                        <Button onClick={openCreate} size="sm" className="mt-2 h-10 px-4 rounded-lg text-sm font-semibold shadow-xs">
+                          <Plus className="size-4" aria-hidden="true" />
+                          Create your first category
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
                   rows.map((row) => (
-                    <TableRow key={row.id}>
-                      <TableCell>
-                        <span className="font-medium">{row.name}</span>
-                        <p className="text-xs text-muted-foreground">{row.slug}</p>
+                    <TableRow key={row.id} className="min-h-[52px] border-b border-border transition-colors hover:bg-muted/30">
+                      <TableCell className="py-3.5">
+                        <span className="text-sm font-semibold text-foreground">{row.name}</span>
+                        <p className="text-xs text-muted-foreground font-mono">{row.slug}</p>
                       </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{CATEGORY_KIND_META[row.kind].label}</Badge>
+                      <TableCell className="py-3.5">
+                        <Badge variant="secondary" className="text-xs font-medium px-2 py-0.5">{CATEGORY_KIND_META[row.kind].label}</Badge>
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{row.sortOrder}</TableCell>
-                      <TableCell>
-                        <Badge variant={row.isActive ? "success" : "outline"}>
+                      <TableCell className="py-3.5 text-right font-mono text-sm tabular-nums text-foreground">{row.sortOrder}</TableCell>
+                      <TableCell className="py-3.5">
+                        <Badge variant={row.isActive ? "success" : "outline"} className="text-xs font-medium px-2 py-0.5">
                           {row.isActive ? "Active" : "Inactive"}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3.5 text-right">
                         <CategoryRowActions row={row} onEdit={() => openEdit(row)} />
                       </TableCell>
                     </TableRow>

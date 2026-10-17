@@ -56,40 +56,40 @@ export default function ListingFilters({
       className="flex flex-col gap-3 sm:flex-row sm:items-end"
     >
       <div className="w-full sm:max-w-sm">
-        <Label htmlFor="listing-search" className="mb-1.5 block text-sm font-medium">
+        <Label htmlFor="listing-search" className="mb-1.5 block text-[13px] font-medium text-foreground">
           Search
         </Label>
         <div className="relative">
           <Search
-            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden="true"
           />
           <Input
             id="listing-search"
             type="search"
-            placeholder="Search by title or destination"
-            className="pl-9"
+            placeholder="Search by title or destination..."
+            className="pl-9 h-10 text-sm rounded-lg border-border"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="w-full sm:w-44">
-        <Label htmlFor="listing-status-filter" className="mb-1.5 block text-sm font-medium">
+      <div className="w-full sm:w-48">
+        <Label htmlFor="listing-status-filter" className="mb-1.5 block text-[13px] font-medium text-foreground">
           Filter by status
         </Label>
         <Select
           value={initialStatus || "all"}
           onValueChange={(v) => navigate(q.trim(), v === "all" ? "" : v)}
         >
-          <SelectTrigger id="listing-status-filter" className="w-full">
+          <SelectTrigger id="listing-status-filter" className="w-full h-10 text-sm rounded-lg border-border">
             <SelectValue placeholder="All statuses" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all" className="text-sm">All statuses</SelectItem>
             {LISTING_STATUSES.map((s) => (
-              <SelectItem key={s} value={s} className="capitalize">
+              <SelectItem key={s} value={s} className="capitalize text-sm">
                 {s}
               </SelectItem>
             ))}
@@ -97,8 +97,8 @@ export default function ListingFilters({
         </Select>
       </div>
 
-      <Button type="submit" variant="secondary" className="sm:mb-px">
-        Search
+      <Button type="submit" variant="secondary" className="h-10 px-4 rounded-lg text-sm font-medium shadow-xs">
+        Filter
       </Button>
     </form>
   );

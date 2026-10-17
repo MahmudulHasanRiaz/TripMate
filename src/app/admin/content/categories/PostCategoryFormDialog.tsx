@@ -105,22 +105,23 @@ export default function PostCategoryFormDialog({
               : "Add a category the blog uses to group posts."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={submit} noValidate className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="post-category-name">Name</Label>
+        <form onSubmit={submit} noValidate className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="post-category-name" className="text-[13px] font-medium text-foreground">Name</Label>
             <Input
               id="post-category-name"
               value={name}
               onChange={(e) => handleName(e.target.value)}
               placeholder="e.g. Travel Tips"
+              className="h-10 text-sm rounded-lg border-border"
             />
             {errors.name ? (
               <p className="text-sm font-medium text-destructive">{errors.name}</p>
             ) : null}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="post-category-slug">Slug</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="post-category-slug" className="text-[13px] font-medium text-foreground">Slug</Label>
             <Input
               id="post-category-slug"
               value={slug}
@@ -129,11 +130,12 @@ export default function PostCategoryFormDialog({
                 setSlug(e.target.value);
               }}
               placeholder="travel-tips"
+              className="h-10 text-sm rounded-lg border-border"
             />
             {errors.slug ? (
               <p className="text-sm font-medium text-destructive">{errors.slug}</p>
             ) : (
-              <p className="text-sm text-muted-foreground">Lowercase, dash-separated; used in URLs.</p>
+              <p className="text-xs text-muted-foreground">Lowercase, dash-separated; used in URLs.</p>
             )}
           </div>
 
@@ -143,13 +145,13 @@ export default function PostCategoryFormDialog({
             </p>
           ) : null}
 
-          <DialogFooter>
-            <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" disabled={busy} onClick={onCancel} className="h-10 rounded-lg text-sm font-semibold">
               Cancel
             </Button>
-            <Button type="submit" disabled={busy}>
-              {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-              {editing ? "Save changes" : "Create category"}
+            <Button type="submit" disabled={busy} className="h-10 rounded-lg text-sm font-semibold">
+              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+              {editing ? "Save Changes" : "Create Category"}
             </Button>
           </DialogFooter>
         </form>

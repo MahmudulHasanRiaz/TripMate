@@ -204,29 +204,31 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
       {/* Top Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="icon" className="size-11 min-h-[44px] min-w-[44px]">
+          <Button asChild variant="ghost" size="icon" className="size-10 rounded-lg">
             <Link href={"/admin/leads" as Route} aria-label="Back to leads">
               <ArrowLeft className="size-5" aria-hidden="true" />
             </Link>
           </Button>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               <h2 className="text-xl font-bold tracking-tight text-foreground">
                 {lead.name.trim() || "Anonymous Inquiry"}
               </h2>
-              <Badge variant={STATUS_BADGE_VARIANTS[currentStatus]} className="capitalize text-xs">
-                {currentStatus}
+              <Badge variant={STATUS_BADGE_VARIANTS[currentStatus]} className="capitalize text-xs font-medium px-2.5 py-0.5">
+                {currentStatus.replace(/_/g, " ")}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               Submitted on{" "}
-              {new Date(lead.createdAt).toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              <span className="tabular-nums">
+                {new Date(lead.createdAt).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
             </p>
           </div>
         </div>
@@ -234,7 +236,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
         {/* Quick Contact Buttons */}
         <div className="flex items-center gap-2">
           {cleanPhone ? (
-            <Button asChild variant="outline" size="sm" className="h-11 min-h-[44px] px-3.5 gap-1.5 text-xs">
+            <Button asChild variant="outline" size="sm" className="h-10 rounded-lg px-3.5 gap-1.5 text-sm font-medium shadow-xs">
               <a href={`tel:${cleanPhone}`}>
                 <Phone className="size-4 text-primary" aria-hidden="true" />
                 Call
@@ -243,7 +245,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
           ) : null}
 
           {waPhone ? (
-            <Button asChild variant="outline" size="sm" className="h-11 min-h-[44px] px-3.5 gap-1.5 text-xs">
+            <Button asChild variant="outline" size="sm" className="h-10 rounded-lg px-3.5 gap-1.5 text-sm font-medium shadow-xs">
               <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer">
                 <MessageCircle className="size-4 text-success" aria-hidden="true" />
                 WhatsApp
@@ -252,7 +254,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
           ) : null}
 
           {lead.email ? (
-            <Button asChild variant="outline" size="sm" className="h-11 min-h-[44px] px-3.5 gap-1.5 text-xs">
+            <Button asChild variant="outline" size="sm" className="h-10 rounded-lg px-3.5 gap-1.5 text-sm font-medium shadow-xs">
               <a href={`mailto:${lead.email}`}>
                 <Mail className="size-4 text-muted-foreground" aria-hidden="true" />
                 Email
@@ -488,26 +490,26 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
 
         {/* Right Sticky Column (4 cols): Actions, Assignee, Notes */}
         <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-20">
-          <Card>
+          <Card className="rounded-xl border border-border bg-card shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">Lead Management</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-xs">
+            <CardContent className="space-y-4 text-sm">
               {/* Status Select */}
               <div>
-                <Label className="text-xs font-medium">Pipeline Status</Label>
+                <Label className="text-[13px] font-medium text-foreground">Pipeline Status</Label>
                 <Select
                   value={currentStatus}
                   onValueChange={(val: LeadStatus) => handleStatusChange(val)}
                   disabled={isPending}
                 >
-                  <SelectTrigger className="mt-1.5 h-11 min-h-[44px] w-full text-xs">
+                  <SelectTrigger className="mt-1.5 h-10 w-full rounded-lg text-sm border-border">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {LEAD_STATUSES.map((s) => (
-                      <SelectItem key={s} value={s} className="capitalize text-xs">
-                        {s}
+                      <SelectItem key={s} value={s} className="capitalize text-sm">
+                        {s.replace(/_/g, " ")}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -516,21 +518,21 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
 
               {/* Assignee Select */}
               <div>
-                <Label className="text-xs font-medium">Assigned Staff</Label>
+                <Label className="text-[13px] font-medium text-foreground">Assigned Staff</Label>
                 <Select
                   value={currentAssignee || "unassigned"}
                   onValueChange={handleAssignChange}
                   disabled={isPending}
                 >
-                  <SelectTrigger className="mt-1.5 h-11 min-h-[44px] w-full text-xs">
+                  <SelectTrigger className="mt-1.5 h-10 w-full rounded-lg text-sm border-border">
                     <SelectValue placeholder="Select staff..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unassigned" className="text-xs text-muted-foreground">
+                    <SelectItem value="unassigned" className="text-sm text-muted-foreground">
                       Unassigned
                     </SelectItem>
                     {staffUsers.map((staff) => (
-                      <SelectItem key={staff.id} value={staff.id} className="text-xs">
+                      <SelectItem key={staff.id} value={staff.id} className="text-sm">
                         {staff.name}
                       </SelectItem>
                     ))}
@@ -539,8 +541,8 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
               </div>
 
               {/* Convert Lead to Booking */}
-              <div className="space-y-2 border-t border-border/60 pt-4">
-                <Button asChild className="h-10 min-h-10 w-full gap-1.5 text-xs font-semibold">
+              <div className="space-y-2.5 border-t border-border pt-4">
+                <Button asChild className="h-10 w-full rounded-lg gap-2 text-sm font-semibold shadow-xs">
                   <Link href={`/admin/quotations?convertLead=${lead.id}` as Route}>
                     <FileText className="size-4" aria-hidden="true" />
                     Convert to Quotation
@@ -552,7 +554,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                       type="button"
                       disabled={isConverted || isPending}
                       className={cn(
-                        "w-full h-11 min-h-[44px] font-semibold gap-1.5",
+                        "w-full h-10 rounded-lg text-sm font-semibold gap-2 shadow-xs transition-all",
                         isConverted
                           ? "bg-success/20 text-success hover:bg-success/20 cursor-default"
                           : "bg-primary text-primary-foreground",
@@ -571,10 +573,10 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogCancel className="h-10 rounded-lg">Cancel</AlertDialogCancel>
                       <AlertDialogAction
                         onClick={handleConvertLead}
-                        className="bg-primary text-primary-foreground"
+                        className="h-10 rounded-lg bg-primary text-primary-foreground font-semibold"
                       >
                         Confirm conversion
                       </AlertDialogAction>
@@ -586,13 +588,13 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
           </Card>
 
           {/* Internal Operator Notes */}
-          <Card>
+          <Card className="rounded-xl border border-border bg-card shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center justify-between">
                 <span>Internal Notes</span>
                 {noteNotice ? (
-                  <span className="text-xs font-normal text-success flex items-center gap-1">
-                    <CheckCircle2 className="size-3" aria-hidden="true" />
+                  <span className="text-xs font-medium text-success flex items-center gap-1">
+                    <CheckCircle2 className="size-3.5" aria-hidden="true" />
                     {noteNotice}
                   </span>
                 ) : null}
@@ -605,7 +607,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                 placeholder="Log internal discussions, requirements, or follow-up notes..."
                 rows={5}
                 disabled={isPending}
-                className="text-xs resize-none"
+                className="text-sm rounded-lg border-border resize-none"
               />
 
               <Button
@@ -613,12 +615,12 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                 size="sm"
                 disabled={isPending}
                 onClick={handleSaveNote}
-                className="w-full h-11 min-h-[44px] text-xs font-semibold gap-1.5"
+                className="w-full h-10 rounded-lg text-sm font-semibold gap-2 shadow-xs"
               >
                 {isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Save className="size-3.5" aria-hidden="true" />
+                  <Save className="size-4" aria-hidden="true" />
                 )}
                 Save Internal Note
               </Button>
@@ -626,13 +628,13 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
           </Card>
 
           {/* Follow-ups (§2.6) */}
-          <Card>
+          <Card className="rounded-xl border border-border bg-card shadow-xs">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold flex items-center justify-between">
                 <span>Follow-ups{lead.followUpCount > 0 ? ` (${lead.followUpCount})` : ""}</span>
                 {followUpNotice ? (
-                  <span className="text-xs font-normal text-success flex items-center gap-1">
-                    <CheckCircle2 className="size-3" aria-hidden="true" />
+                  <span className="text-xs font-medium text-success flex items-center gap-1">
+                    <CheckCircle2 className="size-3.5" aria-hidden="true" />
                     {followUpNotice}
                   </span>
                 ) : null}
@@ -640,13 +642,15 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
             </CardHeader>
             <CardContent className="space-y-3">
               {lead.nextFollowUpAt ? (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Next follow-up:{" "}
-                  {new Date(lead.nextFollowUpAt).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {new Date(lead.nextFollowUpAt).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
                 </p>
               ) : null}
               <Textarea
@@ -655,16 +659,16 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                 placeholder="What was discussed? Next step..."
                 rows={3}
                 disabled={isPending}
-                className="text-xs resize-none"
+                className="text-sm rounded-lg border-border resize-none"
               />
               <div>
-                <Label className="text-xs font-medium">Next follow-up date</Label>
+                <Label className="text-[13px] font-medium text-foreground">Next follow-up date</Label>
                 <input
                   type="date"
                   value={followUpDate}
                   onChange={(e) => setFollowUpDate(e.target.value)}
                   disabled={isPending}
-                  className="mt-1.5 h-10 w-full rounded-md border border-input bg-background px-3 text-xs"
+                  className="mt-1.5 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-xs"
                 />
               </div>
               <Button
@@ -672,14 +676,14 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                 size="sm"
                 disabled={isPending || !followUpNote.trim()}
                 onClick={handleLogFollowUp}
-                className="w-full h-10 min-h-10 text-xs font-semibold gap-1.5"
+                className="w-full h-10 rounded-lg text-sm font-semibold gap-2 shadow-xs"
               >
                 {isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
                 ) : (
-                  <Phone className="size-3.5" aria-hidden="true" />
+                  <Phone className="size-4" aria-hidden="true" />
                 )}
-                Log follow-up
+                Log Follow-up
               </Button>
             </CardContent>
           </Card>

@@ -45,30 +45,32 @@ export default function SetPasswordDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
+          <DialogTitle className="flex items-center gap-2 text-base font-semibold">
             <KeyRound className="size-4" aria-hidden="true" />
             Set password
           </DialogTitle>
-          <DialogDescription className="text-xs">
+          <DialogDescription className="text-sm text-muted-foreground">
             {user ? `Set a new sign-in password for ${user.name} (${user.email}). Minimum 10 characters.` : ""}
           </DialogDescription>
         </DialogHeader>
-        <Input
-          type="password"
-          autoComplete="new-password"
-          placeholder="New password (min 10 chars)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="h-10"
-        />
+        <div className="py-2">
+          <Input
+            type="password"
+            autoComplete="new-password"
+            placeholder="New password (min 10 chars)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-10 text-sm rounded-lg border-border"
+          />
+        </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy} className="h-10 px-4 rounded-lg text-sm font-medium">
             Cancel
           </Button>
-          <Button onClick={submit} disabled={busy || password.length < 10}>
-            {busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
+          <Button onClick={submit} disabled={busy || password.length < 10} className="h-10 px-4 rounded-lg text-sm font-semibold shadow-xs">
+            {busy && <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />}
             Set password
           </Button>
         </DialogFooter>

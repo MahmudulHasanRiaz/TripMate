@@ -141,18 +141,18 @@ export default function MediaCard({ file }: { file: MediaItem }) {
   };
 
   return (
-    <Card className="group flex flex-col overflow-hidden">
-      <div className="relative aspect-[4/3] w-full overflow-hidden border-b bg-muted">
+    <Card className="group flex flex-col rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+      <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border bg-muted">
         <Preview file={file} />
-        <span className="absolute top-2 left-2 rounded bg-background/85 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide text-foreground">
+        <span className="absolute top-2 left-2 rounded-md bg-background/90 px-2 py-0.5 text-xs font-semibold tracking-wide text-foreground shadow-xs">
           {typeLabel(file.mime)}
         </span>
-        <div className="absolute right-2 bottom-2 flex gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+        <div className="absolute right-2 bottom-2 flex gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
           <Button
             type="button"
             variant="secondary"
             size="icon"
-            className="h-8 w-8"
+            className="h-8 w-8 rounded-lg shadow-xs"
             aria-label={`Edit alt for ${file.name}`}
             onClick={beginEdit}
           >
@@ -164,7 +164,7 @@ export default function MediaCard({ file }: { file: MediaItem }) {
                 type="button"
                 variant="secondary"
                 size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive shadow-xs"
                 aria-label={`Trash ${file.name}`}
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -172,8 +172,8 @@ export default function MediaCard({ file }: { file: MediaItem }) {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Trash this file?</AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogTitle className="text-base font-semibold">Trash this file?</AlertDialogTitle>
+                <AlertDialogDescription className="text-sm text-muted-foreground">
                   &ldquo;{file.name}&rdquo; will leave the library. The stored file
                   is kept so it can be restored later.
                 </AlertDialogDescription>
@@ -183,18 +183,18 @@ export default function MediaCard({ file }: { file: MediaItem }) {
                   {error}
                 </p>
               ) : null}
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+              <AlertDialogFooter className="pt-2">
+                <AlertDialogCancel disabled={busy} className="h-10 rounded-lg text-sm font-semibold">Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   disabled={busy}
                   onClick={(e) => {
                     e.preventDefault();
                     void trash();
                   }}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  className="h-10 rounded-lg text-sm font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
-                  Trash file
+                  {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
+                  Trash File
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -202,17 +202,17 @@ export default function MediaCard({ file }: { file: MediaItem }) {
         </div>
       </div>
 
-      <CardContent className="flex flex-1 flex-col gap-2 p-3">
-        <p className="truncate text-sm font-medium" title={file.name}>
+      <CardContent className="flex flex-1 flex-col gap-2 p-3.5">
+        <p className="truncate text-sm font-semibold text-foreground" title={file.name}>
           {file.name}
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-muted-foreground font-mono tabular-nums">
           {typeLabel(file.mime)} · {formatBytes(file.size)}
         </p>
 
         {editing ? (
-          <form onSubmit={save} className="mt-auto space-y-1.5">
-            <Label htmlFor={`alt-${file.id}`} className="text-xs font-medium">
+          <form onSubmit={save} className="mt-auto space-y-2 pt-1">
+            <Label htmlFor={`alt-${file.id}`} className="text-[13px] font-medium text-foreground">
               Alt text
             </Label>
             <Input
@@ -222,26 +222,26 @@ export default function MediaCard({ file }: { file: MediaItem }) {
               maxLength={ALT_MAX}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Describe the image for screen readers"
-              className="h-8 text-xs"
+              className="h-9 text-xs rounded-lg border-border"
             />
             {error ? (
               <p role="alert" className="text-xs font-medium text-destructive">
                 {error}
               </p>
             ) : null}
-            <div className="flex justify-end gap-1">
+            <div className="flex justify-end gap-1.5">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-7 text-xs"
+                className="h-8 text-xs font-semibold rounded-lg"
                 disabled={busy}
                 onClick={() => setEditing(false)}
               >
                 Cancel
               </Button>
-              <Button type="submit" size="sm" className="h-7 text-xs" disabled={busy}>
-                {busy && <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />}
+              <Button type="submit" size="sm" className="h-8 text-xs font-semibold rounded-lg" disabled={busy}>
+                {busy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
                 Save
               </Button>
             </div>

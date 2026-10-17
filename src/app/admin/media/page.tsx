@@ -5,7 +5,6 @@ import Image from "next/image";
 import { FileText, Images, Trash2 } from "lucide-react";
 import { listFiles, listTrashedFiles, type MediaFile } from "@/modules/media/service";
 import { formatBytes } from "@/modules/media/validation";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import MediaUploader from "./MediaUploader";
 import MediaSearch from "./MediaSearch";
@@ -86,28 +85,30 @@ function Pager({
 }) {
   if (totalPages <= 1) return null;
   return (
-    <div className="flex items-center justify-end gap-2">
-      <Button
-        asChild
-        variant="outline"
-        size="sm"
-        aria-disabled={page <= 1}
-        className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
-      >
-        <Link href={page > 1 ? (href(-1) as Route) : "#"}>Previous</Link>
-      </Button>
-      <span className="text-sm text-muted-foreground">
+    <div className="flex items-center justify-between px-1 text-sm text-muted-foreground pt-2">
+      <span className="text-sm tabular-nums font-medium">
         Page {page} of {totalPages}
       </span>
-      <Button
-        asChild
-        variant="outline"
-        size="sm"
-        aria-disabled={page >= totalPages}
-        className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
-      >
-        <Link href={page < totalPages ? (href(1) as Route) : "#"}>Next</Link>
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          disabled={page <= 1}
+          className={`h-9 gap-1 text-sm rounded-lg font-medium ${page <= 1 ? "pointer-events-none opacity-50" : ""}`}
+        >
+          <Link href={page > 1 ? (href(-1) as Route) : "#"}>Previous</Link>
+        </Button>
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          disabled={page >= totalPages}
+          className={`h-9 gap-1 text-sm rounded-lg font-medium ${page >= totalPages ? "pointer-events-none opacity-50" : ""}`}
+        >
+          <Link href={page < totalPages ? (href(1) as Route) : "#"}>Next</Link>
+        </Button>
+      </div>
     </div>
   );
 }
@@ -158,30 +159,30 @@ export default async function MediaPage({
   const libraryHref = q ? (`/admin/media?q=${encodeURIComponent(q)}` as Route) : ("/admin/media" as Route);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {view === "library" ? <MediaUploader /> : null}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">
-            {view === "trash" ? "Trash" : "Files"}
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
+            {view === "trash" ? "Trash Bin" : "Media Library"}
           </h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             {view === "trash"
-              ? `${trashTotal} ${trashTotal === 1 ? "file" : "files"} — permanently deleted when the trash is emptied`
-              : `${total} ${total === 1 ? "file" : "files"}`}
+              ? `${trashTotal} ${trashTotal === 1 ? "file" : "files"} waiting for permanent deletion or restore`
+              : `${total} ${total === 1 ? "file" : "files"} available across catalog and content modules`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {view === "trash" ? <EmptyTrashButton count={trashTotal} /> : null}
           <nav
             aria-label="Media library views"
-            className="flex items-center gap-1 rounded-md border border-border p-1"
+            className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-xs"
           >
-            <Button asChild variant={view === "library" ? "secondary" : "ghost"} size="sm" className="h-8 text-xs">
+            <Button asChild variant={view === "library" ? "secondary" : "ghost"} size="sm" className="h-9 px-3 text-sm font-medium rounded-md">
               <Link href={libraryHref}>Library</Link>
             </Button>
-            <Button asChild variant={view === "trash" ? "secondary" : "ghost"} size="sm" className="h-8 text-xs">
+            <Button asChild variant={view === "trash" ? "secondary" : "ghost"} size="sm" className="h-9 px-3 text-sm font-medium rounded-md">
               <Link href="/admin/media?view=trash">
                 Trash ({trashTotal})
               </Link>
@@ -192,31 +193,32 @@ export default async function MediaPage({
 
       {view === "trash" ? (
         trashItems.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center gap-2 py-14 text-center">
-              <Trash2 className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
-              <p className="font-medium text-muted-foreground">
-                Trash is empty — trashed files wait here until permanently deleted.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card p-14 text-center shadow-xs">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <Trash2 className="size-6 text-muted-foreground" aria-hidden="true" />
+            </div>
+            <h3 className="mt-4 text-base font-semibold text-foreground">Trash is empty</h3>
+            <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+              Trashed media items will wait here until permanently purged.
+            </p>
+          </div>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-2.5">
             {trashItems.map((f) => (
               <li
                 key={f.id}
-                className={cn("flex items-center gap-3 rounded-md border border-border p-3")}
+                className={cn("flex items-center gap-3.5 rounded-xl border border-border bg-card p-3.5 shadow-xs")}
               >
                 <TrashThumb file={f} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium" title={f.name}>
+                  <p className="truncate text-sm font-semibold text-foreground" title={f.name}>
                     {f.name}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground font-mono tabular-nums mt-0.5">
                     Trashed {f.deletedAt ? formatDeleted(f.deletedAt) : "—"}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs text-muted-foreground">
+                <span className="shrink-0 text-xs font-mono tabular-nums text-muted-foreground">
                   {formatBytes(f.size)}
                 </span>
               </li>
@@ -228,16 +230,24 @@ export default async function MediaPage({
           <MediaSearch initialQ={q} />
 
           {items.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center gap-2 py-14 text-center">
-                <Images className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
-                <p className="font-medium text-muted-foreground">
-                  {q
-                    ? `No files match "${q}".`
-                    : "No files yet — upload your first image or PDF above."}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card p-14 text-center shadow-xs">
+              <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                <Images className="size-6 text-muted-foreground" aria-hidden="true" />
+              </div>
+              <h3 className="mt-4 text-base font-semibold text-foreground">No media files found</h3>
+              <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+                {q
+                  ? `No media items match your search for "${q}".`
+                  : "No media files uploaded yet. Drag and drop images or PDFs above."}
+              </p>
+              {q ? (
+                <Button asChild variant="outline" className="mt-5 h-9 rounded-lg text-sm font-semibold">
+                  <Link href={"/admin/media" as Route}>
+                    Clear Search
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
           ) : (
             <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {items.map((f) => (

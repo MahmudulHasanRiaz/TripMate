@@ -172,13 +172,13 @@ export default function VisaServiceFormDialog({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="destinationId">Destination Country</Label>
+              <Label htmlFor="destinationId" className="text-[13px] font-medium text-foreground">Destination Country</Label>
               <select
                 id="destinationId"
                 value={destinationId}
                 onChange={(e) => setDestinationId(e.target.value)}
                 disabled={busy}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="">Select country...</option>
                 {destinations.map((d) => (
@@ -193,13 +193,13 @@ export default function VisaServiceFormDialog({
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="visaTypeId">Visa Category / Type</Label>
+              <Label htmlFor="visaTypeId" className="text-[13px] font-medium text-foreground">Visa Category / Type</Label>
               <select
                 id="visaTypeId"
                 value={visaTypeId}
                 onChange={(e) => setVisaTypeId(e.target.value)}
                 disabled={busy}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="">Select visa type...</option>
                 {visaTypes.map((vt) => (
@@ -215,19 +215,20 @@ export default function VisaServiceFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="title">Offering Title</Label>
+            <Label htmlFor="title" className="text-[13px] font-medium text-foreground">Offering Title</Label>
             <Input
               id="title"
               value={title}
               onChange={(e) => handleTitle(e.target.value)}
               placeholder="e.g. Dubai 30-Day Tourist Visa"
               disabled={busy}
+              className="h-10 text-sm rounded-lg border-border"
             />
             {errors.title && <p className="text-xs text-destructive">{errors.title}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="slug">Slug (URL identifier)</Label>
+            <Label htmlFor="slug" className="text-[13px] font-medium text-foreground">Slug (URL identifier)</Label>
             <Input
               id="slug"
               value={slug}
@@ -237,18 +238,19 @@ export default function VisaServiceFormDialog({
               }}
               placeholder="dubai-30-day-tourist-visa"
               disabled={busy}
+              className="h-10 text-sm rounded-lg border-border font-mono"
             />
             {errors.slug && <p className="text-xs text-destructive">{errors.slug}</p>}
           </div>
 
           {/* Pricing & Commercial Margins */}
-          <div className="rounded-lg border border-border bg-muted/30 p-4">
+          <div className="rounded-xl border border-border bg-muted/30 p-4 shadow-xs">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Commercial Pricing & Profitability
+              Commercial Pricing &amp; Profitability
             </h4>
             <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="price">Selling Price (BDT)</Label>
+                <Label htmlFor="price" className="text-[13px] font-medium text-foreground">Selling Price (BDT)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -257,12 +259,13 @@ export default function VisaServiceFormDialog({
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="18500"
                   disabled={busy}
+                  className="h-10 text-sm rounded-lg border-border font-mono tabular-nums"
                 />
                 {errors.price && <p className="text-xs text-destructive">{errors.price}</p>}
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="costPrice">Commercial Cost / COGS (BDT)</Label>
+                <Label htmlFor="costPrice" className="text-[13px] font-medium text-foreground">Commercial Cost / COGS (BDT)</Label>
                 <Input
                   id="costPrice"
                   type="number"
@@ -271,15 +274,16 @@ export default function VisaServiceFormDialog({
                   onChange={(e) => setCostPrice(e.target.value)}
                   placeholder="14800"
                   disabled={busy}
+                  className="h-10 text-sm rounded-lg border-border font-mono tabular-nums"
                 />
                 <p className="text-xs text-muted-foreground">Direct embassy/vendor cost</p>
               </div>
             </div>
 
             {grossProfit !== null && (
-              <div className="mt-3 flex items-center justify-between rounded-md bg-background px-3 py-2 text-xs">
-                <span className="text-muted-foreground">Projected Gross Profit:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+              <div className="mt-3 flex items-center justify-between rounded-lg bg-background px-3.5 py-2.5 text-xs border border-border shadow-xs">
+                <span className="text-muted-foreground font-medium">Projected Gross Profit:</span>
+                <span className="font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
                   ৳{grossProfit.toLocaleString()} ({marginPercent}% margin)
                 </span>
               </div>
@@ -289,33 +293,36 @@ export default function VisaServiceFormDialog({
           {/* Processing Details */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label htmlFor="processingTime">Processing Time</Label>
+              <Label htmlFor="processingTime" className="text-[13px] font-medium text-foreground">Processing Time</Label>
               <Input
                 id="processingTime"
                 value={processingTime}
                 onChange={(e) => setProcessingTime(e.target.value)}
                 placeholder="3-5 Working Days"
                 disabled={busy}
+                className="h-10 text-sm rounded-lg border-border"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="validity">Visa Validity</Label>
+              <Label htmlFor="validity" className="text-[13px] font-medium text-foreground">Visa Validity</Label>
               <Input
                 id="validity"
                 value={validity}
                 onChange={(e) => setValidity(e.target.value)}
                 placeholder="60 Days"
                 disabled={busy}
+                className="h-10 text-sm rounded-lg border-border"
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="stayDuration">Max Stay Duration</Label>
+              <Label htmlFor="stayDuration" className="text-[13px] font-medium text-foreground">Max Stay Duration</Label>
               <Input
                 id="stayDuration"
                 value={stayDuration}
                 onChange={(e) => setStayDuration(e.target.value)}
                 placeholder="30 Days Single Entry"
                 disabled={busy}
+                className="h-10 text-sm rounded-lg border-border"
               />
             </div>
           </div>
@@ -323,16 +330,16 @@ export default function VisaServiceFormDialog({
           {/* Requirements Checklist */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Required Documents Checklist</Label>
+              <Label className="text-[13px] font-medium text-foreground">Required Documents Checklist</Label>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={addRequirement}
                 disabled={busy}
-                className="h-7 text-xs"
+                className="h-8 px-3 rounded-md text-xs font-medium"
               >
-                <Plus className="mr-1 size-3" /> Add Document
+                <Plus className="mr-1 size-3.5" /> Add Document
               </Button>
             </div>
             <div className="space-y-2">
@@ -343,6 +350,7 @@ export default function VisaServiceFormDialog({
                     onChange={(e) => handleRequirementChange(idx, e.target.value)}
                     placeholder="e.g. Scanned copy of valid passport (min 6 months)"
                     disabled={busy}
+                    className="h-10 text-sm rounded-lg border-border"
                   />
                   <Button
                     type="button"
@@ -350,7 +358,7 @@ export default function VisaServiceFormDialog({
                     size="icon"
                     onClick={() => removeRequirement(idx)}
                     disabled={busy || requirements.length === 1}
-                    className="text-muted-foreground hover:text-destructive"
+                    className="size-10 rounded-lg text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="size-4" />
                   </Button>
@@ -360,7 +368,7 @@ export default function VisaServiceFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="description">Overview / Description</Label>
+            <Label htmlFor="description" className="text-[13px] font-medium text-foreground">Overview / Description</Label>
             <Textarea
               id="description"
               rows={3}
@@ -368,12 +376,13 @@ export default function VisaServiceFormDialog({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Important notes, embassy jurisdiction rules, or inclusion details..."
               disabled={busy}
+              className="text-sm rounded-lg border-border resize-none"
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-border p-3">
+          <div className="flex items-center justify-between rounded-xl border border-border p-3.5 shadow-xs">
             <div>
-              <p className="text-sm font-medium">Public Status</p>
+              <p className="text-sm font-medium text-foreground">Public Status</p>
               <p className="text-xs text-muted-foreground">
                 Visible to customers in the public visa explorer
               </p>
@@ -382,10 +391,10 @@ export default function VisaServiceFormDialog({
           </div>
 
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={onCancel} disabled={busy}>
+            <Button type="button" variant="outline" onClick={onCancel} disabled={busy} className="h-10 px-4 rounded-lg text-sm font-medium">
               Cancel
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy} className="h-10 px-4 rounded-lg text-sm font-semibold shadow-xs">
               {busy && <Loader2 className="mr-2 size-4 animate-spin" />}
               {editing ? "Save Changes" : "Create Offering"}
             </Button>

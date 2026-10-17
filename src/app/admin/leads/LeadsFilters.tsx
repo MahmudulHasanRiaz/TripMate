@@ -61,7 +61,7 @@ export default function LeadsFilters({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end justify-between">
       <form onSubmit={submitSearch} className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end">
         <div className="w-full sm:max-w-sm">
-          <Label htmlFor="leads-search" className="mb-1.5 block text-xs font-medium">
+          <Label htmlFor="leads-search" className="mb-1.5 block text-[13px] font-medium text-foreground">
             Search
           </Label>
           <div className="relative">
@@ -73,29 +73,29 @@ export default function LeadsFilters({
               id="leads-search"
               type="search"
               placeholder="Search by name, phone, email..."
-              className="pl-9 h-9 text-xs"
+              className="pl-9 h-10 text-sm rounded-lg border-border"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
         </div>
 
-        <div className="w-full sm:w-48">
-          <Label htmlFor="leads-assignee-filter" className="mb-1.5 block text-xs font-medium">
+        <div className="w-full sm:w-52">
+          <Label htmlFor="leads-assignee-filter" className="mb-1.5 block text-[13px] font-medium text-foreground">
             Assigned to
           </Label>
           <Select
             value={initialAssignedTo || "all"}
             onValueChange={(v) => navigate(search.trim(), v === "all" ? "" : v)}
           >
-            <SelectTrigger id="leads-assignee-filter" className="w-full h-9 text-xs">
+            <SelectTrigger id="leads-assignee-filter" className="w-full h-10 text-sm rounded-lg border-border">
               <SelectValue placeholder="All assignees" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all" className="text-xs">All assignees</SelectItem>
-              <SelectItem value="unassigned" className="text-xs">Unassigned</SelectItem>
+              <SelectItem value="all" className="text-sm">All assignees</SelectItem>
+              <SelectItem value="unassigned" className="text-sm">Unassigned</SelectItem>
               {staffUsers.map((staff) => (
-                <SelectItem key={staff.id} value={staff.id} className="text-xs">
+                <SelectItem key={staff.id} value={staff.id} className="text-sm">
                   {staff.name}
                 </SelectItem>
               ))}
@@ -103,39 +103,43 @@ export default function LeadsFilters({
           </Select>
         </div>
 
-        <Button type="submit" variant="secondary" size="sm" className="h-9 text-xs">
+        <Button type="submit" variant="secondary" className="h-10 px-4 text-sm font-medium rounded-lg shadow-xs">
           Filter
         </Button>
       </form>
 
       {/* View Toggle */}
-      <div className="flex rounded-lg border border-border bg-muted/40 p-0.5 self-start sm:self-auto">
-        <button
+      <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 self-start sm:self-auto shadow-xs">
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => navigate(search.trim(), initialAssignedTo, "board")}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors",
+            "h-8 px-3 text-sm font-medium gap-1.5 rounded-md transition-all duration-150 ease-out",
             currentView === "board"
-              ? "bg-card text-foreground shadow-xs font-semibold"
+              ? "bg-secondary text-foreground shadow-xs font-semibold"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          <Kanban className="size-3.5" aria-hidden="true" />
+          <Kanban className="size-4" aria-hidden="true" />
           Board
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => navigate(search.trim(), initialAssignedTo, "list")}
           className={cn(
-            "flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium transition-colors",
+            "h-8 px-3 text-sm font-medium gap-1.5 rounded-md transition-all duration-150 ease-out",
             currentView === "list"
-              ? "bg-card text-foreground shadow-xs font-semibold"
+              ? "bg-secondary text-foreground shadow-xs font-semibold"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
-          <List className="size-3.5" aria-hidden="true" />
+          <List className="size-4" aria-hidden="true" />
           List
-        </button>
+        </Button>
       </div>
     </div>
   );

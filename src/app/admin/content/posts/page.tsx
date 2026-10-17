@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { Route } from "next";
-import { Plus } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { listAllPosts } from "@/modules/content/service";
 import { contentStatusSchema } from "@/modules/content/validation";
 import type { ContentStatus } from "@/modules/content/validation";
@@ -74,91 +74,97 @@ export default async function PostsPage({
   const empty = items.length === 0;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Posts</h2>
-          <p className="text-sm text-muted-foreground">
-            {total} {total === 1 ? "result" : "results"}
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Blog & Articles</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Manage published travel stories, visa guides, and customer announcements.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="h-10 text-sm font-semibold gap-2 rounded-lg bg-primary text-primary-foreground">
           <Link href={"/admin/content/posts/new" as Route}>
-            <Plus className="h-4 w-4" aria-hidden="true" />
-            New post
+            <Plus className="size-4" aria-hidden="true" />
+            New Post
           </Link>
         </Button>
       </div>
 
       <PostFilters initialQ={q} initialStatus={status ?? ""} />
 
-      <Card className="overflow-hidden">
+      <Card className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead>Published</TableHead>
-                  <TableHead>Updated</TableHead>
-                  <TableHead className="text-right">
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {empty ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-32 text-center">
-                      <p className="font-medium text-muted-foreground">
-                        {q || status
-                          ? "No posts match these filters."
-                          : "No posts yet."}
-                      </p>
-                      {!(q || status) ? (
-                        <Button asChild variant="link" className="mt-1">
-                          <Link href={"/admin/content/posts/new" as Route}>
-                            Create your first post
-                          </Link>
-                        </Button>
-                      ) : null}
-                    </TableCell>
-                  </TableRow>
+            {empty ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center">
+                <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+                  <FileText className="size-6 text-muted-foreground" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">No posts found</h3>
+                <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
+                  {q || status
+                    ? "No posts match the applied filters. Try a different query."
+                    : "No blog posts or travel articles created yet."}
+                </p>
+                {q || status ? (
+                  <Button asChild variant="outline" className="mt-5 h-9 rounded-lg text-sm font-semibold">
+                    <Link href={"/admin/content/posts" as Route}>
+                      Clear Filters
+                    </Link>
+                  </Button>
                 ) : (
-                  items.map((post) => {
+                  <Button asChild className="mt-5 h-10 gap-2 rounded-lg text-sm font-semibold">
+                    <Link href={"/admin/content/posts/new" as Route}>
+                      <Plus className="size-4" /> Create First Post
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="border-b border-border/80">
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5 pl-6">Title</TableHead>
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Category</TableHead>
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Status</TableHead>
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Author</TableHead>
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Published</TableHead>
+                    <TableHead className="text-[13px] font-semibold text-muted-foreground py-3.5">Updated</TableHead>
+                    <TableHead className="w-[100px] text-right text-[13px] font-semibold text-muted-foreground py-3.5 pr-6">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-border/60">
+                  {items.map((post) => {
                     const meta = CONTENT_STATUS_META[post.status];
                     return (
-                      <TableRow key={post.id}>
-                        <TableCell>
+                      <TableRow key={post.id} className="min-h-[52px] text-sm hover:bg-muted/30 transition-colors">
+                        <TableCell className="py-3.5 pl-6">
                           <Link
                             href={`/admin/content/posts/${post.id}/edit` as Route}
-                            className="font-medium text-foreground hover:underline"
+                            className="font-semibold text-foreground hover:underline"
                           >
                             {post.title}
                           </Link>
-                          <p className="text-xs text-muted-foreground">{post.slug}</p>
+                          <p className="text-xs font-mono text-muted-foreground mt-0.5">{post.slug}</p>
                         </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{post.category?.name ?? "—"}</span>
+                        <TableCell className="py-3.5">
+                          <span className="text-sm font-medium">{post.category?.name ?? "—"}</span>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={meta.variant} className="capitalize">
+                        <TableCell className="py-3.5">
+                          <Badge variant={meta.variant} className="capitalize text-xs font-medium">
                             {meta.label}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="py-3.5 text-sm text-muted-foreground">
                           {post.author?.name ?? "—"}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="py-3.5 font-mono text-sm tabular-nums text-muted-foreground">
                           {dateCell(post.publishedAt)}
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="py-3.5 font-mono text-sm tabular-nums text-muted-foreground">
                           {dateCell(post.updatedAt)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-3.5 pr-6 text-right">
                           <PostRowActions
                             postId={post.id}
                             status={post.status}
@@ -169,43 +175,49 @@ export default async function PostsPage({
                         </TableCell>
                       </TableRow>
                     );
-                  })
-                )}
-              </TableBody>
-            </Table>
+                  })}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {totalPages > 1 ? (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            aria-disabled={page <= 1}
-            className={page <= 1 ? "pointer-events-none opacity-50" : undefined}
-          >
-            <Link href={page > 1 ? (`/admin/content/posts?${pageParams(-1)}` as Route) : "#"}>
-              Previous
-            </Link>
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            aria-disabled={page >= totalPages}
-            className={page >= totalPages ? "pointer-events-none opacity-50" : undefined}
-          >
-            <Link
-              href={page < totalPages ? (`/admin/content/posts?${pageParams(1)}` as Route) : "#"}
+        <div className="flex items-center justify-between px-1 text-sm text-muted-foreground">
+          <div>
+            Showing <span className="font-semibold tabular-nums text-foreground">{items.length}</span> of{" "}
+            <span className="font-semibold tabular-nums text-foreground">{total}</span> posts
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              className={`h-9 gap-1 text-sm rounded-lg font-medium ${page <= 1 ? "pointer-events-none opacity-50" : ""}`}
             >
-              Next
-            </Link>
-          </Button>
+              <Link href={page > 1 ? (`/admin/content/posts?${pageParams(-1)}` as Route) : "#"}>
+                Previous
+              </Link>
+            </Button>
+            <span className="text-sm tabular-nums font-medium">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              className={`h-9 gap-1 text-sm rounded-lg font-medium ${page >= totalPages ? "pointer-events-none opacity-50" : ""}`}
+            >
+              <Link
+                href={page < totalPages ? (`/admin/content/posts?${pageParams(1)}` as Route) : "#"}
+              >
+                Next
+              </Link>
+            </Button>
+          </div>
         </div>
       ) : null}
     </div>

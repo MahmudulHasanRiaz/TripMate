@@ -72,14 +72,14 @@ export default async function ListingsPage({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Listings</h2>
-          <p className="text-sm text-muted-foreground">
-            {total} {total === 1 ? "result" : "results"}
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Listings</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            <span className="tabular-nums font-medium text-foreground">{total}</span> {total === 1 ? "result" : "results"}
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="h-10 px-4 rounded-lg text-sm font-semibold gap-2 shadow-xs">
           <Link href={"/admin/catalog/listings/new" as Route}>
-            <Plus className="h-4 w-4" aria-hidden="true" />
+            <Plus className="size-4" aria-hidden="true" />
             New listing
           </Link>
         </Button>
@@ -87,18 +87,18 @@ export default async function ListingsPage({
 
       <ListingFilters initialQ={q} initialStatus={status ?? ""} />
 
-      <Card className="overflow-hidden">
+      <Card className="rounded-xl border border-border bg-card overflow-hidden shadow-xs">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Listing</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead className="text-right">Price</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Updated</TableHead>
-                  <TableHead className="text-right">
+                <TableRow className="border-b border-border bg-muted/40 hover:bg-muted/40">
+                  <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Listing</TableHead>
+                  <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Category</TableHead>
+                  <TableHead className="h-11 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Price</TableHead>
+                  <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
+                  <TableHead className="h-11 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Updated</TableHead>
+                  <TableHead className="h-11 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     <span className="sr-only">Actions</span>
                   </TableHead>
                 </TableRow>
@@ -106,55 +106,70 @@ export default async function ListingsPage({
               <TableBody>
                 {empty ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-32 text-center">
-                      <p className="font-medium text-muted-foreground">
-                        {q || status
-                          ? "No listings match these filters."
-                          : "No listings yet."}
-                      </p>
-                      {!(q || status) ? (
-                        <Button asChild variant="link" className="mt-1">
-                          <Link href={"/admin/catalog/listings/new" as Route}>
-                            Create your first listing
-                          </Link>
-                        </Button>
-                      ) : null}
+                    <TableCell colSpan={6} className="py-16 text-center">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                          <Plus className="size-6" aria-hidden="true" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-semibold text-foreground">
+                            {q || status ? "No listings found" : "No listings created yet"}
+                          </h4>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {q || status
+                              ? "Try adjusting your search terms or status filter."
+                              : "Start by publishing your first package, tour, or service listing."}
+                          </p>
+                        </div>
+                        {q || status ? (
+                          <Button asChild variant="outline" size="sm" className="mt-2 h-9 rounded-lg text-sm">
+                            <Link href={"/admin/catalog/listings" as Route}>Reset Filters</Link>
+                          </Button>
+                        ) : (
+                          <Button asChild size="sm" className="mt-2 h-10 px-4 rounded-lg text-sm font-semibold shadow-xs">
+                            <Link href={"/admin/catalog/listings/new" as Route}>
+                              <Plus className="size-4" aria-hidden="true" />
+                              Create your first listing
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
                   items.map((listing) => {
                     const meta = LISTING_STATUS_META[listing.status];
                     return (
-                      <TableRow key={listing.id}>
-                        <TableCell>
+                      <TableRow key={listing.id} className="min-h-[52px] border-b border-border transition-colors hover:bg-muted/30">
+                        <TableCell className="py-3.5">
                           <Link
                             href={`/admin/catalog/listings/${listing.id}/edit` as Route}
-                            className="font-medium text-foreground hover:underline"
+                            className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                           >
                             {listing.title}
                           </Link>
-                          <p className="text-xs text-muted-foreground">{listing.slug}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{listing.slug}</p>
                         </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{listing.category.name}</span>
+                        <TableCell className="py-3.5">
+                          <span className="text-sm text-foreground">{listing.category.name}</span>
                           {listing.destination ? (
                             <p className="text-xs text-muted-foreground">
                               {listing.destination.name}
                             </p>
                           ) : null}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">
+                        <TableCell className="py-3.5 text-right font-mono text-sm font-bold text-foreground tabular-nums">
                           {formatPrice(listing.price, listing.currency)}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={meta.variant} className="capitalize">
+                        <TableCell className="py-3.5">
+                          <Badge variant={meta.variant} className="capitalize text-xs font-medium px-2 py-0.5">
                             {meta.label}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">
+                        <TableCell className="py-3.5 text-sm text-muted-foreground tabular-nums">
                           {dateCell(listing.updatedAt)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-3.5 text-right">
                           <ListingRowActions
                             listingId={listing.id}
                             status={listing.status}
