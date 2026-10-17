@@ -126,12 +126,16 @@ must whitelist the CDN host for `next/image` at build time — set
 
 Configuration resolves from `.env` next to the compose file
 (`cp .env.example .env`, fill real values). **Inside the stack the database
-host is the service name `postgres`, not `localhost`** —
-`postgresql://postgres:postgres@postgres:5432/tripmate`. Compose already
-defaults `DATABASE_URL` to that, so a dedicated deploy `.env` only needs
+host is the service name `postgres`, not `localhost`.** Rather than a
+hand-written URL, the image derives `DATABASE_URL` at boot from
+`POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`
+(`scripts/derive-db-url.mjs` — percent-encodes each part, so passwords with
+`@ : # %` are safe, and never logs the value): set those ONCE and both the
+Postgres service and the app agree — a dedicated deploy `.env` only needs
 `AUTH_SECRET` (32+ chars, or the app exits at boot with the exact error) and
-`APP_URL`. Running the app profile next to a *dev* `.env` (which points
-`DATABASE_URL` at `localhost:5432`)? Override it on the command:
+`APP_URL`. Set `DATABASE_URL` explicitly only for an EXTERNAL database.
+Running the app profile next to a *dev* `.env` (which points `DATABASE_URL`
+at `localhost:5432`)? Override it on the command:
 `DATABASE_URL=postgresql://postgres:postgres@postgres:5432/tripmate docker compose --profile app up -d --build`.
 
 **Schema auto-migrates on every (re)deploy.** The runner image applies pending
@@ -159,12 +163,25 @@ Portainer, because stack deploys run without `--profile`):
 1. Stacks → Add stack → Build method: **Repository**.
 2. Repository URL: your clone of this repo. Compose path:
    `docker-compose.portainer.yml`.
-3. Environment variables (advanced mode): at minimum `AUTH_SECRET` (32+ chars,
-   `openssl rand -base64 32`) and `APP_URL` (the URL users will open). The
-   stack refuses to deploy when either is missing and names it in the error.
-   Every optional variable — ports, `POSTGRES_PASSWORD`, SMTP, R2, Meta CAPI,
-   Upstash — has a paste-ready sample in `.env.example` under
-   "Portainer stack".
+3. Environment variables (advanced mode):
+   - **Required:** `AUTH_SECRET` (32+ chars, `openssl rand -base64 32`) and
+     `APP_URL` (the URL users will open; behind an NGINX reverse proxy use the
+     public `https://domain` and point the proxy upstream at
+     `http://<docker-host>:<APP_PORT>`). The stack refuses to deploy when
+     either is missing and names it in the error.
+   - **Ports** are independent variables: `APP_PORT` (default 3000) and
+     `POSTGRES_PORT` (default 5433) — assign any free host ports.
+   - **Database, internal (default):** nothing to set — Postgres runs in the
+     stack and the app derives its connection at boot. To customize, set
+     `POSTGRES_DB` / `POSTGRES_PASSWORD` (/ `POSTGRES_USER`) once; both the
+     Postgres service and the app receive them. (An existing
+     `tripmate_pgdata` volume keeps the credentials it was initialized with.)
+   - **Database, external:** set `DATABASE_URL`; add `DATABASE_URL_MIGRATE`
+     only when that URL is not DDL-capable (e.g. Supabase transaction pooler
+     `:6543` — point it at the direct or session-pooler `:5432` URL; see
+     "Deploy env" below).
+   - Optional SMTP, R2, Meta CAPI, Upstash: paste-ready samples live in
+     `.env.example` under "Portainer stack".
 4. Deploy. The app auto-migrates at boot, then open `<APP_URL>/setup` once to
    create the superadmin.
 

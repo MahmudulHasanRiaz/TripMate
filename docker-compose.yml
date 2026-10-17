@@ -3,16 +3,16 @@ services:
     image: postgres:16-alpine
     container_name: tripmate-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: tripmate
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-tripmate}
     # Host 5433 -> container 5432: avoids clash with a host-native Postgres on 5432
     ports:
-      - "5433:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     volumes:
       - tripmate_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tripmate}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -30,9 +30,11 @@ services:
   #
   # Values resolve from .env in this directory (compose interpolation — the
   # same file local dev uses). Defaults are compose-aware:
-  #   * DATABASE_URL defaults to the `postgres` service. The value a local
-  #     dev .env carries (localhost:543x) is wrong from inside a container —
-  #     for the app profile, override it (see README Deploy section).
+  #   * DATABASE_URL: leave unset → the container derives it at boot from the
+  #     POSTGRES_* passthrough below (host = the `postgres` service). A local
+  #     dev .env DOES set DATABASE_URL (localhost:543x) — that value is wrong
+  #     from inside a container, so for the app profile override it on the
+  #     command (see README Deploy section) or blank it.
   #   * AUTH_SECRET has NO default on purpose: an empty value fail-fasts at
   #     boot with the zod message ("at least 32 chars"). Never bake a secret.
   app:
@@ -46,7 +48,12 @@ services:
     container_name: tripmate-app
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/tripmate}
+      # Empty → derived from POSTGRES_* at boot (same wiring as the portainer
+      # file). Set to a full URL to use an external database instead.
+      DATABASE_URL: ${DATABASE_URL:-}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-tripmate}
       # Boot-time auto-migration connection (Supabase session pooler / direct).
       # Unset -> falls back to DATABASE_URL.
       DATABASE_URL_MIGRATE: ${DATABASE_URL_MIGRATE:-}

@@ -125,6 +125,46 @@ export function resolveMigrationDatabaseUrl(env) {
 }
 
 /**
+ * Build a runtime DATABASE_URL from the individual POSTGRES_* variables that
+ * the bundled docker-compose stack feeds the app container. This is what makes
+ * the internal-database deploy fully automatic: the operator sets
+ * POSTGRES_DB / POSTGRES_PASSWORD (/ POSTGRES_USER) once — for the Postgres
+ * service and the app alike — and both ends derive the SAME connection without
+ * the operator ever writing a URL (see scripts/derive-db-url.mjs, run by the
+ * image's CMD before auto-migration).
+ *
+ * Username/password/database are encodeURIComponent'd — the driver side
+ * (postgres.js / node-postgres) percent-DECODES each URL part, and
+ * encodeURIComponent output is always a valid escape sequence, so passwords
+ * containing @ : # % / etc. round-trip verbatim (tested in
+ * tests/derive-db-url.test.ts).
+ *
+ * @param {{
+ *   user?: string,
+ *   password?: string,
+ *   database?: string,
+ *   host?: string,
+ *   port?: string | number,
+ * }} parts
+ * @returns {string | null} the URL, or null when no database name is given
+ *   (nothing sensible to derive).
+ */
+export function databaseUrlFromParts(parts) {
+  const database = (parts.database ?? "").trim();
+  if (!database) return null;
+
+  const user = (parts.user ?? "postgres").trim() || "postgres";
+  const password = parts.password ?? "postgres";
+  const host = (parts.host ?? "postgres").trim() || "postgres";
+  const port = String(parts.port ?? "5432").trim() || "5432";
+
+  return (
+    `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}` +
+    `@${host}:${port}/${encodeURIComponent(database)}`
+  );
+}
+
+/**
  * Compare the committed journal against the rows recorded in
  * drizzle."__drizzle_migrations" (matched on the `when`/created_at epoch ms
  * drizzle itself uses). Proves migrations applied — never assume they did.

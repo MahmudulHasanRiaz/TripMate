@@ -101,6 +101,7 @@ COPY --from=builder --chown=node:node /app/public ./public
 COPY --from=builder --chown=node:node /app/drizzle ./drizzle
 COPY --from=builder --chown=node:node /app/scripts/auto-migrate.mjs ./scripts/auto-migrate.mjs
 COPY --from=builder --chown=node:node /app/scripts/migrate-lib.mjs ./scripts/migrate-lib.mjs
+COPY --from=builder --chown=node:node /app/scripts/derive-db-url.mjs ./scripts/derive-db-url.mjs
 USER node
 EXPOSE 3000
 # /api/health returns 200 only when the app can query Postgres. Alpine ships
@@ -108,5 +109,11 @@ EXPOSE 3000
 # start-period 60s covers the first-boot migration run.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
-# Every container start: apply pending migrations, then boot the server.
-CMD ["sh", "-c", "node scripts/auto-migrate.mjs && exec node server.js"]
+# Every container start:
+#   1. DATABASE_URL="${DATABASE_URL:-<derived>}" — when the operator did NOT
+#      set DATABASE_URL (internal-database compose/Portainer deploy), derive it
+#      from POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB so the app and the
+#      bundled Postgres always agree. Unset everywhere → stays empty and the
+#      migrator fails fast with its actionable message.
+#   2. Apply pending migrations, then boot the server.
+CMD ["sh", "-c", "DATABASE_URL=\"${DATABASE_URL:-$(node scripts/derive-db-url.mjs)}\"; export DATABASE_URL; node scripts/auto-migrate.mjs && exec node server.js"]

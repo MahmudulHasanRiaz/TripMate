@@ -80,8 +80,39 @@ describe.skipIf(!dockerComposeAvailable())("docker-compose.portainer.yml", () =>
     // Postgres data + uploaded media must survive redeploys.
     expect(run.stdout).toMatch(/tripmate_pgdata/);
     expect(run.stdout).toMatch(/tripmate_uploads/);
-    // Inside the stack the DB host is the service name, not localhost.
-    expect(run.stdout).toMatch(/postgresql:\/\/postgres[^@]*@postgres:5432\/tripmate/);
+    // Internal-database wiring: DATABASE_URL stays EMPTY (derived at boot from
+    // the POSTGRES_* passthrough) and both services get the same variables.
+    expect(run.stdout).toMatch(/DATABASE_URL: ""/);
+    expect(run.stdout).toMatch(/POSTGRES_DB: tripmate/);
+    expect(run.stdout).toMatch(/POSTGRES_USER: postgres/);
+  });
+
+  it("wires custom ports and DB credentials as independent variables in ONE place", () => {
+    const run = composeConfig("docker-compose.portainer.yml", {
+      ...REQUIRED_ENV,
+      APP_PORT: "8080",
+      POSTGRES_PORT: "6544",
+      POSTGRES_DB: "tripmate-custom",
+      POSTGRES_PASSWORD: "p@ss:word",
+      POSTGRES_USER: "owner",
+    });
+    expect(run.ok, run.stderr).toBe(true);
+
+    // Ports: independent, free to assign (APP_PORT != old default, etc.).
+    expect(run.stdout).toMatch(/published: "8080"/);
+    expect(run.stdout).toMatch(/target: 3000/);
+    expect(run.stdout).toMatch(/published: "6544"/);
+    expect(run.stdout).toMatch(/target: 5432/);
+    // DB credentials: same values reach the postgres service AND the app
+    // container (the app derives its URL from them at boot).
+    for (const expected of [
+      /POSTGRES_DB: "?tripmate-custom"?/,
+      /POSTGRES_PASSWORD: "?p@ss:word"?/,
+      /POSTGRES_USER: "?owner"?/,
+    ]) {
+      const matches = run.stdout.match(new RegExp(expected.source, "g")) ?? [];
+      expect(matches.length, `${expected} must reach BOTH services`).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it("passes every optional runtime variable through to the app container", () => {
@@ -187,5 +218,13 @@ describe("docker build context", () => {
   it("ships scripts/auto-migrate.mjs into the builder stage", () => {
     expect(dockerignore).toMatch(/^!scripts\/auto-migrate\.mjs$/m);
     expect(dockerfile).toMatch(/COPY --from=builder[^\n]*scripts\/auto-migrate\.mjs/);
+  });
+
+  it("ships scripts/derive-db-url.mjs and runs it in the boot CMD", () => {
+    expect(dockerignore).toMatch(/^!scripts\/derive-db-url\.mjs$/m);
+    expect(dockerfile).toMatch(/COPY --from=builder[^\n]*scripts\/derive-db-url\.mjs/);
+    // The CMD must derive DATABASE_URL before auto-migration and the server.
+    expect(dockerfile).toMatch(/derive-db-url\.mjs/);
+    expect(dockerfile).toMatch(/auto-migrate\.mjs && exec node server\.js/);
   });
 });

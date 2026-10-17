@@ -20,17 +20,30 @@
 # Required variables (deploy FAILS FAST with an actionable message if unset):
 #   AUTH_SECRET  32+ chars          — openssl rand -base64 32
 #   APP_URL      public base URL    — e.g. http://192.168.1.50:3000 or a domain
-# Optional variables (samples in .env.example): POSTGRES_PASSWORD, APP_PORT,
-#   POSTGRES_PORT, SMTP_*, STORAGE_DRIVER/R2_*, META_*, UPSTASH_REDIS_REST_*,
-#   SKIP_DB_MIGRATE.
+#
+# PORTS are independent variables — assign any free host port you want:
+#   APP_PORT      host port for the app        (default 3000)
+#   POSTGRES_PORT host port for Postgres       (default 5433)
+#
+# DATABASE — both modes fully automatic, pick ONE:
+#   INTERNAL (default, no work needed): PostgreSQL runs in this stack. Set
+#     POSTGRES_DB / POSTGRES_PASSWORD (/ POSTGRES_USER) if you want custom
+#     values — the SAME variables initialize the postgres service AND are used
+#     by the app to derive DATABASE_URL at boot (scripts/derive-db-url.mjs).
+#     Nothing else to configure.
+#   EXTERNAL: set DATABASE_URL (and DATABASE_URL_MIGRATE only when that URL is
+#     not DDL-capable — e.g. Supabase transaction pooler). The bundled Postgres
+#     keeps running but stays unused.
+# Other optional variables (samples in .env.example): SMTP_*,
+#   STORAGE_DRIVER/R2_*, META_*, UPSTASH_REDIS_REST_*, SKIP_DB_MIGRATE.
 services:
   postgres:
     image: postgres:16-alpine
     container_name: tripmate-postgres
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: tripmate
+      POSTGRES_DB: ${POSTGRES_DB:-tripmate}
     # Exposed for debugging/backups. Change the HOST port if 5433 is taken
     # (POSTGRES_PORT stack variable); the app talks over the compose network.
     ports:
@@ -38,7 +51,7 @@ services:
     volumes:
       - tripmate_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d tripmate"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-tripmate}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -54,11 +67,19 @@ services:
     container_name: tripmate-app
     environment:
       NODE_ENV: production
-      # Inside the stack the DB host is the service name. If you change
-      # POSTGRES_PASSWORD above you MUST set DATABASE_URL explicitly with the
-      # same password (interpolation cannot nest); an existing tripmate_pgdata
-      # volume keeps the password it was initialized with.
-      DATABASE_URL: "${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/tripmate}"
+      # EXTERNAL database only. Leave EMPTY for the internal Postgres — the
+      # container then derives DATABASE_URL at boot from the POSTGRES_*
+      # passthrough below (host = the `postgres` service), so app and database
+      # always share user/password/name with zero extra configuration.
+      DATABASE_URL: "${DATABASE_URL:-}"
+      # Internal-database wiring: the same values the postgres service gets.
+      # Setting POSTGRES_DB/POSTGRES_PASSWORD here configures BOTH ends.
+      # (An existing tripmate_pgdata volume keeps the credentials it was
+      # initialized with — changing these only works on a fresh volume, or
+      # after ALTER USER inside the old one.)
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-tripmate}
       # Only needed when the runtime URL is NOT DDL-capable (Supabase pooled
       # setups). For this stack the internal Postgres is direct — leave unset.
       DATABASE_URL_MIGRATE: ${DATABASE_URL_MIGRATE:-}
