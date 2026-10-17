@@ -201,6 +201,14 @@ Non-Supabase configs (Docker/Neon/local) keep the old fallback to
 
 Notes:
 
+- **Journal `when` values must be strictly increasing** (real epoch millis).
+  drizzle's migrator applies a journal entry only when its `when` is greater
+  than the single max `created_at` already recorded — a hand-faked,
+  non-monotonic `when` makes later migrations SILENTLY SKIP on databases that
+  already applied a later-timestamped entry (the auto-migrate verification
+  fails the build when this happens). Always generate with `npm run
+  db:generate`; if hand-authoring, stamp current epoch millis. Enforced by
+  `tests/journal-when-monotonic.test.ts` + the partial-state integration test.
 - Migrations are recorded in `"drizzle"."__drizzle_migrations"`, so re-runs
   are safe. If a preview and a production deploy race, both apply the same
   files — acceptable for a single-operator project; for a team, move the
