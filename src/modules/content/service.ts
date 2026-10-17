@@ -241,7 +241,7 @@ export async function listPublishedPostRefs(): Promise<PublicPostRef[]> {
 }
 
 /** slug + updatedAt for every published, non-deleted page — the sitemap's
- *  /p/[slug] URL set (same predicate as getPublishedPageBySlug, unpaginated). */
+ *  /{slug} URL set (same predicate as getPublishedPageBySlug, unpaginated). */
 export async function listPublishedPageRefs(): Promise<PublicPageRef[]> {
   return db
     .select({ slug: pages.slug, updatedAt: pages.updatedAt })

@@ -26,16 +26,17 @@ export type PublicNavItem = {
  * a later task will drive items + CTA from site settings.
  *
  * hrefs are cast because typed routes don't enumerate route-group paths and
- * `/p/about-us` is a dynamic-segment literal; the casts stay until the types
+ * `/{slug}` is a dynamic-segment surface; the casts stay until the types
  * can validate them (Task 9 noted the same).
  */
 const NAV_ITEMS: PublicNavItem[] = [
   { label: "Packages", href: "/packages" as Route },
   { label: "Visa Services", href: "/visa" as Route },
   { label: "Blog", href: "/blog" as Route },
-  // About lands on the seeded about-us static page (Task 12) — the seeded page
-  // set lives under /p/{slug}, so that's the canonical URL, not /about.
-  { label: "About", href: "/p/about-us" as Route },
+  // About lands on the seeded about-us static page (Task 12) — evergreen pages
+  // are served at the root /{slug} surface, so /about-us is canonical and
+  // legacy /p/* URLs only 301-redirect here.
+  { label: "About", href: "/about-us" as Route },
 ];
 
 type SiteHeaderProps = {
