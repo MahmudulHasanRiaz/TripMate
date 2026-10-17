@@ -11,6 +11,7 @@ import { getPublicHomeSettings, getPublicSiteSettings } from "@/modules/settings
 import { getSetting } from "@/modules/settings/service";
 import { listCategories, listPublishedListings, listDestinationsWithStats } from "@/modules/catalog/service";
 import { listPublishedPosts } from "@/modules/content/service";
+import { getPublicTestimonials } from "@/modules/content/testimonials-service";
 import type { ServiceKind } from "@/modules/catalog/validation";
 import { TestimonialsSection } from "@/components/landing/sections/TestimonialsSection";
 import type { TestimonialItem } from "@/modules/landing-pages/section-types";
@@ -58,6 +59,7 @@ export default async function Home() {
     allPublished,
     blog,
     ordersCountRow,
+    publicTestimonials,
   ] = await Promise.all([
     getSiteSettings(),
     getSetting("home"),
@@ -70,6 +72,7 @@ export default async function Home() {
       .select({ count: sql<number>`count(*)::int` })
       .from(orders)
       .catch(() => [{ count: 0 }]),
+    getPublicTestimonials(12).catch(() => []),
   ]);
 
   const home = readHomeSetting(homeRaw);
@@ -183,7 +186,17 @@ export default async function Home() {
 
       {realStats.length > 0 && home.showStats ? <StatsBand stats={realStats} /> : null}
 
-      {home.showTestimonials ? <TestimonialsSection config={{ items: home.testimonials }} /> : null}
+      {home.showTestimonials ? (
+        <TestimonialsSection
+          items={
+            publicTestimonials.length > 0
+              ? publicTestimonials
+              : home.testimonials.length > 0
+                ? home.testimonials
+                : undefined
+          }
+        />
+      ) : null}
 
       <HumanConcierge phone={site.phone} email={site.email} />
 

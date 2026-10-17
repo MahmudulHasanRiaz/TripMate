@@ -18,9 +18,11 @@ import {
   Mail,
   MailOpen,
   Megaphone,
+  MessageSquare,
   Package,
   Receipt,
   Settings,
+  Star,
   Trash2,
   Users,
   type LucideIcon,
@@ -74,6 +76,8 @@ const MENU_ICONS: Record<string, LucideIcon> = {
   receipt: Receipt,
   package: Package,
   "file-text": FileText,
+  "message-square": MessageSquare,
+  star: Star,
   megaphone: Megaphone,
   image: ImageIcon,
   users: Users,
@@ -115,7 +119,7 @@ export default function AdminShell({
             <HeaderUserMenu user={user} />
           </div>
         </header>
-        <div className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:px-6 md:py-8">
+        <div className="w-full max-w-[1600px] flex-1 px-4 py-6 md:px-6 md:py-8 min-[1400px]:px-8">
           {children}
         </div>
         <Toaster />

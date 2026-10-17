@@ -249,7 +249,9 @@ export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
 };
 
 /** HSL "h s% l%" → relative luminance (sRGB) for AA contrast hints. */
-function hslToLuminance(hsl: string): number {
+/** HSL "h s% l%" → relative luminance (sRGB) for AA contrast hints. */
+function hslToLuminance(hsl: string | null | undefined): number {
+  if (typeof hsl !== "string" || !hsl.trim()) return 0;
   const m = hsl.trim().match(/^([\d.]+)\s+([\d.]+)%\s+([\d.]+)%$/);
   if (!m) return 0;
   const h = Number(m[1]);
@@ -275,7 +277,7 @@ function hslToLuminance(hsl: string): number {
 }
 
 /** WCAG contrast ratio between two HSL channel strings. */
-export function themeContrastRatio(a: string, b: string): number {
+export function themeContrastRatio(a: string | null | undefined, b: string | null | undefined): number {
   const l1 = hslToLuminance(a);
   const l2 = hslToLuminance(b);
   const [hi, lo] = l1 >= l2 ? [l1, l2] : [l2, l1];
@@ -283,7 +285,10 @@ export function themeContrastRatio(a: string, b: string): number {
 }
 
 /** AA hint for a preset: body text pair must reach 4.5:1 (§1.2). */
-export function themeAAPass(colors: ThemeColors): { ratio: number; pass: boolean } {
+export function themeAAPass(colors: ThemeColors | null | undefined): { ratio: number; pass: boolean } {
+  if (!colors || typeof colors !== "object") {
+    return { ratio: 4.5, pass: true };
+  }
   const ratio = themeContrastRatio(colors.foreground, colors.background);
   return { ratio: Math.round(ratio * 100) / 100, pass: ratio >= 4.5 };
 }
@@ -294,36 +299,38 @@ export function themeAAPass(colors: ThemeColors): { ratio: number; pass: boolean
  * intact — an unscoped :root override injected after globals would beat the
  * .dark rules in the cascade and break dark mode.
  */
-export function buildThemeCssVariables(theme: ThemeSettings): string {
-  const c = theme.colors;
+export function buildThemeCssVariables(theme: ThemeSettings | null | undefined): string {
+  if (!theme || !theme.colors) return "";
+  const def = THEME_TEMPLATES.signature.colors;
+  const c = { ...def, ...theme.colors };
   return `
 :root:not(.dark) {
-  --background: ${c.background};
-  --foreground: ${c.foreground};
-  --card: ${c.card};
-  --card-foreground: ${c.cardForeground};
-  --popover: ${c.card};
-  --popover-foreground: ${c.cardForeground};
-  --primary: ${c.primary};
-  --primary-foreground: ${c.primaryForeground};
-  --secondary: ${c.secondary};
-  --secondary-foreground: ${c.secondaryForeground};
-  --muted: ${c.muted};
-  --muted-foreground: ${c.mutedForeground};
-  --accent: ${c.accent};
-  --accent-foreground: ${c.accentForeground};
-  --accent-text: ${c.accentText};
-  --success: ${c.success};
-  --warning: ${c.warning};
-  --destructive: ${c.destructive};
-  --border: ${c.border};
-  --input: ${c.input};
-  --ring: ${c.ring};
-  --sidebar: hsl(${c.card});
-  --sidebar-foreground: hsl(${c.foreground});
-  --sidebar-primary: hsl(${c.primary});
-  --sidebar-primary-foreground: hsl(${c.primaryForeground});
-  --sidebar-border: hsl(${c.border});
+  --background: ${c.background || def.background};
+  --foreground: ${c.foreground || def.foreground};
+  --card: ${c.card || def.card};
+  --card-foreground: ${c.cardForeground || def.cardForeground};
+  --popover: ${c.card || def.card};
+  --popover-foreground: ${c.cardForeground || def.cardForeground};
+  --primary: ${c.primary || def.primary};
+  --primary-foreground: ${c.primaryForeground || def.primaryForeground};
+  --secondary: ${c.secondary || def.secondary};
+  --secondary-foreground: ${c.secondaryForeground || def.secondaryForeground};
+  --muted: ${c.muted || def.muted};
+  --muted-foreground: ${c.mutedForeground || def.mutedForeground};
+  --accent: ${c.accent || def.accent};
+  --accent-foreground: ${c.accentForeground || def.accentForeground};
+  --accent-text: ${c.accentText || def.accentText};
+  --success: ${c.success || def.success};
+  --warning: ${c.warning || def.warning};
+  --destructive: ${c.destructive || def.destructive};
+  --border: ${c.border || def.border};
+  --input: ${c.input || def.input};
+  --ring: ${c.ring || def.ring};
+  --sidebar: hsl(${c.card || def.card});
+  --sidebar-foreground: hsl(${c.foreground || def.foreground});
+  --sidebar-primary: hsl(${c.primary || def.primary});
+  --sidebar-primary-foreground: hsl(${c.primaryForeground || def.primaryForeground});
+  --sidebar-border: hsl(${c.border || def.border});
 }
 `.trim();
 }

@@ -11,3 +11,4 @@ export * from "@/modules/bookings/schema";
 export * from "@/modules/bookings/quotations-schema";
 export * from "@/modules/payments/schema";
 export * from "@/modules/expenses/schema";
+export * from "@/modules/content/testimonials-schema";

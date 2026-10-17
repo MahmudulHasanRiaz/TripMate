@@ -5,6 +5,9 @@ import { getEnv } from "@/lib/env";
 
 const client = postgres(getEnv().DATABASE_URL, {
   max: 10,
+  // Connect timeout (seconds) prevents DB connection from hanging indefinitely on network stalls
+  connect_timeout: 10,
+  idle_timeout: 20,
   // Runtime on Vercel uses the Supabase TRANSACTION pooler (port 6543), which
   // does not support server-side prepared statements. prepare:false disables
   // them so the pooler can route each statement to any backend; it is harmless

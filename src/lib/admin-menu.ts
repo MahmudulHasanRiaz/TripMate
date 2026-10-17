@@ -35,6 +35,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
 
   // Content
   { href: "/admin/content", label: "Content", icon: "file-text", permission: "content.manage", group: "Content" },
+  { href: "/admin/testimonials", label: "Testimonials", icon: "message-square", permission: "content.manage", group: "Content" },
   { href: "/admin/landing-pages", label: "Landing Pages", icon: "megaphone", permission: "content.manage", group: "Content" },
   { href: "/admin/media", label: "Media Library", icon: "image", permission: "media.manage", group: "Content" },
 

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import CustomerPickerField from "@/components/admin/CustomerPickerField";
 
 /**
  * Services quick-create (§2.9): exactly service name, customer name,
@@ -77,7 +78,20 @@ export default function ServicesView() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="svc-customer" className="text-sm">Customer name</Label>
-                <Input id="svc-customer" value={form.customerName} onChange={set("customerName")} className="h-10" required disabled={busy} />
+                <CustomerPickerField
+                  id="svc-customer"
+                  value={form.customerName}
+                  onChange={(val) => setForm((f) => ({ ...f, customerName: val }))}
+                  onSelectCustomer={(c) => {
+                    setForm((f) => ({
+                      ...f,
+                      customerName: c.name,
+                      customerPhone: c.phone || f.customerPhone,
+                    }));
+                  }}
+                  placeholder="Search directory or enter walk-in..."
+                  required
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="svc-phone" className="text-sm">Customer phone</Label>

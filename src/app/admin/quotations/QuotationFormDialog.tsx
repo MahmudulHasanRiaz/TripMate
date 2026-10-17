@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import CustomerPickerField from "@/components/admin/CustomerPickerField";
+import PackagePickerField from "@/components/admin/PackagePickerField";
 import {
   Dialog,
   DialogContent,
@@ -156,13 +158,18 @@ export default function QuotationFormDialog({
 
           {/* Customer Info */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 sm:col-span-1">
               <Label htmlFor="customerName">Customer / Company Name *</Label>
-              <Input
+              <CustomerPickerField
                 id="customerName"
                 value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="e.g. Rahim Chowdhury"
+                onChange={setCustomerName}
+                onSelectCustomer={(c) => {
+                  setCustomerName(c.name);
+                  if (c.phone) setCustomerPhone(c.phone);
+                  if (c.email) setCustomerEmail(c.email);
+                }}
+                placeholder="Search directory or enter walk-in..."
                 required
               />
             </div>
@@ -173,6 +180,7 @@ export default function QuotationFormDialog({
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 placeholder="e.g. 01711223344"
+                className="h-10 text-xs"
                 required
               />
             </div>
@@ -184,6 +192,7 @@ export default function QuotationFormDialog({
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 placeholder="e.g. rahim@example.com"
+                className="h-10 text-xs"
               />
             </div>
           </div>
@@ -196,6 +205,7 @@ export default function QuotationFormDialog({
                 type="date"
                 value={validUntil}
                 onChange={(e) => setValidUntil(e.target.value)}
+                className="h-10 text-xs"
               />
             </div>
             <div className="space-y-1.5">
@@ -206,24 +216,51 @@ export default function QuotationFormDialog({
                 onChange={(e) => setNotes(e.target.value)}
                 rows={2}
                 placeholder="Includes 4-star hotel, visa fees, and private airport transfers..."
+                className="text-xs"
               />
             </div>
           </div>
 
           {/* Line Items Editor */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Quotation Line Items</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddItem}
-                className="gap-1 text-xs"
-              >
-                <Plus className="size-3.5" />
-                Add Item
-              </Button>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <Label className="text-sm font-semibold">Quotation Line Items</Label>
+                <p className="text-[11px] text-muted-foreground">
+                  Add items manually or select packages directly from the catalog.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-56 sm:w-64">
+                  <PackagePickerField
+                    value={null}
+                    onChange={(_, pkg) => {
+                      if (pkg) {
+                        setItems((prev) => [
+                          ...prev,
+                          {
+                            description: pkg.title,
+                            quantity: 1,
+                            unitPrice: pkg.price ?? 0,
+                            unitCost: pkg.costPrice ?? Math.round((pkg.price ?? 0) * 0.85),
+                          },
+                        ]);
+                      }
+                    }}
+                    placeholder="+ Insert from catalog..."
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddItem}
+                  className="gap-1 text-xs h-10"
+                >
+                  <Plus className="size-3.5" />
+                  Custom Item
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-2">

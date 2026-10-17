@@ -160,3 +160,26 @@ export async function changeOwnPasswordAction(
     return { ok: false, error: err instanceof Error ? err.message : "Failed to change password" };
   }
 }
+
+/** Search users (customers and staff) for pickers across admin forms */
+export async function searchUsersAction(term: string) {
+  try {
+    await requireSession();
+    const { listUsers } = await import("./service");
+    const result = await listUsers({ search: term.trim() || undefined, perPage: 20 });
+    return {
+      ok: true,
+      items: result.items.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        role: u.role,
+        status: u.status,
+      })),
+    };
+  } catch (err) {
+    console.error("[searchUsersAction]", err);
+    return { ok: false, error: err instanceof Error ? err.message : "Failed to search users", items: [] };
+  }
+}

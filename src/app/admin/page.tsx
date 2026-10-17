@@ -1,12 +1,14 @@
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
   Banknote,
   DollarSign,
   Receipt,
+  RotateCcw,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -62,18 +64,87 @@ export default async function AdminDashboardPage(props: {
   const sp = await props.searchParams;
   const preset: DashboardPreset =
     sp.preset === "today" || sp.preset === "week" || sp.preset === "custom" ? sp.preset : "month";
-  const range = await resolveDashboardRange({ preset, from: sp.from, to: sp.to });
-  const [session, kpis, rangeKpis, trend, funnel, profitByService, recentOrders, recentPayments] =
-    await Promise.all([
-      requireSession(),
-      getDashboardKpis(),
-      getDashboardRangeKpis(range),
-      getDashboardTrend({ days: 30 }),
-      getLeadFunnel(),
-      getProfitByService(range),
-      getRecentOrders(),
-      getRecentPayments(),
-    ]);
+
+  let session: Awaited<ReturnType<typeof requireSession>> | undefined;
+  let range: Awaited<ReturnType<typeof resolveDashboardRange>> | undefined;
+  let kpis: Awaited<ReturnType<typeof getDashboardKpis>> | undefined;
+  let rangeKpis: Awaited<ReturnType<typeof getDashboardRangeKpis>> | undefined;
+  let trend: Awaited<ReturnType<typeof getDashboardTrend>> | undefined;
+  let funnel: Awaited<ReturnType<typeof getLeadFunnel>> | undefined;
+  let profitByService: Awaited<ReturnType<typeof getProfitByService>> | undefined;
+  let recentOrders: Awaited<ReturnType<typeof getRecentOrders>> | undefined;
+  let recentPayments: Awaited<ReturnType<typeof getRecentPayments>> | undefined;
+  let loadError: string | null = null;
+
+  try {
+    session = await requireSession();
+    range = await resolveDashboardRange({ preset, from: sp.from, to: sp.to });
+    [kpis, rangeKpis, trend, funnel, profitByService, recentOrders, recentPayments] =
+      await Promise.all([
+        getDashboardKpis(),
+        getDashboardRangeKpis(range),
+        getDashboardTrend({ days: 30 }),
+        getLeadFunnel(),
+        getProfitByService(range),
+        getRecentOrders(),
+        getRecentPayments(),
+      ]);
+  } catch (err: unknown) {
+    console.error("[AdminDashboardPage] Failed to load dashboard data:", err);
+    loadError = err instanceof Error ? err.message : "Failed to connect to database";
+  }
+
+  if (
+    loadError ||
+    !session ||
+    !range ||
+    !kpis ||
+    !rangeKpis ||
+    !trend ||
+    !funnel ||
+    !profitByService ||
+    !recentOrders ||
+    !recentPayments
+  ) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+            <p className="text-xs text-muted-foreground">
+              Overview of inquiries, orders, payments, expenses, and operational queues.
+            </p>
+          </div>
+        </div>
+
+        <Card className="border-destructive/40 bg-card p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-lg bg-destructive/10 text-destructive shrink-0">
+                <AlertTriangle className="size-5" aria-hidden="true" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Unable to load dashboard data
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {loadError ?? "The database service is unreachable or query timed out."}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href={"/admin" as Route}>
+                <Button size="sm" className="h-9 text-xs gap-1.5">
+                  <RotateCcw className="size-3.5" aria-hidden="true" />
+                  Retry
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   const sections = menuForRole(session.user.role).length;
   void sections;

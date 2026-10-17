@@ -82,11 +82,21 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   copyright: null,
 };
 
-/** Project a raw jsonb cell onto Record<string, unknown> | null (jsonb may hold
- *  anything; only objects are settings rows). */
+/** Project a raw jsonb cell onto Record<string, unknown> (jsonb may hold
+ *  anything; only objects are settings rows). Safely parses if stored as string. */
 function asRow(value: unknown): Record<string, unknown> {
   if (value !== null && typeof value === "object" && !Array.isArray(value)) {
     return value as Record<string, unknown>;
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+    } catch {
+      return {};
+    }
   }
   return {};
 }
@@ -106,31 +116,37 @@ function mergedString(row: Record<string, unknown>, key: string, fallback: strin
  * after a save (the cached public read is getPublicSiteSettings below).
  */
 export async function getSiteSettings(): Promise<SiteSettings> {
-  const row = asRow(await getSetting("site"));
-  const footer = row.footerDescription;
-  const columns = Array.isArray(row.footerColumns)
-    ? (row.footerColumns as FooterColumn[]).filter((c) => c && typeof c.title === "string")
-    : [];
-  const socials = Array.isArray(row.footerSocials)
-    ? (row.footerSocials as FooterSocial[]).filter((s) => s && typeof s.href === "string")
-    : [];
-  const copyright = row.copyright;
-  return {
-    title: mergedString(row, "title", DEFAULT_SITE_SETTINGS.title),
-    phone: mergedString(row, "phone", DEFAULT_SITE_SETTINGS.phone),
-    email: mergedString(row, "email", DEFAULT_SITE_SETTINGS.email),
-    address: mergedString(row, "address", DEFAULT_SITE_SETTINGS.address),
-    logoUrl: mergedString(row, "logoUrl", DEFAULT_SITE_SETTINGS.logoUrl),
-    faviconUrl: mergedString(row, "faviconUrl", DEFAULT_SITE_SETTINGS.faviconUrl),
-    searchEngineVisibility:
-      typeof row.searchEngineVisibility === "boolean"
-        ? row.searchEngineVisibility
-        : DEFAULT_SITE_SETTINGS.searchEngineVisibility,
-    footerDescription: typeof footer === "string" && footer !== "" ? footer : null,
-    footerColumns: columns,
-    footerSocials: socials,
-    copyright: typeof copyright === "string" && copyright !== "" ? copyright : null,
-  };
+  try {
+    const raw = await getSetting("site");
+    const row = asRow(raw);
+    const footer = row.footerDescription;
+    const columns = Array.isArray(row.footerColumns)
+      ? (row.footerColumns as FooterColumn[]).filter((c) => c && typeof c.title === "string")
+      : [];
+    const socials = Array.isArray(row.footerSocials)
+      ? (row.footerSocials as FooterSocial[]).filter((s) => s && typeof s.href === "string")
+      : [];
+    const copyright = row.copyright;
+    return {
+      title: mergedString(row, "title", DEFAULT_SITE_SETTINGS.title),
+      phone: mergedString(row, "phone", DEFAULT_SITE_SETTINGS.phone),
+      email: mergedString(row, "email", DEFAULT_SITE_SETTINGS.email),
+      address: mergedString(row, "address", DEFAULT_SITE_SETTINGS.address),
+      logoUrl: mergedString(row, "logoUrl", DEFAULT_SITE_SETTINGS.logoUrl),
+      faviconUrl: mergedString(row, "faviconUrl", DEFAULT_SITE_SETTINGS.faviconUrl),
+      searchEngineVisibility:
+        typeof row.searchEngineVisibility === "boolean"
+          ? row.searchEngineVisibility
+          : DEFAULT_SITE_SETTINGS.searchEngineVisibility,
+      footerDescription: typeof footer === "string" && footer !== "" ? footer : null,
+      footerColumns: columns,
+      footerSocials: socials,
+      copyright: typeof copyright === "string" && copyright !== "" ? copyright : null,
+    };
+  } catch (err) {
+    console.error("[getSiteSettings] Failed to read or parse site settings, falling back to defaults:", err);
+    return DEFAULT_SITE_SETTINGS;
+  }
 }
 
 /**
@@ -195,6 +211,27 @@ export type HomeSettings = {
   showTestimonials: boolean;
 };
 
+export const DEFAULT_HOME_SETTINGS: HomeSettings = {
+  heroHeadline: null,
+  heroSub: null,
+  heroImage: null,
+  heroButtonLabel: null,
+  heroButtonLink: null,
+  heroImageAlt: null,
+  featuredKicker: null,
+  featuredTitle: null,
+  featuredLead: null,
+  ctaHeadline: null,
+  ctaSub: null,
+  stats: null,
+  testimonials: null,
+  showHero: true,
+  showFeatured: true,
+  showCta: true,
+  showStats: true,
+  showTestimonials: true,
+};
+
 /**
  * The settings.home row projected onto the hero keys the (public) home page
  * consumes (readHomeSetting) — NEVER null. Absent/empty keys read as null and
@@ -202,35 +239,41 @@ export type HomeSettings = {
  * placeholders instead of pre-filling fake "saved" defaults.
  */
 export async function getHomeSettings(): Promise<HomeSettings> {
-  const row = asRow(await getSetting("home"));
-  const text = (key: string): string | null => {
-    const value = row[key];
-    return typeof value === "string" && value !== "" ? value : null;
-  };
-  const arrayOf = (key: string): unknown[] | null => {
-    const value = row[key];
-    return Array.isArray(value) && value.length > 0 ? (value as unknown[]) : null;
-  };
-  return {
-    heroHeadline: text("heroHeadline"),
-    heroSub: text("heroSub"),
-    heroImage: text("heroImage"),
-    heroButtonLabel: text("heroButtonLabel"),
-    heroButtonLink: text("heroButtonLink"),
-    heroImageAlt: text("heroImageAlt"),
-    featuredKicker: text("featuredKicker"),
-    featuredTitle: text("featuredTitle"),
-    featuredLead: text("featuredLead"),
-    ctaHeadline: text("ctaHeadline"),
-    ctaSub: text("ctaSub"),
-    stats: (arrayOf("stats") as HomeStat[] | null) ?? null,
-    testimonials: (arrayOf("testimonials") as HomeTestimonial[] | null) ?? null,
-    showHero: row.showHero !== false,
-    showFeatured: row.showFeatured !== false,
-    showCta: row.showCta !== false,
-    showStats: row.showStats !== false,
-    showTestimonials: row.showTestimonials !== false,
-  };
+  try {
+    const raw = await getSetting("home");
+    const row = asRow(raw);
+    const text = (key: string): string | null => {
+      const value = row[key];
+      return typeof value === "string" && value !== "" ? value : null;
+    };
+    const arrayOf = (key: string): unknown[] | null => {
+      const value = row[key];
+      return Array.isArray(value) && value.length > 0 ? (value as unknown[]) : null;
+    };
+    return {
+      heroHeadline: text("heroHeadline"),
+      heroSub: text("heroSub"),
+      heroImage: text("heroImage"),
+      heroButtonLabel: text("heroButtonLabel"),
+      heroButtonLink: text("heroButtonLink"),
+      heroImageAlt: text("heroImageAlt"),
+      featuredKicker: text("featuredKicker"),
+      featuredTitle: text("featuredTitle"),
+      featuredLead: text("featuredLead"),
+      ctaHeadline: text("ctaHeadline"),
+      ctaSub: text("ctaSub"),
+      stats: (arrayOf("stats") as HomeStat[] | null) ?? null,
+      testimonials: (arrayOf("testimonials") as HomeTestimonial[] | null) ?? null,
+      showHero: row.showHero !== false,
+      showFeatured: row.showFeatured !== false,
+      showCta: row.showCta !== false,
+      showStats: row.showStats !== false,
+      showTestimonials: row.showTestimonials !== false,
+    };
+  } catch (err) {
+    console.error("[getHomeSettings] Failed to read or parse home settings, falling back to defaults:", err);
+    return DEFAULT_HOME_SETTINGS;
+  }
 }
 
 /**
