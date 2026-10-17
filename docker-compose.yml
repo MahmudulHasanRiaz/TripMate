@@ -16,6 +16,7 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
 
   # Full production stack (Plan 7). Behind the "app" profile so the default
   # `docker compose up -d` stays "local dev Postgres only" — and keeps working
@@ -23,9 +24,12 @@ services:
   # including inactive ones, so required-syntax vars would break dev startup):
   #   docker compose --profile app up -d --build
   #
+  # PORTAINER: do NOT point a stack at this file — stack deploys run without
+  # --profile, so only Postgres would start. Use docker-compose.portainer.yml
+  # (no profiles, required vars enforced at deploy time, named upload volume).
+  #
   # Values resolve from .env in this directory (compose interpolation — the
-  # same file local dev uses; in Portainer paste the same variables into the
-  # stack's Environment variables section). Defaults are compose-aware:
+  # same file local dev uses). Defaults are compose-aware:
   #   * DATABASE_URL defaults to the `postgres` service. The value a local
   #     dev .env carries (localhost:543x) is wrong from inside a container —
   #     for the app profile, override it (see README Deploy section).
@@ -33,7 +37,12 @@ services:
   #     boot with the zod message ("at least 32 chars"). Never bake a secret.
   app:
     profiles: ["app"]
-    build: .
+    build:
+      context: .
+      # Build-time only (next.config.ts image whitelist). Set R2_PUBLIC_URL
+      # here when STORAGE_DRIVER=r2.
+      args:
+        R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
     container_name: tripmate-app
     environment:
       NODE_ENV: production
@@ -57,6 +66,13 @@ services:
       R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
       R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
       R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      # Meta CAPI conversion tracking (optional; all three go together).
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
+      META_CAPI_ACCESS_TOKEN: ${META_CAPI_ACCESS_TOKEN:-}
+      META_CAPI_TEST_CODE: ${META_CAPI_TEST_CODE:-}
+      # Shared rate limiting through Upstash Redis (optional; both go together).
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL:-}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-}
     ports:
       - "3000:3000"
     volumes:

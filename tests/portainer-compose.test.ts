@@ -1,0 +1,191 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { afterAll, describe, expect, it } from "vitest";
+
+// Guards for the Portainer / Docker deployment surface:
+//   1. docker-compose.portainer.yml must render with ONLY the documented
+//      required variables, start both services (no profiles — a stack deploy
+//      runs `docker compose up -d` without --profile), and pass through every
+//      optional runtime variable the app reads.
+//   2. docker-compose.yml must keep the app behind the "app" profile so
+//      `docker compose up -d` stays "local dev Postgres only".
+//   3. The docker build context must ship scripts/migrate-lib.mjs — the
+//      runner image COPYs it and auto-migrate.mjs imports it; when
+//      .dockerignore excludes it, the image build fails at that COPY.
+//
+// `docker compose config` is fully client-side (no daemon), so these run
+// anywhere the CLI is installed; machines without it skip the suite.
+
+function dockerComposeAvailable(): boolean {
+  try {
+    execFileSync("docker", ["compose", "version"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const repoRoot = resolve(process.cwd());
+const scratchDir = mkdtempSync(join(tmpdir(), "tripmate-compose-"));
+const emptyEnvFile = join(scratchDir, "empty.env");
+writeFileSync(emptyEnvFile, "");
+
+afterAll(() => {
+  rmSync(scratchDir, { recursive: true, force: true });
+});
+
+interface ComposeRun {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+}
+
+/** Render a compose file with an EMPTY env file (no repo .env leakage). */
+function composeConfig(file: string, env: Record<string, string> = {}): ComposeRun {
+  try {
+    const stdout = execFileSync(
+      "docker",
+      ["compose", "--env-file", emptyEnvFile, "-f", join(repoRoot, file), "config"],
+      { cwd: repoRoot, encoding: "utf8", env: { ...process.env, ...env } },
+    );
+    return { ok: true, stdout, stderr: "" };
+  } catch (error) {
+    const e = error as { stdout?: string | Buffer; stderr?: string | Buffer };
+    return {
+      ok: false,
+      stdout: String(e.stdout ?? ""),
+      stderr: String(e.stderr ?? ""),
+    };
+  }
+}
+
+const REQUIRED_ENV = {
+  AUTH_SECRET: "compose-test-secret-000000000000000000",
+  APP_URL: "http://tripmate.test:3000",
+};
+
+describe.skipIf(!dockerComposeAvailable())("docker-compose.portainer.yml", () => {
+  it("renders with only AUTH_SECRET + APP_URL and starts both services", () => {
+    const run = composeConfig("docker-compose.portainer.yml", REQUIRED_ENV);
+    expect(run.stderr + run.stdout).toBeTruthy();
+    expect(run.ok, run.stderr).toBe(true);
+
+    expect(run.stdout).toMatch(/^  postgres:/m);
+    expect(run.stdout).toMatch(/^  app:/m);
+    // A profile on any service would keep a Portainer stack deploy (which runs
+    // without --profile) from starting it.
+    expect(run.stdout).not.toMatch(/profiles:/);
+    // Postgres data + uploaded media must survive redeploys.
+    expect(run.stdout).toMatch(/tripmate_pgdata/);
+    expect(run.stdout).toMatch(/tripmate_uploads/);
+    // Inside the stack the DB host is the service name, not localhost.
+    expect(run.stdout).toMatch(/postgresql:\/\/postgres[^@]*@postgres:5432\/tripmate/);
+  });
+
+  it("passes every optional runtime variable through to the app container", () => {
+    const run = composeConfig("docker-compose.portainer.yml", REQUIRED_ENV);
+    expect(run.ok, run.stderr).toBe(true);
+
+    for (const key of [
+      "DATABASE_URL",
+      "DATABASE_URL_MIGRATE",
+      "SKIP_DB_MIGRATE",
+      "APP_URL",
+      "AUTH_SECRET",
+      "STORAGE_DRIVER",
+      "STORAGE_LOCAL_DIR",
+      "SMTP_HOST",
+      "SMTP_PORT",
+      "SMTP_USER",
+      "SMTP_PASS",
+      "SMTP_FROM",
+      "R2_ACCOUNT_ID",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY",
+      "R2_BUCKET_NAME",
+      "R2_PUBLIC_URL",
+      "META_PIXEL_ID",
+      "META_CAPI_ACCESS_TOKEN",
+      "META_CAPI_TEST_CODE",
+      "UPSTASH_REDIS_REST_URL",
+      "UPSTASH_REDIS_REST_TOKEN",
+    ]) {
+      expect(run.stdout, `${key} missing from rendered stack config`).toContain(`${key}:`);
+    }
+  });
+
+  it("fails fast, naming the variable, when AUTH_SECRET or APP_URL is missing", () => {
+    const missingBoth = composeConfig("docker-compose.portainer.yml");
+    expect(missingBoth.ok).toBe(false);
+    expect(missingBoth.stderr).toMatch(/AUTH_SECRET is required/);
+    expect(missingBoth.stderr).toMatch(/APP_URL is required/);
+
+    const missingSecret = composeConfig("docker-compose.portainer.yml", {
+      APP_URL: REQUIRED_ENV.APP_URL,
+    });
+    expect(missingSecret.ok).toBe(false);
+    expect(missingSecret.stderr).toMatch(/AUTH_SECRET is required/);
+  });
+});
+
+describe.skipIf(!dockerComposeAvailable())("docker-compose.yml (local dev)", () => {
+  it("renders without any environment and keeps app behind the app profile", () => {
+    const run = composeConfig("docker-compose.yml");
+    expect(run.ok, run.stderr).toBe(true);
+
+    // Fresh clone, no .env: `docker compose up -d` must still start Postgres.
+    expect(run.stdout).toMatch(/^  postgres:/m);
+  });
+
+  it("activates the app service only with --profile app", () => {
+    const inactive = composeConfig("docker-compose.yml");
+    expect(inactive.ok, inactive.stderr).toBe(true);
+    expect(inactive.stdout).not.toMatch(/^  app:/m);
+
+    let active: ComposeRun;
+    try {
+      const stdout = execFileSync(
+        "docker",
+        [
+          "compose",
+          "--env-file",
+          emptyEnvFile,
+          "--profile",
+          "app",
+          "-f",
+          join(repoRoot, "docker-compose.yml"),
+          "config",
+        ],
+        { cwd: repoRoot, encoding: "utf8", env: { ...process.env } },
+      );
+      active = { ok: true, stdout, stderr: "" };
+    } catch (error) {
+      const e = error as { stdout?: string | Buffer; stderr?: string | Buffer };
+      active = { ok: false, stdout: String(e.stdout ?? ""), stderr: String(e.stderr ?? "") };
+    }
+    expect(active.ok, active.stderr).toBe(true);
+    expect(active.stdout).toMatch(/^  app:/m);
+    // The R2 build arg must render empty when unset (not break the render).
+    expect(active.stdout).toMatch(/R2_PUBLIC_URL/);
+  });
+});
+
+describe("docker build context", () => {
+  const dockerignore = readFileSync(join(repoRoot, ".dockerignore"), "utf8");
+  const dockerfile = readFileSync(join(repoRoot, "Dockerfile"), "utf8");
+
+  it("ships scripts/migrate-lib.mjs into the builder stage", () => {
+    // The runner stage does `COPY --from=builder /app/scripts/migrate-lib.mjs`
+    // and auto-migrate.mjs imports it — if .dockerignore's `scripts/*`
+    // exclusion is not re-opened for it, the image build fails at that COPY.
+    expect(dockerignore).toMatch(/^!scripts\/migrate-lib\.mjs$/m);
+    expect(dockerfile).toMatch(/COPY --from=builder[^\n]*scripts\/migrate-lib\.mjs/);
+  });
+
+  it("ships scripts/auto-migrate.mjs into the builder stage", () => {
+    expect(dockerignore).toMatch(/^!scripts\/auto-migrate\.mjs$/m);
+    expect(dockerfile).toMatch(/COPY --from=builder[^\n]*scripts\/auto-migrate\.mjs/);
+  });
+});

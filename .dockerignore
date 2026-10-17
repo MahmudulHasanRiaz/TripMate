@@ -34,9 +34,11 @@ playwright.config.ts
 
 # dev-only scripts (runner is standalone-only). NOTE: drizzle/ +
 # drizzle.config.ts are NOT ignored — the builder migrates its throwaway
-# embedded Postgres before `next build` (see Dockerfile).
+# embedded Postgres before `next build` (see Dockerfile). migrate-lib.mjs must
+# ship too: auto-migrate.mjs imports it and the runner COPYs it explicitly.
 scripts/*
 !scripts/auto-migrate.mjs
+!scripts/migrate-lib.mjs
 
 # runtime data (bind-mounted by compose, not baked in)
 storage
@@ -48,4 +50,4 @@ docs
 .vercel
 .dockerignore
 Dockerfile
-docker-compose.yml
+docker-compose*.yml

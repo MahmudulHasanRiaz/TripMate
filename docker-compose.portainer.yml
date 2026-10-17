@@ -1,0 +1,110 @@
+# TripMate — full production stack for Portainer (or plain `docker compose`).
+#
+# WHY A SEPARATE FILE: docker-compose.yml keeps its `app` service behind the
+# "app" profile so a bare `docker compose up -d` on a dev machine starts only
+# Postgres. Portainer deploys run `docker compose up -d` WITHOUT --profile, so
+# pointing a Portainer stack at that file would silently start just the
+# database. This file has NO profiles — deploying it brings up the database
+# AND the app, with nothing else to configure.
+#
+# Portainer (Git repository method) — the whole flow:
+#   1. Stacks → Add stack → Build method: "Repository".
+#   2. Repository URL: your fork/clone of this repo.
+#   3. Compose path: docker-compose.portainer.yml
+#   4. Environment variables: paste at least AUTH_SECRET + APP_URL
+#      (see .env.example → "Portainer stack" section for the full sample set).
+#   5. Deploy. Postgres + app start; the app auto-migrates the schema at boot
+#      (scripts/auto-migrate.mjs) and /api/health reports migrationsPending: 0.
+#   6. Open https://<your-APP_URL>/setup once to create the superadmin.
+#
+# Required variables (deploy FAILS FAST with an actionable message if unset):
+#   AUTH_SECRET  32+ chars          — openssl rand -base64 32
+#   APP_URL      public base URL    — e.g. http://192.168.1.50:3000 or a domain
+# Optional variables (samples in .env.example): POSTGRES_PASSWORD, APP_PORT,
+#   POSTGRES_PORT, SMTP_*, STORAGE_DRIVER/R2_*, META_*, UPSTASH_REDIS_REST_*,
+#   SKIP_DB_MIGRATE.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tripmate-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: tripmate
+    # Exposed for debugging/backups. Change the HOST port if 5433 is taken
+    # (POSTGRES_PORT stack variable); the app talks over the compose network.
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - tripmate_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tripmate"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      # Build-time only (next.config.ts image whitelist). Set R2_PUBLIC_URL in
+      # the stack environment when STORAGE_DRIVER=r2.
+      args:
+        R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+    container_name: tripmate-app
+    environment:
+      NODE_ENV: production
+      # Inside the stack the DB host is the service name. If you change
+      # POSTGRES_PASSWORD above you MUST set DATABASE_URL explicitly with the
+      # same password (interpolation cannot nest); an existing tripmate_pgdata
+      # volume keeps the password it was initialized with.
+      DATABASE_URL: "${DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/tripmate}"
+      # Only needed when the runtime URL is NOT DDL-capable (Supabase pooled
+      # setups). For this stack the internal Postgres is direct — leave unset.
+      DATABASE_URL_MIGRATE: ${DATABASE_URL_MIGRATE:-}
+      SKIP_DB_MIGRATE: ${SKIP_DB_MIGRATE:-}
+      APP_URL: "${APP_URL:?APP_URL is required — e.g. http://192.168.1.50:3000 or https://tripmate.example.com}"
+      AUTH_SECRET: "${AUTH_SECRET:?AUTH_SECRET is required (32+ chars) — generate with: openssl rand -base64 32}"
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      STORAGE_LOCAL_DIR: ${STORAGE_LOCAL_DIR:-storage/uploads}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+      # Meta CAPI conversion tracking (optional; all three go together).
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
+      META_CAPI_ACCESS_TOKEN: ${META_CAPI_ACCESS_TOKEN:-}
+      META_CAPI_TEST_CODE: ${META_CAPI_TEST_CODE:-}
+      # Shared rate limiting through Upstash Redis (optional; both go together).
+      UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL:-}
+      UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-}
+    ports:
+      # Change the HOST port if 3000 is taken (APP_PORT stack variable) — then
+      # also make APP_URL match, e.g. APP_URL=http://host:8080 + APP_PORT=8080.
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      # NAMED volume (not a bind mount): initialized from the image directory
+      # (owned by the non-root `node` user), so uploads work on any host with
+      # zero permission fiddling — Portainer repo deploys included.
+      - tripmate_uploads:/app/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      # Covers the first-boot migration run before the server accepts traffic.
+      start_period: 60s
+      retries: 3
+
+volumes:
+  tripmate_pgdata:
+  tripmate_uploads:

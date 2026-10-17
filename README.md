@@ -107,7 +107,9 @@ fixed window across all serverless instances (see `src/lib/rate-limit.ts`).
 
 ## Deploy (Docker / Portainer)
 
-One `docker-compose.yml`, two modes, split by Compose profiles:
+One `docker-compose.yml` for local dev, two modes, split by Compose profiles
+(and a separate `docker-compose.portainer.yml` for one-click Portainer stacks —
+see below):
 
 - `docker compose up -d` — local dev Postgres only (the default, unchanged).
 - `docker compose --profile app up -d --build` — Postgres **plus** the
@@ -118,8 +120,9 @@ builder starts a throwaway Postgres internally to prerender the public-site
 cache (with Cache Components, `next build` executes the `'use cache'` data
 scopes, so it needs a migrated+seeded DB; your real databases are never
 touched). The one exception to "no args": with R2 storage, `next.config.ts`
-must whitelist the CDN host for `next/image` at build time — build with
-`--build-arg R2_PUBLIC_URL=https://cdn.example.com`.
+must whitelist the CDN host for `next/image` at build time — set
+`R2_PUBLIC_URL` in `.env` (compose forwards it as a build arg) or pass
+`--build-arg R2_PUBLIC_URL=https://cdn.example.com` to a raw `docker build`.
 
 Configuration resolves from `.env` next to the compose file
 (`cp .env.example .env`, fill real values). **Inside the stack the database
@@ -148,15 +151,29 @@ container self-checks `GET /api/health`
 `docker compose --profile app ps`. Uploaded
 media persists in the bind-mounted `./storage` directory across rebuilds.
 
-**Portainer** — Stacks → Add stack: either paste `docker-compose.yml` in the
-Web editor (the web editor has no build context, so build/push an image first
-and change `build: .` to `image: your-registry/tripmate`) or use the
-Repository method pointing at the git repo, where `build: .` builds on the
-host. In both cases paste your `.env` values into the stack's Environment
-variables (advanced mode) — the same `${...}` substitutions run there; set
-`DATABASE_URL` with host `postgres` as above. Postgres data lives in the
-`tripmate_pgdata` volume and uploads in the `./storage` bind mount, so
-re-deploys keep both.
+**Portainer** — deploy `docker-compose.portainer.yml` (a standalone full-stack
+file: **no profiles**, so one deploy starts Postgres **and** the app;
+`docker-compose.yml` stays for local dev and would only start Postgres under
+Portainer, because stack deploys run without `--profile`):
+
+1. Stacks → Add stack → Build method: **Repository**.
+2. Repository URL: your clone of this repo. Compose path:
+   `docker-compose.portainer.yml`.
+3. Environment variables (advanced mode): at minimum `AUTH_SECRET` (32+ chars,
+   `openssl rand -base64 32`) and `APP_URL` (the URL users will open). The
+   stack refuses to deploy when either is missing and names it in the error.
+   Every optional variable — ports, `POSTGRES_PASSWORD`, SMTP, R2, Meta CAPI,
+   Upstash — has a paste-ready sample in `.env.example` under
+   "Portainer stack".
+4. Deploy. The app auto-migrates at boot, then open `<APP_URL>/setup` once to
+   create the superadmin.
+
+Data survives redeploys in the named volumes `tripmate_pgdata` (database) and
+`tripmate_uploads` (uploaded media — a named volume instead of the dev bind
+mount, so uploads work on any host without permission fixes). The container
+health check hits `/api/health`, so Portainer shows healthy/unhealthy.
+Pasting the compose in the Web editor also works, but has no build context —
+it needs a pre-built image (`build: .` → `image: your-registry/tripmate`).
 
 ## Deploy — Vercel (serverless + Supabase)
 
