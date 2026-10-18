@@ -1,4 +1,5 @@
 import type { Metadata, Route } from "next";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -7,6 +8,7 @@ import {
   ArrowUpRight,
   Banknote,
   DollarSign,
+  LayoutDashboard,
   Receipt,
   RotateCcw,
   TrendingUp,
@@ -14,6 +16,7 @@ import {
 } from "lucide-react";
 import { requireSession } from "@/lib/auth-helpers";
 import { menuForRole } from "@/lib/admin-menu";
+import SectionHeader from "@/components/admin/SectionHeader";
 import {
   getDashboardKpis,
   getDashboardRangeKpis,
@@ -57,6 +60,26 @@ const ORDER_STATUS_BADGE_VARIANTS: Record<
   completed: "default",
   cancelled: "destructive",
 };
+
+/** Colored left rail per order status on the status tiles. */
+const ORDER_STATUS_ACCENTS: Record<OrderStatus, string> = {
+  pending: "var(--c-amber)",
+  confirmed: "var(--c-blue)",
+  completed: "var(--c-green)",
+  cancelled: "var(--c-red)",
+};
+
+/** Per-row accent cycle for ranked lists (funnel stages, profit rows). */
+const ACCENTS = [
+  "var(--c-green)",
+  "var(--c-blue)",
+  "var(--c-amber)",
+  "var(--c-violet)",
+  "var(--c-cyan)",
+  "var(--c-pink)",
+  "var(--c-orange)",
+  "var(--c-red)",
+] as const;
 
 export default async function AdminDashboardPage(props: {
   searchParams: Promise<{ preset?: string; from?: string; to?: string }>;
@@ -153,12 +176,12 @@ export default async function AdminDashboardPage(props: {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-0.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-xs text-muted-foreground">
-            Overview of inquiries, orders, payments, expenses, and operational queues.
-          </p>
-        </div>
+        <SectionHeader
+          title="Dashboard"
+          description="Overview of inquiries, orders, payments, expenses, and operational queues."
+          icon={LayoutDashboard}
+          accent="var(--c-blue)"
+        />
         <DashboardRangeFilter preset={range.preset} from={range.from} to={range.to} />
       </div>
 
@@ -169,7 +192,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Leads</span>
-              <Users className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <span className="kpi-chip" style={{ "--k": "var(--c-blue)" } as CSSProperties}>
+                <Users aria-hidden="true" />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
@@ -190,7 +215,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Pending Collections</span>
-              <Banknote className="size-3.5 text-warning" aria-hidden="true" />
+              <span className="kpi-chip" style={{ "--k": "var(--c-amber)" } as CSSProperties}>
+                <Banknote aria-hidden="true" />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
@@ -212,7 +239,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Revenue</span>
-              <DollarSign className="size-3.5 text-primary" aria-hidden="true" />
+              <span className="kpi-chip" style={{ "--k": "var(--c-green)" } as CSSProperties}>
+                <DollarSign aria-hidden="true" />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
@@ -230,7 +259,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Cost of Sales</span>
-              <Receipt className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <span className="kpi-chip" style={{ "--k": "var(--c-orange)" } as CSSProperties}>
+                <Receipt aria-hidden="true" />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
@@ -248,7 +279,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Gross Profit</span>
-              <TrendingUp className="size-3.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+              <span className="kpi-chip" style={{ "--k": "var(--c-green)" } as CSSProperties}>
+                <TrendingUp aria-hidden="true" />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
@@ -267,7 +300,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Op. Expenses</span>
-              <Receipt className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <span className="kpi-chip" style={{ "--k": "var(--c-red)" } as CSSProperties}>
+                <Receipt aria-hidden="true" />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
@@ -285,11 +320,18 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Net Profit</span>
-              {rangeKpis.net >= 0 ? (
-                <ArrowUpRight className="size-3.5 text-success" aria-hidden="true" />
-              ) : (
-                <ArrowDownRight className="size-3.5 text-destructive" aria-hidden="true" />
-              )}
+              <span
+                className="kpi-chip"
+                style={
+                  { "--k": rangeKpis.net >= 0 ? "var(--c-green)" : "var(--c-red)" } as CSSProperties
+                }
+              >
+                {rangeKpis.net >= 0 ? (
+                  <ArrowUpRight aria-hidden="true" />
+                ) : (
+                  <ArrowDownRight aria-hidden="true" />
+                )}
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
@@ -319,7 +361,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-3 pb-1">
             <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
               <span>Follow-ups Due</span>
-              <Users className="size-3.5 text-muted-foreground" aria-hidden="true" />
+              <span className="kpi-chip" style={{ "--k": "var(--c-violet)" } as CSSProperties}>
+                <Users aria-hidden="true" />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
@@ -359,7 +403,8 @@ export default async function AdminDashboardPage(props: {
               <Link
                 key={status}
                 href={"/admin/orders" as Route}
-                className="group flex items-center justify-between rounded-lg border border-border bg-card p-3 shadow-xs hover:border-primary/40 hover:bg-secondary/20 transition-all min-h-[44px]"
+                style={{ "--k": ORDER_STATUS_ACCENTS[status] } as CSSProperties}
+                className="group row-accent flex items-center justify-between rounded-lg border border-border bg-card p-3 pl-2.5 shadow-xs hover:bg-secondary/20 transition-all min-h-[44px]"
               >
                 <div className="flex items-center gap-2">
                   <Badge
@@ -386,7 +431,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Banknote className="size-4 text-muted-foreground" aria-hidden="true" />
+                <span className="kpi-chip" style={{ "--k": "var(--c-amber)" } as CSSProperties}>
+                  <Banknote aria-hidden="true" />
+                </span>
                 <span>Payment Verification Queue</span>
               </CardTitle>
               <Badge
@@ -422,7 +469,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Receipt className="size-4 text-muted-foreground" aria-hidden="true" />
+                <span className="kpi-chip" style={{ "--k": "var(--c-red)" } as CSSProperties}>
+                  <Receipt aria-hidden="true" />
+                </span>
                 <span>Expense Approval Queue</span>
               </CardTitle>
               <Badge
@@ -457,7 +506,9 @@ export default async function AdminDashboardPage(props: {
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Users className="size-4 text-muted-foreground" aria-hidden="true" />
+                <span className="kpi-chip" style={{ "--k": "var(--c-violet)" } as CSSProperties}>
+                  <Users aria-hidden="true" />
+                </span>
                 <span>Follow-ups Due</span>
               </CardTitle>
               <Badge
@@ -496,16 +547,20 @@ export default async function AdminDashboardPage(props: {
             <CardTitle className="text-sm font-semibold">Lead funnel by stage</CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-1 space-y-2">
-            {funnel.map((point) => {
+            {funnel.map((point, i) => {
               const max = Math.max(1, ...funnel.map((p) => p.count));
               return (
-                <div key={point.status} className="flex items-center gap-3">
+                <div
+                  key={point.status}
+                  className="flex items-center gap-3"
+                  style={{ "--k": ACCENTS[i % ACCENTS.length] } as CSSProperties}
+                >
                   <span className="w-24 shrink-0 text-xs capitalize text-muted-foreground">
                     {point.status.replace("_", " ")}
                   </span>
                   <div className="h-2 min-h-2 flex-1 overflow-hidden rounded-full bg-secondary">
                     <div
-                      className="h-full rounded-full bg-primary"
+                      className="funnel-fill h-full rounded-full"
                       style={{ width: `${Math.round((point.count / max) * 100)}%` }}
                     />
                   </div>
@@ -524,8 +579,12 @@ export default async function AdminDashboardPage(props: {
             {profitByService.length === 0 ? (
               <p className="text-xs text-muted-foreground">No orders in this range yet.</p>
             ) : (
-              profitByService.map((point) => (
-                <div key={point.type} className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2">
+              profitByService.map((point, i) => (
+                <div
+                  key={point.type}
+                  className="row-accent flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
+                  style={{ "--k": ACCENTS[i % ACCENTS.length] } as CSSProperties}
+                >
                   <span className="text-xs font-medium capitalize">{point.type}</span>
                   <span className="text-right font-mono text-xs tabular-nums" data-money>
                     {formatMoney(point.revenue, "BDT")}

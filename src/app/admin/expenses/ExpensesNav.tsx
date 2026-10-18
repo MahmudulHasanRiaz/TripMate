@@ -10,6 +10,15 @@ type ExpensesNavProps = {
   canApprove: boolean;
 };
 
+function pillClass(active: boolean) {
+  return cn(
+    "flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-xs font-medium transition-colors",
+    active
+      ? "bg-card text-foreground shadow-[0_1px_2px_rgba(16,24,20,.08)]"
+      : "text-muted-foreground hover:text-foreground",
+  );
+}
+
 export function ExpensesNav({ canApprove }: ExpensesNavProps) {
   const pathname = usePathname();
 
@@ -18,46 +27,34 @@ export function ExpensesNav({ canApprove }: ExpensesNavProps) {
   const isReports = pathname.startsWith("/admin/expenses/reports");
 
   return (
-    <div className="flex border-b border-border space-x-6">
+    <div className="inline-flex items-center gap-1 rounded-[10px] border border-border bg-secondary/40 p-1">
       <Link
         href={"/admin/expenses" as Route}
-        className={cn(
-          "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
-          isEntries
-            ? "border-primary text-primary"
-            : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-        )}
+        aria-current={isEntries ? "page" : undefined}
+        className={pillClass(isEntries)}
       >
-        <Receipt className="size-4" aria-hidden="true" />
+        <Receipt className="size-3.5" aria-hidden="true" />
         Expense Entries
       </Link>
 
       {canApprove ? (
         <Link
           href={"/admin/expenses/categories" as Route}
-          className={cn(
-            "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
-            isCategories
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-          )}
+          aria-current={isCategories ? "page" : undefined}
+          className={pillClass(isCategories)}
         >
-          <FolderTree className="size-4" aria-hidden="true" />
+          <FolderTree className="size-3.5" aria-hidden="true" />
           Categories
         </Link>
       ) : null}
 
       <Link
         href={"/admin/expenses/reports" as Route}
-        className={cn(
-          "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
-          isReports
-            ? "border-primary text-primary"
-            : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-        )}
+        aria-current={isReports ? "page" : undefined}
+        className={pillClass(isReports)}
       >
-        <BarChart3 className="size-4" aria-hidden="true" />
-        Financial Reports (P&L)
+        <BarChart3 className="size-3.5" aria-hidden="true" />
+        Financial Reports (P&amp;L)
       </Link>
     </div>
   );

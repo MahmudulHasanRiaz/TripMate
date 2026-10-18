@@ -416,3 +416,53 @@ body[data-admin] [data-slot="sidebar"][data-mobile="true"] {
 
 /* The existing global prefers-reduced-motion guard already neutralises
    these animations; nothing extra needed here. */
+
+/* ==========================================================================
+   9. KPI / stat accents (phase 2 hero screens)
+   --------------------------------------------------------------------------
+   Any element can opt into an accent by setting `--k` inline (see AdminShell
+   group map and the dashboard KPI cards). `.kpi-chip` is the artifact's
+   tinted icon square; `.row-accent` is the colored left rail used on list
+   rows (funnel stages, profit rows, status tiles).
+   ========================================================================== */
+
+.kpi-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--k, hsl(var(--primary))) 13%, transparent);
+  color: var(--k, hsl(var(--primary)));
+}
+
+.kpi-chip svg {
+  width: 14px;
+  height: 14px;
+}
+
+html.dark .kpi-chip {
+  background: color-mix(in srgb, var(--k, hsl(var(--primary))) 20%, transparent);
+}
+
+/* Colored left rail on cards / rows */
+.row-accent {
+  border-left: 3px solid var(--k, hsl(var(--primary)));
+}
+
+.admin-root .funnel-fill {
+  background: var(--k, hsl(var(--primary)));
+}
+
+.kpi-chip-lg {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.kpi-chip-lg svg {
+  width: 17px;
+  height: 17px;
+}

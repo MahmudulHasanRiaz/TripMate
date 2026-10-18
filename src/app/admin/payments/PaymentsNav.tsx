@@ -10,6 +10,15 @@ type PaymentsNavProps = {
   canManageGateways: boolean;
 };
 
+function pillClass(active: boolean) {
+  return cn(
+    "flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-xs font-medium transition-colors",
+    active
+      ? "bg-card text-foreground shadow-[0_1px_2px_rgba(16,24,20,.08)]"
+      : "text-muted-foreground hover:text-foreground",
+  );
+}
+
 export function PaymentsNav({ canManageGateways }: PaymentsNavProps) {
   const pathname = usePathname();
 
@@ -17,31 +26,23 @@ export function PaymentsNav({ canManageGateways }: PaymentsNavProps) {
   const isGateways = pathname.startsWith("/admin/payments/gateways");
 
   return (
-    <div className="flex border-b border-border space-x-6">
+    <div className="inline-flex items-center gap-1 rounded-[10px] border border-border bg-secondary/40 p-1">
       <Link
         href={"/admin/payments" as Route}
-        className={cn(
-          "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
-          isQueue
-            ? "border-primary text-primary font-semibold"
-            : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-        )}
+        aria-current={isQueue ? "page" : undefined}
+        className={pillClass(isQueue)}
       >
-        <CheckSquare className="size-4" aria-hidden="true" />
+        <CheckSquare className="size-3.5" aria-hidden="true" />
         Verification Queue
       </Link>
 
       {canManageGateways ? (
         <Link
           href={"/admin/payments/gateways" as Route}
-          className={cn(
-            "flex items-center gap-2 border-b-2 py-3 text-sm font-medium transition-colors",
-            isGateways
-              ? "border-primary text-primary font-semibold"
-              : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
-          )}
+          aria-current={isGateways ? "page" : undefined}
+          className={pillClass(isGateways)}
         >
-          <CreditCard className="size-4" aria-hidden="true" />
+          <CreditCard className="size-3.5" aria-hidden="true" />
           Gateway Configuration
         </Link>
       ) : null}
