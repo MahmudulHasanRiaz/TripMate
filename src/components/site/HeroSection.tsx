@@ -52,7 +52,7 @@ export function HeroSection({
   };
 
   return (
-    <section className="relative isolate overflow-hidden -mt-20 sm:-mt-24 pt-32 sm:pt-40 pb-20 sm:pb-28 lg:pb-32 transition-colors">
+    <section className="relative isolate overflow-hidden -mt-20 sm:-mt-24 pt-40 sm:pt-48 lg:pt-52 pb-20 sm:pb-28 lg:pb-32 transition-colors">
       {/* Background: Atmospheric Photograph extending to top */}
       {imageSrc ? (
         <div className="absolute inset-0 -z-10 overflow-hidden">
