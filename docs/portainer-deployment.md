@@ -71,8 +71,10 @@ curl -s https://<domain>/api/health     # {"ok":true,"db":true,"migrationsApplie
 # Update: Portainer → Stack → Editor: re-pull/redeploy (or re-save the stack).
 #   Redeploy = git pull latest main + rebuild + boot-time auto-migration.
 
-# Backup database (volume: tripmate_pgdata)
-docker exec tripmate-postgres pg_dump -U <POSTGRES_USER> -Fc <POSTGRES_DB> > backup_$(date +%Y%m%d_%H%M%S).dump
+# Backup database (volume: tripmate_pgdata). Compose names containers
+# <stack>-postgres-1 — discover the exact name instead of guessing:
+PG=$(docker ps -q --filter label=com.docker.compose.service=postgres | head -1)
+docker exec "$PG" pg_dump -U <POSTGRES_USER> -Fc <POSTGRES_DB> > backup_$(date +%Y%m%d_%H%M%S).dump
 
 # Backup uploads (volume: tripmate_uploads)
 docker run --rm -v tripmate_tripmate_uploads:/data -v "$PWD":/out alpine \
@@ -84,9 +86,10 @@ docker run --rm -v tripmate_tripmate_uploads:/data -v "$PWD":/out alpine \
 - Volumes survive stack deletion unless removed explicitly. **Deleting
   `tripmate_pgdata` destroys the database.**
 - Keep the **same stack name** on every redeploy: it is the compose project
-  name (and the prefix of `<name>_tripmate_pgdata`). A rename creates a second,
-  parallel copy — the old containers keep their host ports and the old volume
-  gets orphaned.
+  name, the prefix of containers (`<stack>-postgres-1` / `<stack>-app-1`) and
+  of volumes (`<stack>_tripmate_pgdata`). A rename creates a second, parallel
+  copy — the old containers keep their host ports and the old volume gets
+  orphaned. Pinned `container_name`s are gone for exactly this reason.
 
 ## 5. Troubleshooting (seen in practice)
 
@@ -96,7 +99,7 @@ docker run --rm -v tripmate_tripmate_uploads:/data -v "$PWD":/out alpine \
 | `Bind for 0.0.0.0:5433 failed: port is already allocated` | A container **outside this stack** owns the host port. Find it: `docker ps --filter publish=5433 --format '{{.Names}} (project: {{.Label "com.docker.compose.project"}})'` — usually an **older deploy under a different stack name** (renaming/duplicating a stack leaves the old copy running; Portainer only replaces same-name stacks). Fix: Stacks → the old stack → **Delete** (its containers go, named volumes survive) or `docker rm -f <name>`, then redeploy. If the holder is an unrelated service: change `POSTGRES_PORT` (e.g. 5434) in the stack env → Update the stack — the app connects over the internal network, so the host port only affects external access. |
 | `AUTH_SECRET is required` / `APP_URL is required` at deploy | Exactly what it says — paste the missing variable (Portainer env, advanced mode). |
 | App restarts in a loop, logs mention `ECONNREFUSED`/auth for DB | `POSTGRES_*` changed **after** the volume was initialized (volume keeps the original credentials) → revert, or recreate the volume (destroys data), or `ALTER USER` inside the old DB. |
-| App log: `caused by: getaddrinfo EAI_AGAIN postgres` (or `ENOTFOUND postgres`) | The app container cannot see a `postgres` service on its network — leftover state from earlier deploys (stale containers / recreated network from a renamed or duplicated stack). Confirm: `docker ps -a --filter name=tripmate --format 'table {{.Names}}\t{{.Status}}\t{{.Networks}}'` — if `tripmate-postgres` is missing, or not on the same network as `tripmate-app`: `docker rm -f $(docker ps -aq --filter name=tripmate)` then `docker network rm $(docker network ls -q --filter name=tripmate)` (**named volumes are not touched — data survives**), delete duplicate stacks in Portainer, deploy ONE stack. Boot-migrate already retries these transient failures ~4× before failing. |
+| App log: `caused by: getaddrinfo EAI_AGAIN postgres` (or `ENOTFOUND postgres`) | The app container cannot see a `postgres` service on its network — leftover state from earlier deploys (orphan containers / deleted network from a renamed or deleted stack; the boot retry proves it is not transient). Confirm: `docker ps -a --filter name=tripmate --format 'table {{.Names}}\t{{.Status}}\t{{.Networks}}'` (or Portainer → Containers — check the Stack column) — if no `*-postgres-1` container exists, or `*-app-1` sits on a different network: `docker rm -f $(docker ps -aq --filter name=tripmate)` then `docker network rm $(docker network ls -q --filter name=tripmate)` (**named volumes are not touched — data survives**), delete duplicate stacks in Portainer (keep ONE), redeploy. |
 | Login/links point to `localhost` | `APP_URL` still the default or the dev `.env` value → set the public URL and redeploy. |
 | Migrator logs `FATAL: ... cannot run migrations (6543...)` | External DB given a transaction-pooler URL → set `DATABASE_URL_MIGRATE` to the direct or session-pooler (`:5432`) URL. |
 | Health `pending > 0` | A new migration shipped but the container boot didn't run — check the container log for `[auto-migrate]`; redeploy. |

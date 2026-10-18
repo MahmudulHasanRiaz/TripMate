@@ -39,7 +39,10 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: tripmate-postgres
+    # No container_name on purpose: compose/Portainer names it
+    # <stack>-postgres-1, so containers of one deploy can never collide with
+    # leftovers from an older or renamed stack (pinned names allowed exactly
+    # that; orphans then held host ports and faked "network is broken" errors).
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -71,7 +74,6 @@ services:
       # the stack environment when STORAGE_DRIVER=r2.
       args:
         R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
-    container_name: tripmate-app
     environment:
       NODE_ENV: production
       # EXTERNAL database only. Leave EMPTY for the internal Postgres — the

@@ -1,7 +1,9 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: tripmate-postgres
+    # No container_name on purpose: compose/Portainer names it
+    # <project>-postgres-1, so containers of one deploy can never collide with
+    # leftovers from an older stack and every recreate stays project-scoped.
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
@@ -52,7 +54,6 @@ services:
       # here when STORAGE_DRIVER=r2.
       args:
         R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
-    container_name: tripmate-app
     environment:
       NODE_ENV: production
       # Empty → derived from POSTGRES_* at boot (same wiring as the portainer
