@@ -87,22 +87,28 @@ describe.skipIf(!dockerComposeAvailable())("docker-compose.portainer.yml", () =>
     expect(run.stdout).toMatch(/POSTGRES_USER: postgres/);
   });
 
-  it("wires custom ports and DB credentials as independent variables in ONE place", () => {
+  it("never publishes Postgres to the host — deploys cannot be blocked by port conflicts", () => {
+    const run = composeConfig("docker-compose.portainer.yml", REQUIRED_ENV);
+    expect(run.ok, run.stderr).toBe(true);
+    // Only the app takes a host port. A published Postgres port once let an
+    // old stack's leftover container block every redeploy at the network step.
+    expect(run.stdout).not.toMatch(/published: "543[0-9]"/);
+    expect(run.stdout).toMatch(/published: "3000"/);
+  });
+
+  it("wires APP_PORT and DB credentials as independent variables in ONE place", () => {
     const run = composeConfig("docker-compose.portainer.yml", {
       ...REQUIRED_ENV,
       APP_PORT: "8080",
-      POSTGRES_PORT: "6544",
       POSTGRES_DB: "tripmate-custom",
       POSTGRES_PASSWORD: "p@ss:word",
       POSTGRES_USER: "owner",
     });
     expect(run.ok, run.stderr).toBe(true);
 
-    // Ports: independent, free to assign (APP_PORT != old default, etc.).
+    // App port: free to assign.
     expect(run.stdout).toMatch(/published: "8080"/);
     expect(run.stdout).toMatch(/target: 3000/);
-    expect(run.stdout).toMatch(/published: "6544"/);
-    expect(run.stdout).toMatch(/target: 5432/);
     // DB credentials: same values reach the postgres service AND the app
     // container (the app derives its URL from them at boot).
     for (const expected of [

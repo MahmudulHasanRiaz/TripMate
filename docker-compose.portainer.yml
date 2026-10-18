@@ -21,9 +21,12 @@
 #   AUTH_SECRET  32+ chars          — openssl rand -base64 32
 #   APP_URL      public base URL    — e.g. http://192.168.1.50:3000 or a domain
 #
-# PORTS are independent variables — assign any free host port you want:
-#   APP_PORT      host port for the app        (default 3000)
-#   POSTGRES_PORT host port for Postgres       (default 5433)
+# PORTS: only the app is published — APP_PORT (default 3000), the port NGINX
+# proxies to. Postgres is intentionally NOT published to the host: the app and
+# the boot migration reach it over the stack network only, so a host-port
+# conflict (e.g. another stack's Postgres from an old deployment) can never
+# block this deploy. Ad-hoc psql: docker exec -it <stack>-postgres-1 psql
+# -U $POSTGRES_USER -d $POSTGRES_DB — backups do the same (docker exec).
 #
 # DATABASE — both modes fully automatic, pick ONE:
 #   INTERNAL (default, no work needed): PostgreSQL runs in this stack. Set
@@ -47,10 +50,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-tripmate}
-    # Exposed for debugging/backups. Change the HOST port if 5433 is taken
-    # (POSTGRES_PORT stack variable); the app talks over the compose network.
-    ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+    # NO host port on purpose (see header): internal-network access only, so
+    # no other stack can ever conflict with this deploy. Publish temporarily
+    # here (e.g. "5433:5432") only if external tools must reach the DB.
     volumes:
       - tripmate_pgdata:/var/lib/postgresql/data
     healthcheck:

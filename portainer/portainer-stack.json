@@ -2,7 +2,7 @@
   "version": "2",
   "name": "tripmate",
   "description": "TripMate — travel agency platform (Next.js standalone + PostgreSQL, fully self-contained stack)",
-  "note": "Deploy via Portainer UI with compose path docker-compose.portainer.yml. Internal PostgreSQL is configured by POSTGRES_* alone — DATABASE_URL is derived inside the app at boot. Configure unique local ports if other stacks share the server.",
+  "note": "Deploy via Portainer UI with compose path docker-compose.portainer.yml. Internal PostgreSQL is configured by POSTGRES_* alone — DATABASE_URL is derived inside the app at boot. Postgres is not published to the host (internal network only) — no port conflicts possible. Only the app takes a host port (APP_PORT); pick a free one if other stacks share the server.",
   "repository": {
     "url": "https://github.com/MahmudulHasanRiaz/TripMate",
     "stackfile": "docker-compose.portainer.yml"
@@ -11,8 +11,7 @@
     { "name": "AUTH_SECRET", "label": "⭐ Auth Secret — 32+ chars; generate: openssl rand -base64 32", "default": "" },
     { "name": "APP_URL", "label": "⭐ Public URL users open — e.g. https://tripmate.example.com (NGINX domain) or http://1.2.3.4:3000", "default": "" },
 
-    { "name": "APP_PORT", "label": "App host port", "default": "3000" },
-    { "name": "POSTGRES_PORT", "label": "PostgreSQL host port (leave free if only the app should reach it)", "default": "5433" },
+    { "name": "APP_PORT", "label": "App host port (the port NGINX proxies to)", "default": "3000" },
 
     { "name": "POSTGRES_DB", "label": "PostgreSQL database name (internal DB)", "default": "tripmate" },
     { "name": "POSTGRES_PASSWORD", "label": "⭐ PostgreSQL password — CHANGE before first deploy (volume keeps the initial password)", "default": "postgres" },

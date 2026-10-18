@@ -51,8 +51,7 @@ means changing all three **in the same commit**.
 |---|---|
 | `AUTH_SECRET` | **Required.** `openssl rand -base64 32` (32+ chars). Stack refuses to deploy without it. |
 | `APP_URL` | **Required.** The URL users open — `https://<domain>` behind NGINX, else `http://<ip>:<APP_PORT>`. |
-| `APP_PORT` | App host port (default 3000). Pick a free one if the server hosts other stacks. |
-| `POSTGRES_PORT` | Postgres host port (default 5433) — debugging/backups only; the app uses the internal network. |
+| `APP_PORT` | App host port (default 3000). Pick a free one if the server hosts other stacks. Postgres takes no host port — internal network only. |
 | `POSTGRES_DB` / `POSTGRES_PASSWORD` / `POSTGRES_USER` | Internal DB, set **once**. The app derives its connection from these. |
 | `DATABASE_URL` (+`DATABASE_URL_MIGRATE`) | External DB only; leave empty otherwise. |
 | SMTP / R2 / Meta / Upstash | Optional; see `.env.example` for samples. |
@@ -96,7 +95,7 @@ docker run --rm -v tripmate_tripmate_uploads:/data -v "$PWD":/out alpine \
 | Symptom | Cause → fix |
 |---|---|
 | Stack deploys but only Postgres appears | Compose path points at `docker-compose.yml` (app is behind the `app` profile) → use `docker-compose.portainer.yml`. |
-| `Bind for 0.0.0.0:5433 failed: port is already allocated` | A container **outside this stack** owns the host port. Find it: `docker ps --filter publish=5433 --format '{{.Names}} (project: {{.Label "com.docker.compose.project"}})'` — usually an **older deploy under a different stack name** (renaming/duplicating a stack leaves the old copy running; Portainer only replaces same-name stacks). Fix: Stacks → the old stack → **Delete** (its containers go, named volumes survive) or `docker rm -f <name>`, then redeploy. If the holder is an unrelated service: change `POSTGRES_PORT` (e.g. 5434) in the stack env → Update the stack — the app connects over the internal network, so the host port only affects external access. |
+| `Bind for :::5433 failed: port is already allocated` at deploy | The current stack file publishes **no** Postgres port — this error means an **older stack's** postgres container (from before the port was dropped, or from a differently-named duplicate stack) is still running and holding 5433, while its `restart: unless-stopped` keeps resurrecting it. Fix: Portainer → Stacks → delete every TripMate stack except the current one; Containers → remove leftover `tripmate-*` / `*_postgres` containers (`docker ps --filter publish=5433` names the holder when you have SSH); redeploy the one remaining stack. |
 | `AUTH_SECRET is required` / `APP_URL is required` at deploy | Exactly what it says — paste the missing variable (Portainer env, advanced mode). |
 | App restarts in a loop, logs mention `ECONNREFUSED`/auth for DB | `POSTGRES_*` changed **after** the volume was initialized (volume keeps the original credentials) → revert, or recreate the volume (destroys data), or `ALTER USER` inside the old DB. |
 | App log: `caused by: getaddrinfo EAI_AGAIN postgres` (or `ENOTFOUND postgres`) | The app container cannot see a `postgres` service on its network — leftover state from earlier deploys (orphan containers / deleted network from a renamed or deleted stack; the boot retry proves it is not transient). Confirm: `docker ps -a --filter name=tripmate --format 'table {{.Names}}\t{{.Status}}\t{{.Networks}}'` (or Portainer → Containers — check the Stack column) — if no `*-postgres-1` container exists, or `*-app-1` sits on a different network: `docker rm -f $(docker ps -aq --filter name=tripmate)` then `docker network rm $(docker network ls -q --filter name=tripmate)` (**named volumes are not touched — data survives**), delete duplicate stacks in Portainer (keep ONE), redeploy. |

@@ -169,8 +169,10 @@ Portainer, because stack deploys run without `--profile`):
      public `https://domain` and point the proxy upstream at
      `http://<docker-host>:<APP_PORT>`). The stack refuses to deploy when
      either is missing and names it in the error.
-   - **Ports** are independent variables: `APP_PORT` (default 3000) and
-     `POSTGRES_PORT` (default 5433) — assign any free host ports.
+   - **Ports:** only the app takes a host port — `APP_PORT` (default 3000), the
+     port NGINX proxies to. Postgres is not published to the host (internal
+     stack network only), so a port conflict from another stack can never
+     block a deploy.
    - **Database, internal (default):** nothing to set — Postgres runs in the
      stack and the app derives its connection at boot. To customize, set
      `POSTGRES_DB` / `POSTGRES_PASSWORD` (/ `POSTGRES_USER`) once; both the
