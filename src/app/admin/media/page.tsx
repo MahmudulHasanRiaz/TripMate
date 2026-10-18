@@ -164,7 +164,7 @@ export default async function MediaPage({
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">
             {view === "trash" ? "Trash Bin" : "Media Library"}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">

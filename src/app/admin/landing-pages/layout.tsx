@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Megaphone } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
+import SectionHeader from "@/components/admin/SectionHeader";
 
 export const instant = false;
 
@@ -12,12 +14,12 @@ export default async function LandingPagesLayout({ children }: { children: React
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Landing Pages</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Conversion-focused landing pages, lead capture forms, and campaign funnels.
-        </p>
-      </div>
+      <SectionHeader
+        title="Landing Pages"
+        description="Conversion-focused landing pages, lead capture forms, and campaign funnels."
+        icon={Megaphone}
+        accent="var(--c-pink)"
+      />
       {children}
     </div>
   );

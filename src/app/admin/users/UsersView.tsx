@@ -20,6 +20,7 @@ import {
 import type { UserView, UserRole } from "@/modules/users/service";
 import { updateUserRoleAction, toggleUserStatusAction } from "@/modules/users/actions";
 import SetPasswordDialog from "./SetPasswordDialog";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -243,15 +244,15 @@ export default function UsersView({
       {/* Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              Users &amp; Customers
-            </h1>
-            <Badge variant="secondary" className="text-xs font-semibold tabular-nums">{total} Total</Badge>
+          <div className="flex items-start gap-3">
+            <SectionHeader
+              title="Users & Customers"
+              description="Manage user accounts, roles, and access status across staff, admins, and portal customers."
+              icon={Users}
+              accent="var(--c-cyan)"
+            />
+            <Badge variant="secondary" className="mt-1 text-xs font-semibold tabular-nums">{total} Total</Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Manage user accounts, roles, and access status across staff, admins, and portal customers.
-          </p>
         </div>
       </div>
 

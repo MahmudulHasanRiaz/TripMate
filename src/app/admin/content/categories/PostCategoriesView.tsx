@@ -41,7 +41,7 @@ export default function PostCategoriesView({ rows }: { rows: PostCategoryRow[] }
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Post Categories</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Post Categories</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {rows.length} {rows.length === 1 ? "category" : "categories"} configured for blog and article grouping
           </p>

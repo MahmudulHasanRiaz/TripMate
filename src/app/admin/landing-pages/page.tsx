@@ -72,7 +72,7 @@ export default async function LandingPagesIndexPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Landing Pages</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Landing Pages</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {total} {total === 1 ? "page" : "pages"} configured for high-converting marketing campaigns
           </p>

@@ -77,7 +77,7 @@ export default async function PostsPage({
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Blog & Articles</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Blog & Articles</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Manage published travel stories, visa guides, and customer announcements.
           </p>

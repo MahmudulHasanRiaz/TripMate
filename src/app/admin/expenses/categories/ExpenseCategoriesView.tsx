@@ -201,7 +201,7 @@ export default function ExpenseCategoriesView({
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Expense Classification Categories</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Expense Classification Categories</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Categories define P&L grouping between operational overheads and direct tour package costs.
           </p>

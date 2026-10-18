@@ -251,7 +251,7 @@ export default function ExpenseEntriesView({
       {/* Header bar with Record Expense Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Operational & Direct Costs</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Operational & Direct Costs</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Staff expense logs awaiting approval and realized financial outflows.
           </p>

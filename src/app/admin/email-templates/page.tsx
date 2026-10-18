@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { MailOpen } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { listEmailTemplates } from "@/modules/email/admin";
 import EmailTemplatesView from "./EmailTemplatesView";
 
@@ -16,12 +18,12 @@ export default async function AdminEmailTemplatesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Email Templates</h1>
-        <p className="text-sm text-muted-foreground">
-          Preview transactional email templates dispatched across the booking and inquiry funnel.
-        </p>
-      </div>
+      <SectionHeader
+        title="Email Templates"
+        description="Preview transactional email templates dispatched across the booking and inquiry funnel."
+        icon={MailOpen}
+        accent="var(--c-orange)"
+      />
 
       <EmailTemplatesView templates={templates} />
     </div>

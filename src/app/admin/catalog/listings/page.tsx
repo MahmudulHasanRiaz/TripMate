@@ -72,7 +72,7 @@ export default async function ListingsPage({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Listings</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Listings</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             <span className="tabular-nums font-medium text-foreground">{total}</span> {total === 1 ? "result" : "results"}
           </p>

@@ -42,7 +42,7 @@ export default async function PagesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Static & Evergreen Pages</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Static & Evergreen Pages</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             {shown} of {total} {total === 1 ? "page" : "pages"} configured for site navigation
           </p>

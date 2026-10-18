@@ -21,28 +21,29 @@ export function ContentNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Content sections" className="border-b border-border">
-      <div className="-mb-px flex gap-1 overflow-x-auto">
-        {TABS.map((tab) => {
-          const active =
-            pathname === tab.href || pathname.startsWith(`${tab.href}/`);
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href as Route}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "inline-flex items-center whitespace-nowrap rounded-t-md px-4 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "border-b-2 border-primary text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {tab.label}
-            </Link>
-          );
-        })}
-      </div>
+    <nav
+      aria-label="Content sections"
+      className="inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-[10px] border border-border bg-secondary/40 p-1"
+    >
+      {TABS.map((tab) => {
+        const active =
+          pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+        return (
+          <Link
+            key={tab.href}
+            href={tab.href as Route}
+            aria-current={active ? "page" : undefined}
+            className={cn(
+              "inline-flex items-center whitespace-nowrap rounded-[7px] px-3 py-1.5 text-xs font-medium transition-colors",
+              active
+                ? "bg-card text-foreground shadow-[0_1px_2px_rgba(16,24,20,.08)]"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

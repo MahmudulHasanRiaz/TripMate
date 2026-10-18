@@ -18,6 +18,7 @@ import type { QuotationListItem } from "@/modules/bookings/quotations-service";
 import type { QuotationStatus } from "@/modules/bookings/quotations-validation";
 import { formatMoney } from "@/components/site/currency";
 import QuotationFormDialog, { type QuotationPrefill } from "./QuotationFormDialog";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -104,14 +105,12 @@ export default function QuotationsView({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">
-            Custom Quotations
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            B2B proposals, group itineraries, and custom agency quotations with commercial margin tracking.
-          </p>
-        </div>
+        <SectionHeader
+          title="Custom Quotations"
+          description="B2B proposals, group itineraries, and custom agency quotations with commercial margin tracking."
+          icon={FileSpreadsheet}
+          accent="var(--c-green)"
+        />
         <Button onClick={() => setCreateOpen(true)} className="h-10 px-4 text-sm font-semibold rounded-lg gap-2 shrink-0">
           <Plus className="size-4" />
           Create Quotation

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
 import { listHelpArticles } from "@/modules/help/articles";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
@@ -18,12 +19,12 @@ export default async function AdminHelpPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-0.5">
-        <h1 className="text-2xl font-semibold tracking-tight">সহায়তা কেন্দ্র</h1>
-        <p className="text-xs text-muted-foreground">
-          প্রতিটি অংশ কীভাবে চালাবেন — সহজ বাংলায় ধাপে ধাপে নির্দেশনা।
-        </p>
-      </div>
+      <SectionHeader
+        title="সহায়তা কেন্দ্র"
+        description="প্রতিটি অংশ কীভাবে চালাবেন — সহজ বাংলায় ধাপে ধাপে নির্দেশনা।"
+        icon={BookOpen}
+        accent="var(--c-orange)"
+      />
       {sections.map((section) => (
         <div key={section} className="space-y-2">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">

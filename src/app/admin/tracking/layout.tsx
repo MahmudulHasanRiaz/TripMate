@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Activity } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
+import SectionHeader from "@/components/admin/SectionHeader";
 
 export const instant = false;
 
@@ -12,12 +14,12 @@ export default async function TrackingLayout({ children }: { children: ReactNode
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight text-foreground">Meta Tracking &amp; CAPI</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Conversions API health, Pixel bootstrap status, and server-side event audit log.
-        </p>
-      </div>
+      <SectionHeader
+        title="Meta Tracking & CAPI"
+        description="Conversions API health, Pixel bootstrap status, and server-side event audit log."
+        icon={Activity}
+        accent="var(--c-orange)"
+      />
       {children}
     </div>
   );

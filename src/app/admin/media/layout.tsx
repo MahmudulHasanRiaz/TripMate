@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Image } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
+import SectionHeader from "@/components/admin/SectionHeader";
 
 /**
  * Media section gate. The parent /admin layout already restricts the whole
@@ -16,12 +18,12 @@ export default async function MediaLayout({ children }: { children: ReactNode })
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Media library</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Upload, caption and manage the images and PDFs your listings link to.
-        </p>
-      </div>
+      <SectionHeader
+        title="Media library"
+        description="Upload, caption and manage the images and PDFs your listings link to."
+        icon={Image}
+        accent="var(--c-pink)"
+      />
       {children}
     </div>
   );

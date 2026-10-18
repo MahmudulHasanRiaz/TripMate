@@ -26,6 +26,7 @@ import {
   toggleTestimonialPublishedAction,
 } from "@/modules/content/testimonials-actions";
 import TestimonialFormDialog from "./TestimonialFormDialog";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,18 +151,16 @@ export default function TestimonialsView({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-              Testimonials
-            </h1>
-            <Badge variant="outline" className="tabular-nums font-medium text-xs">
-              {total} total
-            </Badge>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage and publish traveler reviews, trip stories, and video experiences across the site.
-          </p>
+        <div className="flex items-start gap-3">
+          <SectionHeader
+            title="Testimonials"
+            description="Manage and publish traveler reviews, trip stories, and video experiences across the site."
+            icon={MessageSquareQuote}
+            accent="var(--c-pink)"
+          />
+          <Badge variant="outline" className="mt-1 tabular-nums font-medium text-xs">
+            {total} total
+          </Badge>
         </div>
 
         <Button

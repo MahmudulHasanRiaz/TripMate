@@ -211,7 +211,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
           </Button>
           <div>
             <div className="flex items-center gap-2.5">
-              <h2 className="text-xl font-bold tracking-tight text-foreground">
+              <h2 className="text-base font-semibold tracking-tight text-foreground">
                 {lead.name.trim() || "Anonymous Inquiry"}
               </h2>
               <Badge variant={STATUS_BADGE_VARIANTS[currentStatus]} className="capitalize text-xs font-medium px-2.5 py-0.5">

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Settings } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { hasPermission } from "@/modules/users/permissions";
 import {
   DEFAULT_HOME_SETTINGS,
@@ -63,11 +65,13 @@ export default async function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <div className="min-w-0 flex-1 space-y-0.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-          <p className="text-xs text-muted-foreground">
-            Manage brand identity, theme styling, contact details, public homepage copy, and search engine indexing.
-          </p>
+        <div className="min-w-0 flex-1">
+          <SectionHeader
+            title="Settings"
+            description="Manage brand identity, theme styling, contact details, public homepage copy, and search engine indexing."
+            icon={Settings}
+            accent="var(--c-orange)"
+          />
         </div>
         <span
           className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-border bg-card px-2.5 text-xs font-medium text-muted-foreground"

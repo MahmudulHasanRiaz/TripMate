@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, DatabaseBackup, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, DatabaseBackup, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { runResetAndReinitialize, type ResetReinitResult } from "@/modules/settings/reset-actions";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -39,15 +40,12 @@ export default function ResetDataClient({ siteTitle }: { siteTitle: string }) {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          Reset &amp; Re-initialize
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Wipe all demo/live content and media, then seed the database fresh — useful when demo
-          seeding produced imageless or incomplete data. Your admin account is kept.
-        </p>
-      </div>
+      <SectionHeader
+        title="Reset & Re-initialize"
+        description="Wipe all demo/live content and media, then seed the database fresh — useful when demo seeding produced imageless or incomplete data. Your admin account is kept."
+        icon={Trash2}
+        accent="var(--c-orange)"
+      />
 
       <Card className="border-destructive/40">
         <CardHeader>

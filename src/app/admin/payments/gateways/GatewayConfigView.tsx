@@ -265,7 +265,7 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Configured Payment Methods</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Configured Payment Methods</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             Gateways visible to customers at checkout and in the customer portal. Display data only.
           </p>

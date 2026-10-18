@@ -43,7 +43,7 @@ export default function DestinationsView({ rows }: { rows: DestinationRow[] }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-foreground">Destinations</h2>
+          <h2 className="text-base font-semibold tracking-tight text-foreground">Destinations</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             <span className="tabular-nums font-medium text-foreground">{rows.length}</span> {rows.length === 1 ? "destination" : "destinations"} · <span className="tabular-nums font-medium text-foreground">{activeCount}</span> active
           </p>

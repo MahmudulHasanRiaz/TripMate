@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
+import { Package } from "lucide-react";
 import { requirePermission } from "@/lib/auth-helpers";
+import SectionHeader from "@/components/admin/SectionHeader";
 import { CatalogNav } from "./CatalogNav";
 
 /**
@@ -17,12 +19,12 @@ export default async function CatalogLayout({ children }: { children: ReactNode 
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Catalog</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Listings, service categories and destinations.
-        </p>
-      </div>
+      <SectionHeader
+        title="Catalog"
+        description="Listings, service categories and destinations."
+        icon={Package}
+        accent="var(--c-violet)"
+      />
       <CatalogNav />
       {children}
     </div>
