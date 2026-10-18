@@ -17,6 +17,13 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          memory: 256M
 
   # Full production stack (Plan 7). Behind the "app" profile so the default
   # `docker compose up -d` stays "local dev Postgres only" — and keeps working
@@ -81,7 +88,7 @@ services:
       UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL:-}
       UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN:-}
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
     volumes:
       # Uploads persist across rebuilds. Bind-mounted at the same path
       # `npm run dev` writes to, so host dev and the container share media.
@@ -89,6 +96,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          memory: 256M
     restart: unless-stopped
 
 volumes:

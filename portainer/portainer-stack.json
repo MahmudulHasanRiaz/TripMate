@@ -1,0 +1,46 @@
+{
+  "version": "2",
+  "name": "tripmate",
+  "description": "TripMate — travel agency platform (Next.js standalone + PostgreSQL, fully self-contained stack)",
+  "note": "Deploy via Portainer UI with compose path docker-compose.portainer.yml. Internal PostgreSQL is configured by POSTGRES_* alone — DATABASE_URL is derived inside the app at boot. Configure unique local ports if other stacks share the server.",
+  "repository": {
+    "url": "https://github.com/MahmudulHasanRiaz/TripMate",
+    "stackfile": "docker-compose.portainer.yml"
+  },
+  "env": [
+    { "name": "AUTH_SECRET", "label": "⭐ Auth Secret — 32+ chars; generate: openssl rand -base64 32", "default": "" },
+    { "name": "APP_URL", "label": "⭐ Public URL users open — e.g. https://tripmate.example.com (NGINX domain) or http://1.2.3.4:3000", "default": "" },
+
+    { "name": "APP_PORT", "label": "App host port", "default": "3000" },
+    { "name": "POSTGRES_PORT", "label": "PostgreSQL host port (leave free if only the app should reach it)", "default": "5433" },
+
+    { "name": "POSTGRES_DB", "label": "PostgreSQL database name (internal DB)", "default": "tripmate" },
+    { "name": "POSTGRES_PASSWORD", "label": "⭐ PostgreSQL password — CHANGE before first deploy (volume keeps the initial password)", "default": "postgres" },
+    { "name": "POSTGRES_USER", "label": "PostgreSQL user", "default": "postgres" },
+
+    { "name": "DATABASE_URL", "label": "External DB URL only — leave EMPTY to use the internal PostgreSQL", "default": "" },
+    { "name": "DATABASE_URL_MIGRATE", "label": "External DB only: DDL-capable URL when DATABASE_URL is not (e.g. Supabase :6543 → direct/session :5432)", "default": "" },
+    { "name": "SKIP_DB_MIGRATE", "label": "1 disables boot-time migrations (loud drift warning)", "default": "" },
+
+    { "name": "SMTP_HOST", "label": "SMTP host (empty = email logs only)", "default": "" },
+    { "name": "SMTP_PORT", "label": "SMTP port", "default": "587" },
+    { "name": "SMTP_USER", "label": "SMTP username", "default": "" },
+    { "name": "SMTP_PASS", "label": "SMTP password", "default": "" },
+    { "name": "SMTP_FROM", "label": "From header — e.g. TripMate <no-reply@tripmate.example>", "default": "" },
+
+    { "name": "STORAGE_DRIVER", "label": "Upload storage: local | r2", "default": "local" },
+    { "name": "STORAGE_LOCAL_DIR", "label": "Local upload root (persists in the tripmate_uploads volume)", "default": "storage/uploads" },
+    { "name": "R2_ACCOUNT_ID", "label": "Cloudflare R2 account id (STORAGE_DRIVER=r2)", "default": "" },
+    { "name": "R2_ACCESS_KEY_ID", "label": "R2 access key id", "default": "" },
+    { "name": "R2_SECRET_ACCESS_KEY", "label": "R2 secret access key", "default": "" },
+    { "name": "R2_BUCKET_NAME", "label": "R2 bucket name", "default": "" },
+    { "name": "R2_PUBLIC_URL", "label": "R2 CDN base URL (also a BUILD-time input — redeploy with rebuild after changing)", "default": "" },
+
+    { "name": "META_PIXEL_ID", "label": "Meta Pixel ID (conversion tracking, optional)", "default": "" },
+    { "name": "META_CAPI_ACCESS_TOKEN", "label": "Meta Conversions API token (required together with Pixel ID)", "default": "" },
+    { "name": "META_CAPI_TEST_CODE", "label": "Meta test event code — validation only, never in real traffic", "default": "" },
+
+    { "name": "UPSTASH_REDIS_REST_URL", "label": "Upstash Redis REST URL (shared rate limiting, optional)", "default": "" },
+    { "name": "UPSTASH_REDIS_REST_TOKEN", "label": "Upstash Redis REST token", "default": "" }
+  ]
+}

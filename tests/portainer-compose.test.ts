@@ -203,6 +203,53 @@ describe.skipIf(!dockerComposeAvailable())("docker-compose.yml (local dev)", () 
   });
 });
 
+describe("portainer/portainer-stack.json", () => {
+  const template = JSON.parse(
+    readFileSync(join(repoRoot, "portainer/portainer-stack.json"), "utf8"),
+  ) as {
+    version: string;
+    name: string;
+    description: string;
+    repository: { url: string; stackfile: string };
+    env: Array<{ name: string; label: string; default: string }>;
+  };
+  const composeText = readFileSync(join(repoRoot, "docker-compose.portainer.yml"), "utf8");
+
+  it("points at the Portainer stack file (not the profiled dev compose)", () => {
+    expect(template.version).toBe("2");
+    expect(template.name).toBe("tripmate");
+    expect(template.repository.url).toBe("https://github.com/MahmudulHasanRiaz/TripMate");
+    expect(template.repository.stackfile).toBe("docker-compose.portainer.yml");
+  });
+
+  it("labels every variable with a name, label and default", () => {
+    expect(template.env.length).toBeGreaterThan(10);
+    const names = new Set<string>();
+    for (const entry of template.env) {
+      expect(entry.name).toMatch(/^[A-Z][A-Z0-9_]*$/);
+      expect(entry.label.length, `${entry.name} label`).toBeGreaterThan(3);
+      expect(entry.default, `${entry.name} default`).toBeTypeOf("string");
+      expect(names.has(entry.name), `duplicate env entry ${entry.name}`).toBe(false);
+      names.add(entry.name);
+    }
+  });
+
+  it("stays in sync with every ${...} variable the compose file interpolates", () => {
+    // Env-sync rule: a new compose variable must land in this template (and in
+    // .env.example) in the same commit — otherwise the Portainer form silently
+    // omits it and the stack renders with an empty/default value.
+    const composeVars = new Set(
+      [...composeText.matchAll(/\$\{([A-Z][A-Z0-9_]*)/g)].map((m) => m[1]),
+    );
+    const templateVars = new Set(template.env.map((e) => e.name));
+
+    const missingFromTemplate = [...composeVars].filter((v) => !templateVars.has(v));
+    const unusedInCompose = [...templateVars].filter((v) => !composeVars.has(v));
+    expect(missingFromTemplate, "compose vars missing from portainer-stack.json").toEqual([]);
+    expect(unusedInCompose, "template vars not read by the compose file").toEqual([]);
+  });
+});
+
 describe("docker build context", () => {
   const dockerignore = readFileSync(join(repoRoot, ".dockerignore"), "utf8");
   const dockerfile = readFileSync(join(repoRoot, "Dockerfile"), "utf8");

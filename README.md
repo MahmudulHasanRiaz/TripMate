@@ -192,6 +192,16 @@ health check hits `/api/health`, so Portainer shows healthy/unhealthy.
 Pasting the compose in the Web editor also works, but has no build context —
 it needs a pre-built image (`build: .` → `image: your-registry/tripmate`).
 
+Deploy surface, in one place:
+
+- `docker-compose.portainer.yml` — the stack file (ports, resource limits,
+  healthchecks; every `${...}` variable is documented in `.env.example`).
+- `portainer/portainer-stack.json` — Portainer custom-template defaults: each
+  stack env var with a label, ⭐ = required, and its default.
+- [`docs/portainer-deployment.md`](docs/portainer-deployment.md) — full runbook:
+  env table, backup commands, everyday ops, and a troubleshooting table
+  (wrong compose path, port collisions, stale volume credentials, …).
+
 ## Deploy — Vercel (serverless + Supabase)
 
 Schema-on-deploy is wired into the repo: `package.json` defines
