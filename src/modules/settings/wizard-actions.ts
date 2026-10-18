@@ -195,10 +195,9 @@ export const wizardTestR2 = async () => r2Probe(undefined);
  * extra superadmin while steps 2–6 are still open. As a consequence the
  * stray-customer promote path below only ever runs when no superadmin exists.
  *
- * Path (verified against installed better-auth 1.7.2): `createUser` is only
- * exposed by the OPTIONAL admin plugin, which this app does not install — and
- * `role` is an `input: false` additionalField anyway, so it could not be set
- * through the public body. Instead we use `auth.api.signUpEmail` (the
+ * Path (verified against installed better-auth 1.7.2): `createUser` is an
+ * admin-plugin API and `role` is an `input: false` field, so it could not be
+ * set through a public body anyway. Instead we use `auth.api.signUpEmail` (the
  * email+password plugin IS enabled) to create the user + hashed password
  * credential through better-auth itself, then escalate the row's role to
  * superadmin server-side. Escalation inside a setup-unlocked action is

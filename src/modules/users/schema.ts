@@ -24,6 +24,12 @@ export const users = pgTable("users", {
   phone: text("phone"),
   role: userRoleEnum("role").notNull().default("customer"),
   status: text("status").notNull().default("active"),
+  // better-auth admin() plugin fields (v1.7.2) — REQUIRED column-for-column in
+  // the Drizzle schema or every user creation fails with
+  // 'The field "banned" does not exist in the "users" Drizzle schema'.
+  banned: boolean("banned").notNull().default(false),
+  banReason: text("ban_reason"),
+  banExpires: timestamp("ban_expires", { withTimezone: true }),
   avatarUrl: text("avatar_url"),
   permissions: text("permissions").array(), // null = role defaults
   leadId: uuid("lead_id"),
@@ -42,6 +48,8 @@ export const sessions = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
+    // better-auth admin() plugin (v1.7.2): who impersonated this session.
+    impersonatedBy: text("impersonated_by"),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),

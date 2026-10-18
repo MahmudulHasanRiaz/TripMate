@@ -26,7 +26,10 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 10,
   },
-  plugins: [admin()],
+  // The admin() plugin hooks user creation and inserts ITS OWN default role
+  // ('user' unless told otherwise) — which is not a value of our user_role
+  // enum. Both the plugin's default and the column default must be 'customer'.
+  plugins: [admin({ defaultRole: "customer" })],
   user: {
     // Map better-auth's core `image` field onto our existing avatar_url column.
     fields: {
