@@ -31,6 +31,7 @@ export type TravelActionPanelProps = {
 
 export default function TravelActionPanel({
   destinations,
+  categories,
   flightRedirectUrl,
   flightSlug = "flights",
   hotelRedirectUrl,
@@ -47,11 +48,19 @@ export default function TravelActionPanel({
   // Visa search state
   const [selectedVisaDest, setSelectedVisaDest] = useState("");
 
+  const umrahCategory = categories?.find(
+    (c) =>
+      c.slug === "hajj-umrah" ||
+      c.slug.includes("umrah") ||
+      c.slug.includes("hajj") ||
+      c.name.toLowerCase().includes("umrah")
+  );
+  const umrahSlug = umrahCategory?.slug ?? "hajj-umrah";
+
   const handleSearchPackages = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (selectedDestination) params.set("destination", selectedDestination);
-    if (selectedDuration) params.set("duration", selectedDuration);
+    if (selectedDestination) params.set("dest", selectedDestination);
     router.push(`/packages?${params.toString()}` as Route);
   };
 
@@ -220,7 +229,7 @@ export default function TravelActionPanel({
                   </a>
                 </Button>
                 <Button asChild className="rounded-lg h-11">
-                  <Link href="/packages?category=hajj-umrah">
+                  <Link href={`/packages?cat=${encodeURIComponent(umrahSlug)}` as Route}>
                     View Umrah Packages
                   </Link>
                 </Button>

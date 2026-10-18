@@ -39,68 +39,12 @@ function resolveServiceIcon(slug: string, name: string) {
 }
 
 export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
-  const defaultServices: ServiceGridItem[] = [
-    {
-      slug: "vip-umrah",
-      name: "VIP Umrah Concierge",
-      blurb:
-        "Haram-view luxury suites, dedicated guides, private GMC transfers, and fast-track VIP arrival.",
-      href: "/packages?type=umrah",
-      features: ["5★ Steps from Haram", "Private GMC Transfers", "Dedicated Scholar Guide"],
-    },
-    {
-      slug: "hajj-2026",
-      name: "Hajj 2026 Pilgrimage",
-      blurb:
-        "Ministry-approved premium packages with Mina VIP air-conditioned tents and licensed scholar guides.",
-      href: "/packages?type=hajj",
-      features: ["Ministry Licensed Operator", "Mina VIP Executive Tents", "Full Ziyarah Itinerary"],
-    },
-    {
-      slug: "luxury-family-escapes",
-      name: "Curated Holiday Escapes",
-      blurb:
-        "Handpicked 5-star family resorts and bespoke private itineraries in Dubai, Maldives, and Europe.",
-      href: "/packages",
-      features: ["Handcrafted Itineraries", "Private Villa & Resort Deals", "Custom Group Logistics"],
-    },
-    {
-      slug: "visa-desk",
-      name: "Fast-Track Visa Desk",
-      blurb:
-        "Hassle-free documentation, submission, and rapid e-visa processing for 60+ countries worldwide.",
-      href: "/visa",
-      features: ["Saudi Umrah / Tourist e-Visa", "Schengen & UK Assistance", "Express 48h Delivery"],
-    },
-    {
-      slug: "flight-tickets",
-      name: "Global Airline Ticketing",
-      blurb:
-        "Contracted corporate & private fares across 400+ airlines, economy, business, and first class.",
-      href: "/services/flight-tickets",
-      features: ["Saudia & Biman Direct Routes", "Business & First Class Deals", "Flexible Date Rescheduling"],
-    },
-    {
-      slug: "medical-tourism",
-      name: "Medical Travel Coordination",
-      blurb:
-        "Accredited international hospital coordination, doctor appointments, and medical visa facilitation.",
-      href: "/services/medical-tourism",
-      features: ["Bangkok & India Hospitals", "Specialist Doctor Bookings", "Dedicated Airport Escort"],
-    },
-  ];
-
-  const displayItems = items.length >= 6 ? items.slice(0, 6) : defaultServices;
+  if (!items || items.length === 0) return null;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {displayItems.map((item, idx) => {
-        const isFeatured = idx === 0 || item.slug.includes("umrah");
-        const features =
-          item.features ||
-          (isFeatured
-            ? ["5★ Steps from Haram", "Private GMC Transfers", "Dedicated Scholar Guide"]
-            : ["Full Concierge Support", "Verified Partnerships", "24/7 Ground Assistance"]);
+      {items.map((item, idx) => {
+        const isFeatured = idx === 0 || item.slug.includes("umrah") || item.slug.includes("hajj");
 
         const cardContent = (
           <div
@@ -122,7 +66,7 @@ export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
                 {isFeatured && (
                   <span className="inline-flex items-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-text">
                     <Sparkles className="size-3" />
-                    <span>Most Requested</span>
+                    <span>Featured Service</span>
                   </span>
                 )}
               </div>
@@ -137,20 +81,24 @@ export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
                 {item.blurb}
               </p>
 
-              {/* Feature Bullets */}
-              <ul className="mt-4 space-y-1.5 border-t border-border/50 pt-3.5 text-xs text-foreground/80">
-                {features.map((feat, fIdx) => (
-                  <li key={fIdx} className="flex items-center gap-2">
-                    <CheckCircle2 className="size-3.5 text-primary shrink-0" />
-                    <span>{feat}</span>
-                  </li>
-                ))}
-              </ul>
+              {/* Feature Bullets (only when provided) */}
+              {item.features && item.features.length > 0 && (
+                <ul className="mt-4 space-y-1.5 border-t border-border/50 pt-3.5 text-xs text-foreground/80">
+                  {item.features.map((feat, fIdx) => (
+                    <li key={fIdx} className="flex items-center gap-2">
+                      <CheckCircle2 className="size-3.5 text-primary shrink-0" />
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
             {/* Action Footer */}
             <div className="mt-6 flex items-center justify-between border-t border-border/50 pt-4 text-xs font-semibold text-primary">
-              <span className="transition-colors group-hover:underline">Explore Details</span>
+              <span className="transition-colors group-hover:underline">
+                {item.external ? "Visit Partner" : "Explore Service"}
+              </span>
               <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 transition-transform group-hover:translate-x-1">
                 {item.external ? (
                   <ExternalLink className="size-3.5" />

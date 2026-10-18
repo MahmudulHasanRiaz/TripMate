@@ -68,9 +68,6 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
             <span className="font-display text-base sm:text-lg font-bold tracking-tight text-foreground leading-tight">
               {title}
             </span>
-            <span className="hidden sm:block text-[9px] font-semibold uppercase tracking-widest text-primary">
-              Luxury Pilgrimage
-            </span>
           </div>
         </Link>
 

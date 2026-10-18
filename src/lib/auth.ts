@@ -31,9 +31,9 @@ export const auth = betterAuth({
       generateId: "uuid",
     },
     defaultCookieAttributes: {
-      sameSite: "none",
-      secure: true,
-      partitioned: true,
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      secure: process.env.NODE_ENV === "production",
+      partitioned: process.env.NODE_ENV === "production",
     },
   },
   emailAndPassword: {

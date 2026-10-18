@@ -1,4 +1,8 @@
 import type { NextConfig } from "next";
+import { loadEnvConfig } from "@next/env";
+
+// Ensure process.env is populated from .env/.env.local at config evaluation time
+loadEnvConfig(process.cwd());
 
 // When storage is r2 the media driver returns ABSOLUTE urls on the operator's
 // custom domain (R2_PUBLIC_URL), so every public next/image <img> optimization
@@ -63,8 +67,9 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      // R2-backed imagery when R2_PUBLIC_URL is configured (see top of file).
-      // Zero third-party runtime image domains permitted on public site.
+      // Direct Cloudflare R2 public bucket endpoints
+      { protocol: "https", hostname: "*.r2.dev", pathname: "/**" },
+      // R2-backed imagery when custom R2_PUBLIC_URL is configured (see top of file)
       ...(r2Hostname
         ? [{ protocol: "https" as const, hostname: r2Hostname, pathname: "/**" }]
         : []),

@@ -114,26 +114,22 @@ export default async function Home() {
           ctaHref={home.ctaHref}
           imageSrc={home.imageUrl}
           imageAlt={home.imageAlt}
-          destinations={destinations}
-          categories={categories}
-          phone={site.phone}
         />
-      ) : (
-        <>
-          <TravelActionPanel
-            destinations={destinations}
-            categories={categories}
-            flightRedirectUrl={flightCategory?.redirectUrl}
-            flightSlug={flightCategory?.slug ?? "flights"}
-            hotelRedirectUrl={hotelCategory?.redirectUrl}
-            hotelSlug={hotelCategory?.slug ?? "hotels"}
-            phone={site.phone}
-          />
-          <div className="mt-8 sm:mt-12">
-            <TrustStrip />
-          </div>
-        </>
-      )}
+      ) : null}
+
+      <TravelActionPanel
+        destinations={destinations}
+        categories={categories}
+        flightRedirectUrl={flightCategory?.redirectUrl}
+        flightSlug={flightCategory?.slug ?? "flights"}
+        hotelRedirectUrl={hotelCategory?.redirectUrl}
+        hotelSlug={hotelCategory?.slug ?? "hotels"}
+        phone={site.phone}
+      />
+
+      <div className="mt-8 sm:mt-12">
+        <TrustStrip />
+      </div>
 
       {displayPackages.length > 0 && home.showFeatured ? (
         <section className="bg-background">
@@ -204,7 +200,7 @@ export default async function Home() {
         />
       ) : null}
 
-      <HumanConcierge phone={site.phone} email={site.email} />
+      <HumanConcierge phone={site.phone} email={site.email} address={site.address} />
 
       <section className="bg-background">
         <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">

@@ -229,15 +229,13 @@ export function SiteFooter({
         <div className="mx-auto flex w-full max-w-[1400px] flex-col items-center justify-between gap-3 px-4 py-6 text-[11px] text-muted-foreground sm:flex-row lg:px-8">
           <p>{copyright || `© 2026 ${title}. All rights reserved.`}</p>
           <div className="flex items-center gap-4">
-            <Link href={"/terms" as Route} className="hover:text-foreground transition-colors">
+            <Link href={"/terms-of-service" as Route} className="hover:text-foreground transition-colors">
               Terms &amp; Policies
             </Link>
             <span>•</span>
-            <Link href={"/privacy" as Route} className="hover:text-foreground transition-colors">
+            <Link href={"/privacy-policy" as Route} className="hover:text-foreground transition-colors">
               Privacy Statement
             </Link>
-            <span>•</span>
-            <span dir="ltr">Dhaka · Makkah · Madinah</span>
           </div>
         </div>
       </div>

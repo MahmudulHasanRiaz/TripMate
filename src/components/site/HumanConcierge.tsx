@@ -11,16 +11,16 @@ import {
   MessageCircle,
   Phone,
   ShieldCheck,
-  Sparkles,
   User,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { submitConsultationAction } from "@/modules/leads/actions";
 
 export type HumanConciergeProps = {
-  phone?: string;
-  email?: string;
-  address?: string;
+  phone?: string | null;
+  email?: string | null;
+  address?: string | null;
 };
 
 const COUNTRY_CODES = [
@@ -33,18 +33,18 @@ const COUNTRY_CODES = [
 ];
 
 const JOURNEY_OPTIONS = [
-  { id: "umrah", label: "🕋 VIP Umrah", desc: "5-Star Makkah & Madinah" },
-  { id: "hajj", label: "🌙 Hajj 2026", desc: "Pre-Registration & VIP" },
-  { id: "visa_flight", label: "✈️ Flights & Visa", desc: "Fast-Track e-Visa" },
-  { id: "holiday", label: "🏖️ Family Holiday", desc: "Dubai, Turkey, Maldives" },
+  { id: "umrah", label: "🕋 VIP Umrah", desc: "Haram-front hotels & transport" },
+  { id: "hajj", label: "🌙 Hajj Pilgrimage", desc: "Ministry registration & packages" },
+  { id: "visa_flight", label: "✈️ Flights & Visa", desc: "Fast-track tickets & e-Visa" },
+  { id: "holiday", label: "🏖️ Holiday Tours", desc: "Family & bespoke packages" },
 ];
 
 export function HumanConcierge({
-  phone = "+880 1700-000000",
-  email = "concierge@tripmate.agency",
-  address = "Level 4, Plot 18, Road 11, Block F, Banani, Dhaka-1213",
+  phone,
+  email,
+  address,
 }: HumanConciergeProps) {
-  const cleanPhone = phone.replace(/[^0-9+]/g, "");
+  const cleanPhone = phone ? phone.replace(/[^0-9+]/g, "") : "";
 
   // Interactive Form State
   const [selectedJourney, setSelectedJourney] = useState("umrah");
@@ -52,32 +52,45 @@ export function HumanConcierge({
   const [phoneNumber, setPhoneNumber] = useState("");
   const [pilgrimName, setPilgrimName] = useState("");
   const [travelersCount, setTravelersCount] = useState(2);
-  const [preferredMonth, setPreferredMonth] = useState("Nov 2026 / Ramadan");
+  const [preferredMonth, setPreferredMonth] = useState("Upcoming Season");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phoneNumber) return;
 
     setIsSubmitting(true);
-    // Build context message for WhatsApp
-    const journeyTitle = JOURNEY_OPTIONS.find((j) => j.id === selectedJourney)?.label || "Pilgrimage";
-    const msg = `Salam TripMate! My name is ${pilgrimName || "Pilgrim"}. I am inquiring about *${journeyTitle}* for *${travelersCount} travelers* around *${preferredMonth}*. My contact is ${countryCode} ${phoneNumber}. Please share tailored itinerary and quote.`;
+    const journeyTitle = JOURNEY_OPTIONS.find((j) => j.id === selectedJourney)?.label || "Travel Inquiry";
+    const fullPhone = `${countryCode} ${phoneNumber}`;
+    const notes = `Consultation request for ${travelersCount} travelers around ${preferredMonth}.`;
 
-    const waUrl = `https://wa.me/${cleanPhone.replace("+", "")}?text=${encodeURIComponent(msg)}`;
-
-    setTimeout(() => {
+    try {
+      await submitConsultationAction({
+        name: pilgrimName.trim() || "Guest Traveler",
+        phone: fullPhone.trim(),
+        service: journeyTitle,
+        travelDate: preferredMonth,
+        notes,
+      });
+    } catch (err) {
+      console.error("[HumanConcierge] consultation submission error:", err);
+    } finally {
       setIsSubmitting(false);
       setIsSubmitted(true);
+    }
+
+    if (cleanPhone) {
+      const msg = `Salam! My name is ${pilgrimName.trim() || "Traveler"}. I am inquiring about *${journeyTitle}* for *${travelersCount} travelers* around *${preferredMonth}*. My contact is ${fullPhone}. Please share tailored itinerary and quote.`;
+      const waUrl = `https://wa.me/${cleanPhone.replace("+", "")}?text=${encodeURIComponent(msg)}`;
       window.open(waUrl, "_blank", "noopener,noreferrer");
-    }, 400);
+    }
   };
 
   return (
     <section
       id="concierge"
-      aria-label="TripMate Human Concierge & Advisory"
+      aria-label="Human Concierge & Advisory"
       className="relative overflow-hidden bg-secondary/35 py-16 sm:py-24 border-y border-border"
     >
       {/* Ambient background decoration */}
@@ -93,11 +106,11 @@ export function HumanConcierge({
           </div>
 
           <h2 className="mt-4 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-            Personal Guidance from Certified Scholars &amp; Travel Specialists
+            Personal Guidance from Experienced Travel Specialists
           </h2>
 
           <p className="mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
-            Sacred pilgrimage is a life-defining milestone. Our senior advisors in Dhaka, Makkah, and Madinah are ready to plan your bespoke journey with unmatched care and transparency.
+            Planning a pilgrimage or family holiday is a momentous occasion. Our dedicated specialists are here to design your journey with meticulous care, transparency, and personal attention.
           </p>
         </div>
 
@@ -112,12 +125,12 @@ export function HumanConcierge({
                     Instant Journey Consultation
                   </h3>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Receive customized package estimates and visa guidance within minutes.
+                    Receive customized package estimates and travel guidance.
                   </p>
                 </div>
                 <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
-                  Instant Response
+                  Online
                 </span>
               </div>
 
@@ -126,24 +139,26 @@ export function HumanConcierge({
                   <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     <CheckCircle2 className="size-8" />
                   </div>
-                  <h4 className="text-lg font-bold text-foreground">Inquiry Prepared!</h4>
+                  <h4 className="text-lg font-bold text-foreground">Consultation Inquiry Received!</h4>
                   <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
-                    Your consultation request has been prepared and WhatsApp opened. If it didn&apos;t open automatically, click below to chat with our senior advisor.
+                    Your request has been logged with our advisory desk. If WhatsApp did not open automatically, you can message our advisor directly below.
                   </p>
                   <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
-                    <a
-                      href={`https://wa.me/${cleanPhone.replace("+", "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-11 px-6 shadow-md transition-all"
-                    >
-                      <MessageCircle className="size-4" />
-                      Open WhatsApp Chat
-                    </a>
+                    {cleanPhone && (
+                      <a
+                        href={`https://wa.me/${cleanPhone.replace("+", "")}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-11 px-6 shadow-md transition-all"
+                      >
+                        <MessageCircle className="size-4" />
+                        Open WhatsApp Chat
+                      </a>
+                    )}
                     <button
                       type="button"
                       onClick={() => setIsSubmitted(false)}
-                      className="inline-flex items-center justify-center rounded-xl border border-border hover:bg-muted text-foreground font-semibold text-xs h-11 px-5 transition-colors"
+                      className="inline-flex items-center justify-center rounded-xl border border-border hover:bg-muted text-foreground font-semibold text-xs h-11 px-5 transition-colors cursor-pointer"
                     >
                       Submit Another Inquiry
                     </button>
@@ -164,7 +179,7 @@ export function HumanConcierge({
                             key={journey.id}
                             type="button"
                             onClick={() => setSelectedJourney(journey.id)}
-                            className={`flex flex-col text-left p-3 rounded-xl border text-xs transition-all duration-200 ${
+                            className={`flex flex-col text-left p-3 rounded-xl border text-xs transition-all duration-200 cursor-pointer ${
                               isSelected
                                 ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary shadow-xs"
                                 : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
@@ -178,78 +193,22 @@ export function HumanConcierge({
                     </div>
                   </div>
 
-                  {/* Pilgrim Name & Phone with Country Picker */}
+                  {/* Pilgrim Name & Group Size */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className="block text-xs font-semibold text-foreground mb-1.5">
                         Your Full Name
                       </label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                         <input
                           type="text"
                           required
                           value={pilgrimName}
                           onChange={(e) => setPilgrimName(e.target.value)}
-                          placeholder="e.g. Mahbubul Alam"
-                          className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                          placeholder="e.g. Mohammad Rahman"
+                          className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                         />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5">
-                        WhatsApp / Contact Phone
-                      </label>
-                      <div className="flex gap-2">
-                        <select
-                          value={countryCode}
-                          onChange={(e) => setCountryCode(e.target.value)}
-                          className="rounded-xl border border-border bg-background px-2.5 py-2.5 text-xs text-foreground font-medium focus:border-primary focus:outline-none shrink-0"
-                          aria-label="Country Code"
-                        >
-                          {COUNTRY_CODES.map((c) => (
-                            <option key={c.code} value={c.code}>
-                              {c.flag} {c.code}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="relative flex-1">
-                          <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-                          <input
-                            type="tel"
-                            required
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            placeholder="1712-345678"
-                            className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Travel Month & Travelers Count */}
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5">
-                        Target Travel Month
-                      </label>
-                      <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-                        <select
-                          value={preferredMonth}
-                          onChange={(e) => setPreferredMonth(e.target.value)}
-                          className="w-full rounded-xl border border-border bg-background py-2.5 pl-9 pr-3 text-xs text-foreground font-medium focus:border-primary focus:outline-none"
-                          aria-label="Target Travel Month"
-                        >
-                          <option value="Nov 2026">November 2026</option>
-                          <option value="Dec 2026">December 2026 (Winter Break)</option>
-                          <option value="Jan-Feb 2027">January – February 2027</option>
-                          <option value="Ramadan 1448">Ramadan 1448 (Special VIP)</option>
-                          <option value="Hajj 2026">Hajj Season 2026</option>
-                          <option value="Flexible">Flexible Dates</option>
-                        </select>
                       </div>
                     </div>
 
@@ -257,47 +216,87 @@ export function HumanConcierge({
                       <label className="block text-xs font-semibold text-foreground mb-1.5">
                         Number of Travelers
                       </label>
-                      <div className="flex items-center justify-between rounded-xl border border-border bg-background px-3 py-1.5">
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <Users className="size-4 text-primary" />
-                          <span>Pilgrims:</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <button
-                            type="button"
-                            onClick={() => setTravelersCount((c) => Math.max(1, c - 1))}
-                            className="size-7 rounded-lg border border-border bg-muted/60 text-foreground font-bold hover:bg-muted transition-colors flex items-center justify-center text-xs"
-                          >
-                            -
-                          </button>
-                          <span className="font-bold text-xs tabular-nums text-foreground min-w-[1.5rem] text-center">
-                            {travelersCount}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setTravelersCount((c) => Math.min(25, c + 1))}
-                            className="size-7 rounded-lg border border-border bg-muted/60 text-foreground font-bold hover:bg-muted transition-colors flex items-center justify-center text-xs"
-                          >
-                            +
-                          </button>
-                        </div>
+                      <div className="relative">
+                        <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                        <select
+                          value={travelersCount}
+                          onChange={(e) => setTravelersCount(Number(e.target.value))}
+                          className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-xs font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          <option value={1}>1 Person (Solo)</option>
+                          <option value={2}>2 Persons (Couple / Pair)</option>
+                          <option value={3}>3–4 Persons (Small Family)</option>
+                          <option value={6}>5–8 Persons (Family Group)</option>
+                          <option value={10}>10+ Persons (Large Delegation)</option>
+                        </select>
                       </div>
                     </div>
                   </div>
 
-                  {/* Submission Button */}
+                  {/* Contact Phone & Travel Period */}
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1.5">
+                        WhatsApp Contact Number
+                      </label>
+                      <div className="flex gap-2">
+                        <select
+                          value={countryCode}
+                          onChange={(e) => setCountryCode(e.target.value)}
+                          className="rounded-xl border border-border bg-background px-2.5 py-2.5 text-xs font-medium text-foreground focus:border-primary focus:outline-none"
+                        >
+                          {COUNTRY_CODES.map((c) => (
+                            <option key={c.code} value={c.code}>
+                              {c.flag} {c.code}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          type="tel"
+                          required
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          placeholder="017XX-XXXXXX"
+                          className="w-full rounded-xl border border-border bg-background py-2.5 px-3 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-foreground mb-1.5">
+                        Target Travel Timing
+                      </label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={preferredMonth}
+                          onChange={(e) => setPreferredMonth(e.target.value)}
+                          placeholder="e.g. Next Month / Ramadan"
+                          className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
                   <div className="pt-2">
-                    <button
+                    <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent hover:opacity-95 text-primary-foreground font-bold text-xs h-11 px-6 shadow-md transition-all active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+                      className="w-full rounded-xl h-11 text-xs font-bold gap-2 shadow-md cursor-pointer"
                     >
-                      <MessageCircle className="size-4 shrink-0" />
-                      <span>{isSubmitting ? "Connecting..." : "Connect on WhatsApp with Senior Concierge"}</span>
-                      <Sparkles className="size-3.5 shrink-0 opacity-80" />
-                    </button>
-                    <p className="text-[11px] text-center text-muted-foreground mt-2">
-                      🔒 No spam guaranteed. Your data is encrypted and handled under strict confidentiality.
+                      {isSubmitting ? (
+                        <span>Submitting Request...</span>
+                      ) : (
+                        <>
+                          <MessageCircle className="size-4" />
+                          <span>Request Custom Itinerary &amp; Quote</span>
+                        </>
+                      )}
+                    </Button>
+                    <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                      Your inquiry is received directly by our concierge team for immediate follow-up.
                     </p>
                   </div>
                 </form>
@@ -308,20 +307,20 @@ export function HumanConcierge({
             <div className="mt-6 pt-4 border-t border-border grid grid-cols-3 gap-2 text-center text-[11px] text-muted-foreground">
               <div className="flex flex-col items-center gap-1">
                 <ShieldCheck className="size-3.5 text-primary" />
-                <span className="font-semibold text-foreground">IATA Certified</span>
+                <span className="font-semibold text-foreground">Verified Operator</span>
               </div>
               <div className="flex flex-col items-center gap-1">
                 <Clock className="size-3.5 text-primary" />
-                <span className="font-semibold text-foreground">&lt; 5 Min Response</span>
+                <span className="font-semibold text-foreground">Prompt Response</span>
               </div>
               <div className="flex flex-col items-center gap-1">
-                <MapPin className="size-3.5 text-primary" />
-                <span className="font-semibold text-foreground">Dhaka &amp; Makkah Offices</span>
+                <Headphones className="size-3.5 text-primary" />
+                <span className="font-semibold text-foreground">24/7 Human Desk</span>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Senior Concierge Advisor Card */}
+          {/* Right Column: Concierge Advisor Card */}
           <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm">
             <div className="space-y-6">
               {/* Advisor Profile Header */}
@@ -337,84 +336,96 @@ export function HumanConcierge({
                     Online &amp; Taking Inquiries
                   </div>
                   <h3 className="font-display text-base sm:text-lg font-bold text-foreground">
-                    Senior Umrah Concierge Desk
+                    Senior Concierge Desk
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    Lead Advisory Team · Dhaka Head Office
+                    Dedicated Advisory &amp; Booking Team
                   </p>
                 </div>
               </div>
 
               {/* Direct Communication Channels */}
               <div className="space-y-3 pt-2">
-                <a
-                  href={`https://wa.me/${cleanPhone.replace("+", "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
-                      <MessageCircle className="size-4" />
+                {cleanPhone && (
+                  <a
+                    href={`https://wa.me/${cleanPhone.replace("+", "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
+                        <MessageCircle className="size-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-foreground">Direct WhatsApp Chat</div>
+                        <div className="text-[11px] text-muted-foreground">Instant quotes &amp; brochures</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-foreground">Direct WhatsApp Chat</div>
-                      <div className="text-[11px] text-muted-foreground">Instant quotes &amp; PDF brochures</div>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
-                    Chat →
-                  </span>
-                </a>
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
+                      Chat →
+                    </span>
+                  </a>
+                )}
 
-                <a
-                  href={`tel:${cleanPhone}`}
-                  className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-muted/40 hover:bg-muted/70 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-                      <Phone className="size-4" />
+                {phone && (
+                  <a
+                    href={`tel:${cleanPhone}`}
+                    className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-muted/40 hover:bg-muted/70 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+                        <Phone className="size-4" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-foreground">Priority Voice Line</div>
+                        <div className="text-[11px] text-muted-foreground">{phone}</div>
+                      </div>
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-foreground">Priority Voice Line</div>
-                      <div className="text-[11px] text-muted-foreground">{phone}</div>
-                    </div>
-                  </div>
-                  <span className="text-xs font-semibold text-primary group-hover:translate-x-1 transition-transform">
-                    Call →
-                  </span>
-                </a>
+                    <span className="text-xs font-semibold text-primary group-hover:translate-x-1 transition-transform">
+                      Call →
+                    </span>
+                  </a>
+                )}
               </div>
 
-              {/* Physical Headquarters Address */}
-              <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2.5 text-xs text-muted-foreground">
-                <div className="flex items-start gap-2.5">
-                  <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
-                  <span className="text-foreground font-medium">{address}</span>
+              {/* Physical Office / Contact Information */}
+              {(address || email) && (
+                <div className="rounded-xl border border-border bg-muted/30 p-4 space-y-2.5 text-xs text-muted-foreground">
+                  {address && (
+                    <div className="flex items-start gap-2.5">
+                      <MapPin className="size-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-foreground font-medium">{address}</span>
+                    </div>
+                  )}
+                  {email && (
+                    <div className="flex items-center gap-2.5">
+                      <Mail className="size-4 text-primary shrink-0" />
+                      <span>{email}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2.5">
+                    <Clock className="size-4 text-primary shrink-0" />
+                    <span>Office Hours: Saturday – Thursday, 10:00 AM – 7:00 PM</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2.5">
-                  <Mail className="size-4 text-primary shrink-0" />
-                  <span>{email}</span>
-                </div>
-                <div className="flex items-center gap-2.5">
-                  <Clock className="size-4 text-primary shrink-0" />
-                  <span>Visiting Hours: Saturday – Thursday, 10:00 AM – 7:00 PM</span>
-                </div>
-              </div>
+              )}
             </div>
 
-            <div className="pt-6">
-              <Button asChild variant="outline" className="w-full rounded-xl h-11 text-xs font-semibold hover:border-primary hover:text-primary transition-colors">
-                <a
-                  href={`https://wa.me/${cleanPhone.replace("+", "")}?text=${encodeURIComponent("Salam TripMate, I would like to schedule an in-person appointment at your Banani office.")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Calendar className="mr-2 size-4" />
-                  Schedule Office Appointment
-                </a>
-              </Button>
-            </div>
+            {cleanPhone && (
+              <div className="pt-6">
+                <Button asChild variant="outline" className="w-full rounded-xl h-11 text-xs font-semibold hover:border-primary hover:text-primary transition-colors">
+                  <a
+                    href={`https://wa.me/${cleanPhone.replace("+", "")}?text=${encodeURIComponent("Salam, I would like to schedule an in-person consultation at your office.")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Calendar className="mr-2 size-4" />
+                    Schedule Office Appointment
+                  </a>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
