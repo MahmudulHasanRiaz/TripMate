@@ -57,4 +57,9 @@ export const payments = pgTable("payments", {
   note: text("note"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("payments_order_id_idx").on(table.orderId)]);
+}, (table) => [
+  index("payments_order_id_idx").on(table.orderId),
+  index("payments_status_idx").on(table.status),
+  index("payments_created_at_idx").on(table.createdAt),
+  index("payments_status_updated_at_idx").on(table.status, table.updatedAt),
+]);

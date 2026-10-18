@@ -53,7 +53,13 @@ export const orders = pgTable("orders", {
   createdBy: uuid("created_by"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("orders_status_idx").on(table.status)]);
+}, (table) => [
+  index("orders_status_idx").on(table.status),
+  index("orders_user_id_idx").on(table.userId),
+  index("orders_listing_id_idx").on(table.listingId),
+  index("orders_lead_id_idx").on(table.leadId),
+  index("orders_created_at_idx").on(table.createdAt),
+]);
 
 export const orderStatusEvents = pgTable("order_status_events", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -65,7 +71,7 @@ export const orderStatusEvents = pgTable("order_status_events", {
   note: text("note"),
   actorId: uuid("actor_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("order_status_events_order_id_idx").on(table.orderId)]);
 
 export const travelers = pgTable("travelers", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -78,4 +84,4 @@ export const travelers = pgTable("travelers", {
   relation: text("relation"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("travelers_order_id_idx").on(table.orderId)]);

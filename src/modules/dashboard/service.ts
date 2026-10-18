@@ -1,13 +1,12 @@
 import "server-only";
-import { and, eq, sql, type SQLWrapper } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db/client";
+import { withRetry } from "@/lib/with-retry";
 import { withTimeout } from "@/lib/with-timeout";
 // Cross-module-table reads follow the established convention (bookings reads
 // catalog listings; expenses reads bookings orders + payments + catalog): the
-// dashboard is an aggregate over every funnel table, and it reuses
-// bookings.getOrderBoardCounts verbatim instead of re-deriving the order
-// histogram (one more GROUP BY query in the same parallel round).
-import { getOrderBoardCounts, type OrderBoardCounts } from "@/modules/bookings/service";
+// dashboard is an aggregate over every funnel table.
+import type { OrderBoardCounts } from "@/modules/bookings/service";
 import { leads } from "@/modules/leads/schema";
 import { orders } from "@/modules/bookings/schema";
 import { payments } from "@/modules/payments/schema";
@@ -103,11 +102,14 @@ export const DASHBOARD_QUERY_TIMEOUT_MS = 30_000;
 
 /**
  * Guard any DB query promise with a strict deadline so dashboard queries
- * never hang forever on pooler stalls or network drops. The pool bounds
- * execution server-side (statement_timeout in db/connection.ts); this bounds
- * the user's wait — a late-but-healthy query surfaces as the dashboard's
- * error card instead of a blank page hanging for minutes, and the pool
- * self-heals in the background.
+ * never hang forever on pooler stalls or network drops; call sites wrap
+ * their query thunk in withRetry() INSIDE this deadline so one transient
+ * connection failure gets a fast retry without doubling the user's wait.
+ * The pool bounds execution server-side (Supabase's 2-minute default is the
+ * effective backstop through the transaction pooler — see the verified note
+ * in db/connection.ts); this bounds the user's wait — a late-but-healthy
+ * query surfaces as the dashboard's error card instead of a blank page
+ * hanging for minutes, and the pool self-heals in the background.
  */
 export async function withQueryTimeout<T>(
   promise: Promise<T>,
@@ -120,90 +122,89 @@ export async function withQueryTimeout<T>(
 // ---- KPIs -------------------------------------------------------------------------
 
 /**
- * Every headline figure for the dashboard, in ONE round of parallel SQL
- * aggregates:
- *   - leads: a single count with FILTERed variants (total, converted, today,
- *     unassigned) — one pass over the table instead of four queries,
- *   - payments: submitted count + verified-this-month sum, FILTERed in one pass,
- *   - expenses: pending count + approved-this-month sum, FILTERed in one pass,
- *   - ordersByStatus: the existing bookings getOrderBoardCounts (one GROUP BY),
- *     reused verbatim so the dashboard and the orders board can never disagree.
+ * Every headline figure for the dashboard, in ONE round trip: a single SELECT
+ * whose scalar subqueries carry all ten aggregates (leads / payments /
+ * expenses / orders FILTER counts + month sums), plus a jsonb status
+ * histogram for the order board — instead of five parallel queries. On a
+ * remote pooler every saved round trip is ~0.7s of page latency (see
+ * db/connection.ts), and fewer concurrent requests also means fewer pool
+ * waves. The order board keys are the orders.status enum values; unknown
+ * keys are ignored and `total` sums exactly what the orders board counts.
  */
 export async function getDashboardKpis(): Promise<DashboardKpis> {
-  const [leadRows, paymentRows, expenseRows, orderRows, ordersByStatus] =
-    await withQueryTimeout(
-      Promise.all([
-        db
-          .select({
-            total: sql<number>`count(*)::int`,
-            converted: sql<number>`(count(*) filter (where ${leads.status} = 'converted'))::int`,
-            today: sql<number>`(count(*) filter (where ${leads.createdAt} >= current_date AND ${leads.createdAt} < current_date + 1))::int`,
-            unassigned: sql<number>`(count(*) filter (where ${leads.assignedTo} is null))::int`,
-          })
-          .from(leads),
-        db
-          .select({
-            submitted: sql<number>`(count(*) filter (where ${payments.status} = 'submitted'))::int`,
-            revenueThisMonth: sql<string>`coalesce(
-              (sum(${payments.amount}) filter (
-                where ${payments.status} = 'verified'
-                  and ${payments.updatedAt} >= date_trunc('month', current_date)
-                  and ${payments.updatedAt} < date_trunc('month', current_date) + interval '1 month'
-              )),
-              0
-            )`,
-          })
-          .from(payments),
-        db
-          .select({
-            pending: sql<number>`(count(*) filter (where ${expenses.status} = 'pending'))::int`,
-            approvedThisMonth: sql<string>`coalesce(
-              (sum(${expenses.amount}) filter (
-                where ${expenses.status} = 'approved'
-                  and ${expenses.date} >= date_trunc('month', current_date)::date
-              )),
-              0
-            )`,
-          })
-          .from(expenses),
-        db
-          .select({
-            costOfSalesThisMonth: sql<string>`coalesce(
-              (sum(${orders.costPrice}) filter (
-                where ${orders.status} in ('confirmed', 'completed')
-                  and ${orders.updatedAt} >= date_trunc('month', current_date)
-                  and ${orders.updatedAt} < date_trunc('month', current_date) + interval '1 month'
-              )),
-              0
-            )`,
-          })
-          .from(orders),
-        getOrderBoardCounts(),
-      ]),
-      DASHBOARD_QUERY_TIMEOUT_MS,
-      "kpis",
-    );
+  const rows = (await withQueryTimeout(
+    withRetry(() =>
+      db.execute(sql`
+        select
+          (select count(*)::int from ${leads}) as leads_total,
+          (select (count(*) filter (where ${leads.status} = 'converted'))::int from ${leads}) as leads_converted,
+          (select (count(*) filter (where ${leads.createdAt} >= current_date and ${leads.createdAt} < current_date + 1))::int from ${leads}) as leads_today,
+          (select (count(*) filter (where ${leads.assignedTo} is null))::int from ${leads}) as leads_unassigned,
+          (select (count(*) filter (where ${payments.status} = 'submitted'))::int from ${payments}) as payments_submitted,
+          (select coalesce(sum(${payments.amount}) filter (
+            where ${payments.status} = 'verified'
+              and ${payments.updatedAt} >= date_trunc('month', current_date)
+              and ${payments.updatedAt} < date_trunc('month', current_date) + interval '1 month'
+          ), 0) from ${payments}) as revenue_this_month,
+          (select (count(*) filter (where ${expenses.status} = 'pending'))::int from ${expenses}) as expenses_pending,
+          (select coalesce(sum(${expenses.amount}) filter (
+            where ${expenses.status} = 'approved' and ${expenses.date} >= date_trunc('month', current_date)::date
+          ), 0) from ${expenses}) as expenses_this_month,
+          (select coalesce(sum(${orders.costPrice}) filter (
+            where ${orders.status} in ('confirmed', 'completed')
+              and ${orders.updatedAt} >= date_trunc('month', current_date)
+              and ${orders.updatedAt} < date_trunc('month', current_date) + interval '1 month'
+          ), 0) from ${orders}) as cost_this_month,
+          (select coalesce(jsonb_object_agg(t.status, t.n), '{}'::jsonb)
+            from (select status, count(*)::int as n from ${orders} group by status) t
+          ) as orders_by_status
+      `),
+    ),
+    DASHBOARD_QUERY_TIMEOUT_MS,
+    "kpis",
+  )) as unknown as {
+    leads_total: number;
+    leads_converted: number;
+    leads_today: number;
+    leads_unassigned: number;
+    payments_submitted: number;
+    revenue_this_month: string;
+    expenses_pending: number;
+    expenses_this_month: string;
+    cost_this_month: string;
+    orders_by_status: Record<string, number> | null;
+  }[];
 
-  const leadsTotal = leadRows[0]?.total ?? 0;
-  const leadsConverted = leadRows[0]?.converted ?? 0;
-  const revenueThisMonth = Number(paymentRows[0]?.revenueThisMonth ?? 0);
-  const costOfSalesThisMonth = Number(orderRows[0]?.costOfSalesThisMonth ?? 0);
+  const row = rows[0];
+  const leadsTotal = row?.leads_total ?? 0;
+  const leadsConverted = row?.leads_converted ?? 0;
+  const revenueThisMonth = Number(row?.revenue_this_month ?? 0);
+  const costOfSalesThisMonth = Number(row?.cost_this_month ?? 0);
   const grossProfitThisMonth = Math.max(0, revenueThisMonth - costOfSalesThisMonth);
   const grossMarginPercent =
     revenueThisMonth > 0 ? Math.round((grossProfitThisMonth / revenueThisMonth) * 1000) / 10 : 0;
-  const expensesThisMonth = Number(expenseRows[0]?.approvedThisMonth ?? 0);
+  const expensesThisMonth = Number(row?.expenses_this_month ?? 0);
   const netThisMonth = grossProfitThisMonth - expensesThisMonth;
   const netMarginPercent =
     revenueThisMonth > 0 ? Math.round((netThisMonth / revenueThisMonth) * 1000) / 10 : 0;
 
+  const statusMap = row?.orders_by_status ?? {};
+  const ordersByStatus: OrderBoardCounts = {
+    pending: statusMap.pending ?? 0,
+    confirmed: statusMap.confirmed ?? 0,
+    cancelled: statusMap.cancelled ?? 0,
+    completed: statusMap.completed ?? 0,
+    total: Object.values(statusMap).reduce((sum, n) => sum + n, 0),
+  };
+
   return {
-    leadsToday: leadRows[0]?.today ?? 0,
+    leadsToday: row?.leads_today ?? 0,
     leadsTotal,
     leadConversionRate:
       leadsTotal === 0 ? 0 : Math.round((leadsConverted / leadsTotal) * 1000) / 10,
     ordersByStatus,
-    pendingPaymentsCount: paymentRows[0]?.submitted ?? 0,
-    unassignedLeadsCount: leadRows[0]?.unassigned ?? 0,
+    pendingPaymentsCount: row?.payments_submitted ?? 0,
+    unassignedLeadsCount: row?.leads_unassigned ?? 0,
     revenueThisMonth,
     costOfSalesThisMonth,
     grossProfitThisMonth,
@@ -211,7 +212,7 @@ export async function getDashboardKpis(): Promise<DashboardKpis> {
     expensesThisMonth,
     netThisMonth,
     netMarginPercent,
-    pendingExpensesCount: expenseRows[0]?.pending ?? 0,
+    pendingExpensesCount: row?.expenses_pending ?? 0,
   };
 }
 
@@ -242,11 +243,13 @@ export async function resolveDashboardRange(opts: {
     return { preset, from: opts.from, to: opts.to };
   }
   const rows = await withQueryTimeout(
-    db.execute(
-      sql`select to_char(current_date, 'YYYY-MM-DD') as today,
-        to_char(date_trunc('week', current_date)::date, 'YYYY-MM-DD') as week_start,
-        to_char(date_trunc('month', current_date)::date, 'YYYY-MM-DD') as month_start`,
-    ) as unknown as Promise<{ today: string; week_start: string; month_start: string }[]>,
+    withRetry(() =>
+      db.execute(
+        sql`select to_char(current_date, 'YYYY-MM-DD') as today,
+          to_char(date_trunc('week', current_date)::date, 'YYYY-MM-DD') as week_start,
+          to_char(date_trunc('month', current_date)::date, 'YYYY-MM-DD') as month_start`,
+      ) as unknown as Promise<{ today: string; week_start: string; month_start: string }[]>,
+    ),
     DASHBOARD_QUERY_TIMEOUT_MS,
     "range-anchor",
   ).catch(() => {
@@ -289,74 +292,79 @@ function rangeDays(from: string, to: string): number {
 }
 
 /**
- * Range KPIs in ONE parallel round of SQL aggregates. Revenue = verified
- * payments by updated day; cost = costPrice of confirmed/completed orders by
- * updated day; expenses = approved by business date; leads created by day.
- * pendingCollections is range-independent (global outstanding).
+ * Range KPIs in ONE round trip: a single SELECT whose scalar subqueries carry
+ * all ten aggregates. Revenue = verified payments by updated day; cost =
+ * costPrice of confirmed/completed orders by updated day; expenses = approved
+ * by business date; leads created by day. pendingCollections is
+ * range-independent (global outstanding).
  */
 export async function getDashboardRangeKpis(range: DashboardRange): Promise<DashboardRangeKpis> {
-  const from = sql`(${range.from}::date)`;
-  const to = sql`(${range.to}::date)`;
-  const inRange = (col: SQLWrapper) =>
-    sql`${col} >= ${from}::timestamp AND ${col} < (${to}::date + 1)::timestamp`;
+  const rows = (await withQueryTimeout(
+    withRetry(() =>
+      db.execute(sql`
+        select
+          (select coalesce(sum(${payments.amount}) filter (
+            where ${payments.status} = 'verified'
+              and ${payments.updatedAt} >= ${range.from}::date
+              and ${payments.updatedAt} < (${range.to}::date + 1)
+          ), 0) from ${payments}) as revenue,
+          (select (count(*) filter (where ${payments.status} = 'submitted'))::int from ${payments}) as payments_submitted,
+          (select coalesce(sum(${orders.costPrice}) filter (
+            where ${orders.status} in ('confirmed', 'completed')
+              and ${orders.updatedAt} >= ${range.from}::date
+              and ${orders.updatedAt} < (${range.to}::date + 1)
+          ), 0) from ${orders}) as cost,
+          (select coalesce(sum(coalesce(${orders.finalPrice}, ${orders.quotedPrice}, 0)) filter (
+            where ${orders.status} in ('pending', 'confirmed')
+          ), 0) from ${orders}) as open_total,
+          (select coalesce(sum(${expenses.amount}) filter (
+            where ${expenses.status} = 'approved'
+              and ${expenses.date} >= ${range.from}::date
+              and ${expenses.date} <= ${range.to}::date
+          ), 0) from ${expenses}) as expenses_approved,
+          (select (count(*) filter (where ${expenses.status} = 'pending'))::int from ${expenses}) as expenses_pending,
+          (select (count(*) filter (
+            where ${leads.createdAt} >= ${range.from}::date
+              and ${leads.createdAt} < (${range.to}::date + 1)
+          ))::int from ${leads}) as leads_total,
+          (select (count(*) filter (
+            where ${leads.createdAt} >= ${range.from}::date
+              and ${leads.createdAt} < (${range.to}::date + 1)
+              and ${leads.status} = 'converted'
+          ))::int from ${leads}) as leads_converted,
+          (select coalesce(sum(${payments.amount}) filter (where ${payments.status} = 'verified'), 0) from ${payments}) as verified_paid_all,
+          (select count(*)::int from ${leads}
+            where ${leads.nextFollowUpAt} <= now() and ${leads.status} not in ('converted', 'lost')
+          ) as follow_ups_due
+      `),
+    ),
+    DASHBOARD_QUERY_TIMEOUT_MS,
+    "range-kpis",
+  )) as unknown as {
+    revenue: string;
+    payments_submitted: number;
+    cost: string;
+    open_total: string;
+    expenses_approved: string;
+    expenses_pending: number;
+    leads_total: number;
+    leads_converted: number;
+    verified_paid_all: string;
+    follow_ups_due: number;
+  }[];
 
-  const [payRows, orderRows, expRows, leadRows, dueRows, fuRows] =
-    await withQueryTimeout(
-      Promise.all([
-        db
-          .select({
-            revenue: sql<string>`coalesce(sum(${payments.amount}) filter (where ${payments.status} = 'verified' and ${inRange(payments.updatedAt)}), 0)`,
-            submitted: sql<number>`(count(*) filter (where ${payments.status} = 'submitted'))::int`,
-          })
-          .from(payments),
-        db
-          .select({
-            cost: sql<string>`coalesce(sum(${orders.costPrice}) filter (where ${orders.status} in ('confirmed', 'completed') and ${inRange(orders.updatedAt)}), 0)`,
-            openTotal: sql<string>`coalesce(sum(coalesce(${orders.finalPrice}, ${orders.quotedPrice}, 0)) filter (where ${orders.status} in ('pending', 'confirmed')), 0)`,
-          })
-          .from(orders),
-        db
-          .select({
-            approved: sql<string>`coalesce(sum(${expenses.amount}) filter (where ${expenses.status} = 'approved' and ${expenses.date} >= ${from} and ${expenses.date} <= ${to}), 0)`,
-            pending: sql<number>`(count(*) filter (where ${expenses.status} = 'pending'))::int`,
-          })
-          .from(expenses),
-        db
-          .select({
-            total: sql<number>`(count(*) filter (where ${inRange(leads.createdAt)}))::int`,
-            converted: sql<number>`(count(*) filter (where ${inRange(leads.createdAt)} and ${leads.status} = 'converted'))::int`,
-          })
-          .from(leads),
-        db
-          .select({
-            verifiedPaid: sql<string>`coalesce(sum(${payments.amount}) filter (where ${payments.status} = 'verified'), 0)`,
-          })
-          .from(payments),
-        db
-          .select({ due: sql<number>`count(*)::int` })
-          .from(leads)
-          .where(
-            and(
-              sql`${leads.nextFollowUpAt} <= now()`,
-              sql`${leads.status} not in ('converted', 'lost')`,
-            ),
-          ),
-      ]),
-      DASHBOARD_QUERY_TIMEOUT_MS,
-      "range-kpis",
-    );
-
-  const revenue = Number(payRows[0]?.revenue ?? 0);
-  const costOfSales = Number(orderRows[0]?.cost ?? 0);
+  const row = rows[0];
+  const revenue = Number(row?.revenue ?? 0);
+  const costOfSales = Number(row?.cost ?? 0);
   const grossProfit = Math.max(0, revenue - costOfSales);
   const grossMarginPercent =
     revenue > 0 ? Math.round((grossProfit / revenue) * 1000) / 10 : 0;
-  const expensesTotal = Number(expRows[0]?.approved ?? 0);
+  const expensesTotal = Number(row?.expenses_approved ?? 0);
   const net = grossProfit - expensesTotal;
   const netMarginPercent = revenue > 0 ? Math.round((net / revenue) * 1000) / 10 : 0;
-  const leadsTotal = leadRows[0]?.total ?? 0;
-  const openTotal = Number(orderRows[0]?.openTotal ?? 0);
-  const verifiedPaidAll = Number(dueRows[0]?.verifiedPaid ?? 0);
+  const leadsTotal = row?.leads_total ?? 0;
+  const openTotal = Number(row?.open_total ?? 0);
+  const verifiedPaidAll = Number(row?.verified_paid_all ?? 0);
 
   return {
     range,
@@ -372,11 +380,11 @@ export async function getDashboardRangeKpis(range: DashboardRange): Promise<Dash
     leadConversionRate:
       leadsTotal === 0
         ? 0
-        : Math.round(((leadRows[0]?.converted ?? 0) / leadsTotal) * 1000) / 10,
+        : Math.round(((row?.leads_converted ?? 0) / leadsTotal) * 1000) / 10,
     pendingCollections: Math.max(0, openTotal - verifiedPaidAll),
-    followUpsDue: fuRows[0]?.due ?? 0,
-    pendingPaymentsCount: payRows[0]?.submitted ?? 0,
-    pendingExpensesCount: expRows[0]?.pending ?? 0,
+    followUpsDue: row?.follow_ups_due ?? 0,
+    pendingPaymentsCount: row?.payments_submitted ?? 0,
+    pendingExpensesCount: row?.expenses_pending ?? 0,
   };
 }
 
@@ -384,7 +392,11 @@ export async function getDashboardRangeKpis(range: DashboardRange): Promise<Dash
 export async function getLeadFunnel(): Promise<LeadFunnelPoint[]> {
   const { getLeadBoardCounts } = await import("@/modules/leads/service");
   const { LEAD_STATUSES } = await import("@/modules/leads/validation");
-  const counts = await withQueryTimeout(getLeadBoardCounts(), DASHBOARD_QUERY_TIMEOUT_MS, "lead-funnel");
+  const counts = await withQueryTimeout(
+    withRetry(() => getLeadBoardCounts()),
+    DASHBOARD_QUERY_TIMEOUT_MS,
+    "lead-funnel",
+  );
   return LEAD_STATUSES.filter((s) => s !== "converted" && s !== "lost").map((status) => ({
     status,
     count: counts[status] ?? 0,
@@ -396,23 +408,25 @@ export async function getProfitByService(range: DashboardRange): Promise<ProfitB
   const from = sql`(${range.from}::date)`;
   const to = sql`(${range.to}::date)`;
   const rows = await withQueryTimeout(
-    db
-      .select({
-        type: orders.type,
-        revenue: sql<string>`coalesce(sum(${payments.amount}), 0)`,
-        profit: sql<string>`coalesce(sum(${orders.grossProfit}), 0)`,
-      })
-      .from(orders)
-      .leftJoin(
-        payments,
-        and(
-          eq(payments.orderId, orders.id),
-          eq(payments.status, "verified"),
-          sql`${payments.updatedAt} >= ${from}::timestamp AND ${payments.updatedAt} < (${to}::date + 1)::timestamp`,
-        ),
-      )
-      .where(sql`${orders.createdAt} >= ${from}::timestamp AND ${orders.createdAt} < (${to}::date + 1)::timestamp`)
-      .groupBy(orders.type),
+    withRetry(() =>
+      db
+        .select({
+          type: orders.type,
+          revenue: sql<string>`coalesce(sum(${payments.amount}), 0)`,
+          profit: sql<string>`coalesce(sum(${orders.grossProfit}), 0)`,
+        })
+        .from(orders)
+        .leftJoin(
+          payments,
+          and(
+            eq(payments.orderId, orders.id),
+            eq(payments.status, "verified"),
+            sql`${payments.updatedAt} >= ${from}::timestamp AND ${payments.updatedAt} < (${to}::date + 1)::timestamp`,
+          ),
+        )
+        .where(sql`${orders.createdAt} >= ${from}::timestamp AND ${orders.createdAt} < (${to}::date + 1)::timestamp`)
+        .groupBy(orders.type),
+    ),
     DASHBOARD_QUERY_TIMEOUT_MS,
     "profit-by-service",
   );
@@ -428,18 +442,20 @@ export async function getRecentOrders(limit = 8): Promise<
   { id: string; orderNo: string; status: string; total: number | null; createdAt: Date }[]
 > {
   const rows = await withQueryTimeout(
-    db
-      .select({
-        id: orders.id,
-        orderNo: orders.orderNo,
-        status: orders.status,
-        quotedPrice: orders.quotedPrice,
-        finalPrice: orders.finalPrice,
-        createdAt: orders.createdAt,
-      })
-      .from(orders)
-      .orderBy(sql`${orders.createdAt} desc`)
-      .limit(limit),
+    withRetry(() =>
+      db
+        .select({
+          id: orders.id,
+          orderNo: orders.orderNo,
+          status: orders.status,
+          quotedPrice: orders.quotedPrice,
+          finalPrice: orders.finalPrice,
+          createdAt: orders.createdAt,
+        })
+        .from(orders)
+        .orderBy(sql`${orders.createdAt} desc`)
+        .limit(limit),
+    ),
     DASHBOARD_QUERY_TIMEOUT_MS,
     "recent-orders",
   );
@@ -457,17 +473,19 @@ export async function getRecentPayments(limit = 8): Promise<
   { id: string; orderId: string; amount: number; status: string; createdAt: Date }[]
 > {
   const rows = await withQueryTimeout(
-    db
-      .select({
-        id: payments.id,
-        orderId: payments.orderId,
-        amount: payments.amount,
-        status: payments.status,
-        createdAt: payments.createdAt,
-      })
-      .from(payments)
-      .orderBy(sql`${payments.createdAt} desc`)
-      .limit(limit),
+    withRetry(() =>
+      db
+        .select({
+          id: payments.id,
+          orderId: payments.orderId,
+          amount: payments.amount,
+          status: payments.status,
+          createdAt: payments.createdAt,
+        })
+        .from(payments)
+        .orderBy(sql`${payments.createdAt} desc`)
+        .limit(limit),
+    ),
     DASHBOARD_QUERY_TIMEOUT_MS,
     "recent-payments",
   );
@@ -489,7 +507,10 @@ export async function getRecentPayments(limit = 8): Promise<
  * the SQL returns and the day labels this function emits are therefore always
  * the same calendar.
  *
- * One parallel round: the current-date anchor + three grouped day histograms.
+ * ONE round trip: the date anchor + all three day-histograms as a UNION ALL
+ * of grouped subselects (one numeric column `n` — counts and revenue both
+ * land in it exactly; numeric sums come back as strings and are Number()ed
+ * at this boundary like everywhere else in this module).
  */
 // ---- trend -----------------------------------------------------------------------
 
@@ -497,39 +518,48 @@ export async function getDashboardTrend(opts: { days?: number } = {}): Promise<D
   const days = clampDays(opts.days);
   const windowStart = sql`current_date - ${days - 1}::int`;
 
-  const leadDay = sql`to_char(${leads.createdAt}, 'YYYY-MM-DD')`;
-  const orderDay = sql`to_char(${orders.createdAt}, 'YYYY-MM-DD')`;
-  const revenueDay = sql`to_char(${payments.updatedAt}, 'YYYY-MM-DD')`;
-
-  const [todayRows, leadRows, orderRows, revenueRows] = await withQueryTimeout(
-    Promise.all([
-      db
-        .execute(sql`select to_char(current_date, 'YYYY-MM-DD') as today`)
-        .catch(() => [{ today: new Date().toISOString().slice(0, 10) }]) as unknown as Promise<{ today: string }[]>,
-      db
-        .select({ day: sql<string>`${leadDay}`, count: sql<number>`count(*)::int` })
-        .from(leads)
-        .where(sql`${leads.createdAt} >= ${windowStart}`)
-        .groupBy(leadDay),
-      db
-        .select({ day: sql<string>`${orderDay}`, count: sql<number>`count(*)::int` })
-        .from(orders)
-        .where(sql`${orders.createdAt} >= ${windowStart}`)
-        .groupBy(orderDay),
-      db
-        .select({ day: sql<string>`${revenueDay}`, total: sql<string>`sum(${payments.amount})` })
-        .from(payments)
-        .where(and(eq(payments.status, "verified"), sql`${payments.updatedAt} >= ${windowStart}`))
-        .groupBy(revenueDay),
-    ]),
+  const rows = (await withQueryTimeout(
+    withRetry(() =>
+      db.execute(sql`
+        select 'anchor' as src, to_char(current_date, 'YYYY-MM-DD') as day, 0::numeric as n
+        union all
+        select 'leads' as src, day, n from (
+          select to_char(${leads.createdAt}, 'YYYY-MM-DD') as day, count(*)::int as n
+          from ${leads}
+          where ${leads.createdAt} >= ${windowStart}
+          group by 1
+        ) s
+        union all
+        select 'orders' as src, day, n from (
+          select to_char(${orders.createdAt}, 'YYYY-MM-DD') as day, count(*)::int as n
+          from ${orders}
+          where ${orders.createdAt} >= ${windowStart}
+          group by 1
+        ) s
+        union all
+        select 'revenue' as src, day, n from (
+          select to_char(${payments.updatedAt}, 'YYYY-MM-DD') as day, coalesce(sum(${payments.amount}), 0) as n
+          from ${payments}
+          where ${payments.status} = 'verified' and ${payments.updatedAt} >= ${windowStart}
+          group by 1
+        ) s
+      `),
+    ),
     DASHBOARD_QUERY_TIMEOUT_MS,
     "dashboard-trend",
-  );
+  )) as unknown as { src: string; day: string; n: string | number }[];
 
-  const today = todayRows[0]?.today ?? new Date().toISOString().slice(0, 10);
-  const leadByDay = new Map(leadRows.map((row) => [row.day, row.count]));
-  const orderByDay = new Map(orderRows.map((row) => [row.day, row.count]));
-  const revenueByDay = new Map(revenueRows.map((row) => [row.day, row.total]));
+  const today =
+    rows.find((row) => row.src === "anchor")?.day ?? new Date().toISOString().slice(0, 10);
+  const leadByDay = new Map(
+    rows.filter((row) => row.src === "leads").map((row) => [row.day, Number(row.n)]),
+  );
+  const orderByDay = new Map(
+    rows.filter((row) => row.src === "orders").map((row) => [row.day, Number(row.n)]),
+  );
+  const revenueByDay = new Map(
+    rows.filter((row) => row.src === "revenue").map((row) => [row.day, Number(row.n)]),
+  );
 
   const points: DashboardTrendPoint[] = [];
   for (let i = days - 1; i >= 0; i--) {
@@ -538,7 +568,7 @@ export async function getDashboardTrend(opts: { days?: number } = {}): Promise<D
       date,
       leads: leadByDay.get(date) ?? 0,
       orders: orderByDay.get(date) ?? 0,
-      revenue: Number(revenueByDay.get(date) ?? 0),
+      revenue: revenueByDay.get(date) ?? 0,
     });
   }
   return points;

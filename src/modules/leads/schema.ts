@@ -67,6 +67,8 @@ export const leads = pgTable("leads", {
 }, (table) => [
   index("leads_status_idx").on(table.status),
   index("leads_assigned_to_idx").on(table.assignedTo),
+  index("leads_created_at_idx").on(table.createdAt),
+  index("leads_next_follow_up_at_idx").on(table.nextFollowUpAt),
 ]);
 
 export const leadEvents = pgTable("lead_events", {
@@ -78,4 +80,4 @@ export const leadEvents = pgTable("lead_events", {
   payload: jsonb("payload"),
   actorId: uuid("actor_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("lead_events_lead_id_idx").on(table.leadId)]);

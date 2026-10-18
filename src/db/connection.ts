@@ -51,9 +51,17 @@ import { getEnv } from "@/lib/env";
  * 10-connection pool whose orphans occupy the remote connection budget.
  * (Because of this guard, connection changes need a full dev-server restart.)
  */
+/** Pool size: 10 suits one long-lived dev/build process. Serverless hosts
+ *  (Vercel) run many short-lived instances, each with its own pool — set
+ *  DB_POOL_MAX=3..5 there to stay light on the pooler. Clamped to [1, 20]. */
+function poolMax(): number {
+  const parsed = Number.parseInt(process.env.DB_POOL_MAX ?? "", 10);
+  return Number.isInteger(parsed) && parsed > 0 ? Math.min(parsed, 20) : 10;
+}
+
 function createClient() {
   return postgres(getEnv().DATABASE_URL, {
-    max: 10,
+    max: poolMax(),
     connect_timeout: 10,
     idle_timeout: 300,
     keep_alive: 60,

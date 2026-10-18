@@ -16,4 +16,6 @@ export const trackingEvents = pgTable("tracking_events", {
   index("tracking_events_user_id_idx").on(table.userId),
   index("tracking_events_anon_id_idx").on(table.anonId),
   index("tracking_events_event_name_idx").on(table.eventName),
+  index("tracking_events_capi_status_idx").on(table.capiStatus),
+  index("tracking_events_created_at_idx").on(table.createdAt),
 ]);

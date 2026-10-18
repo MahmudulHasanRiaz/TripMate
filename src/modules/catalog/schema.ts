@@ -85,4 +85,5 @@ export const listings = pgTable("listings", {
   index("listings_destination_id_idx").on(table.destinationId),
   index("listings_deleted_at_idx").on(table.deletedAt),
   index("listings_is_featured_idx").on(table.isFeatured),
+  index("listings_created_at_idx").on(table.createdAt),
 ]);

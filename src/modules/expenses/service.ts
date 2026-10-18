@@ -283,11 +283,15 @@ function expenseDateConditions(from: string | null, to: string | null): SQL[] {
 }
 
 /** Verification-moment window conditions on payments (choice 1: the day the
- *  payment was VERIFIED, read off updated_at with an explicit ::date cast). */
+ *  payment was VERIFIED, read off updated_at). Sargable range predicates —
+ *  `updated_at >= from::date AND updated_at < (to::date + 1)` is exactly
+ *  equivalent to date(updated_at) BETWEEN from AND to, but keeps the column
+ *  bare so the payments(status, updated_at) index stays usable in plain
+ *  WHERE-clause reports (function-wrapped columns force a full scan). */
 function paymentVerifiedConditions(from: string | null, to: string | null): SQL[] {
   const conditions: SQL[] = [eq(payments.status, "verified")];
-  if (from) conditions.push(sql`date(${payments.updatedAt}) >= ${from}::date`);
-  if (to) conditions.push(sql`date(${payments.updatedAt}) <= ${to}::date`);
+  if (from) conditions.push(sql`${payments.updatedAt} >= ${from}::date`);
+  if (to) conditions.push(sql`${payments.updatedAt} < (${to}::date + 1)`);
   return conditions;
 }
 
@@ -596,7 +600,7 @@ export async function getPLReport(range: ReportRange = {}): Promise<PLReport> {
   const revenueWhere = and(...paymentVerifiedConditions(from, to));
 
   const expenseYm = sql`to_char(${expenses.date}, 'YYYY-MM')`;
-  const revenueYm = sql`to_char(date(${payments.updatedAt}), 'YYYY-MM')`;
+  const revenueYm = sql`to_char(${payments.updatedAt}, 'YYYY-MM')`;
 
   const [revenueRow, expenseRow, byCategory, revenueMonths, expenseMonths] =
     await Promise.all([

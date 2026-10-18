@@ -52,4 +52,6 @@ export const expenses = pgTable("expenses", {
 }, (table) => [
   index("expenses_category_id_idx").on(table.categoryId),
   index("expenses_status_idx").on(table.status),
+  index("expenses_date_idx").on(table.date),
+  index("expenses_order_id_idx").on(table.orderId),
 ]);

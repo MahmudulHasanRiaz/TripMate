@@ -3,6 +3,7 @@ import { cache } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { withRetry } from "@/lib/with-retry";
 import { withTimeout } from "@/lib/with-timeout";
 import { hasPermission, type UserRole } from "@/modules/users/permissions";
 
@@ -27,8 +28,9 @@ const SESSION_LOOKUP_TIMEOUT_MS = 15_000;
  * by import; the cache is scoped to the request's server runtime.
  */
 export const getSession = cache(async (): Promise<Session | null> => {
+  const requestHeaders = await headers();
   const result = await withTimeout(
-    auth.api.getSession({ headers: await headers() }),
+    withRetry(() => auth.api.getSession({ headers: requestHeaders })),
     SESSION_LOOKUP_TIMEOUT_MS,
     `Session lookup timed out after ${SESSION_LOOKUP_TIMEOUT_MS}ms`,
   ).catch((err: unknown) => {

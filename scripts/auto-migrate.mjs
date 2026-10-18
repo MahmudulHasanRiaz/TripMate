@@ -72,6 +72,17 @@ try {
     `[auto-migrate] source: ${resolved.source} — applying pending migrations from ${migrationsFolder} ...`,
   );
 
+  // Lift the session statement_timeout for this migrator connection: DDL on a
+  // large table (index builds) can legitimately exceed role/connection
+  // defaults — e.g. ALTER ROLE postgres SET statement_timeout='30s' (see
+  // scripts/role-timeouts.sql). App runtime connections keep the timeout.
+  try {
+    await client.unsafe("set statement_timeout = 0");
+    await client.unsafe("set idle_in_transaction_session_timeout = 0");
+  } catch (err) {
+    console.error(`[auto-migrate] could not lift statement_timeout (continuing): ${err}`);
+  }
+
   // Bounded retry for transient connect/DNS failures: at boot the postgres
   // container may still be being (re)created or the network DNS not warm yet.
   // Permanent errors (auth, missing database, ...) fail fast — no retry.
