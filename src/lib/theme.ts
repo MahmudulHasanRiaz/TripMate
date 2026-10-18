@@ -15,4 +15,4 @@ export const THEME_STORAGE_KEY = "tripmate-theme";
  * via `next/script` (strategy="beforeInteractive"), which is the lint-clean
  * documented way to inline a script in the root layout.
  */
-export const themeInitScript = `(function(){try{var s=localStorage.getItem("${THEME_STORAGE_KEY}");var d=s?s==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");}catch(e){}})();`;
+export const themeInitScript = `(function(){try{var s=localStorage.getItem("${THEME_STORAGE_KEY}");var d=s?s==="dark":window.matchMedia("(prefers-color-scheme: dark)").matches;if(d)document.documentElement.classList.add("dark");}catch(e){}if(typeof window!=="undefined"){window.addEventListener("unhandledrejection",function(e){if(e&&e.reason&&(String(e.reason.message||e.reason).indexOf("Viewport size changed")!==-1||String(e.reason.message||e.reason).indexOf("Transition was aborted")!==-1)){e.preventDefault();}});}})();`;

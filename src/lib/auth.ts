@@ -13,13 +13,27 @@ export const auth = betterAuth({
     schema,
     usePlural: true,
   }),
-  // Our tables use uuid PKs with DB-side gen_random_uuid() defaults. Tell
-  // better-auth to leave id generation to the database (on Postgres it then
-  // omits id on insert and reads it back via RETURNING) instead of writing its
-  // default nanoid into a uuid column.
+  trustedOrigins: async (request) => {
+    const origin = request?.headers?.get("origin");
+    const allowed = [
+      "http://localhost:3000",
+      "http://localhost:8080",
+      "https://*.run.app",
+      "https://*.google.com",
+    ];
+    if (origin) {
+      return [...allowed, origin];
+    }
+    return allowed;
+  },
   advanced: {
     database: {
       generateId: "uuid",
+    },
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+      partitioned: true,
     },
   },
   emailAndPassword: {

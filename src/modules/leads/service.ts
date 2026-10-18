@@ -430,7 +430,7 @@ export async function pickNextAssignee(): Promise<{ id: string; name: string } |
 // ---- writes ------------------------------------------------------------------
 
 export type InsertLeadInput = {
-  landingPageId: string;
+  landingPageId?: string | null;
   source: LeadSource;
   name: string;
   email?: string | null;

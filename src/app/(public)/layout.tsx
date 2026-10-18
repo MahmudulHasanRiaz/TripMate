@@ -7,6 +7,7 @@ import { getPublicThemeSettings } from "@/modules/settings/theme-service";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { FloatingConciergeFAB } from "@/components/site/FloatingConciergeFAB";
 import { JsonLd } from "@/components/site/JsonLd";
 
 /**
@@ -73,12 +74,13 @@ export default async function PublicLayout({
       <JsonLd data={orgJsonLd} />
       <style id="tripmate-dynamic-theme">{themeCss}</style>
       <SkipLink />
-      <SiteHeader title={site.title} logoUrl={site.logoUrl} />
+      <SiteHeader title={site.title} logoUrl={site.logoUrl} phone={site.phone} />
       {/* tabIndex=-1 makes main a valid skip-link target; outline-none keeps
           the whole-page focus target from drawing a giant focus ring. */}
-      <main id="main" tabIndex={-1} className="outline-none">
+      <main id="main" tabIndex={-1} className="outline-none pt-20 sm:pt-24">
         {children}
       </main>
+      <FloatingConciergeFAB phone={site.phone} />
       <SiteFooter
         title={site.title}
         logoUrl={site.logoUrl}

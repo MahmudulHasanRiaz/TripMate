@@ -66,13 +66,13 @@ export default function TravelActionPanel({
 
   return (
     <div className="relative z-20 mx-auto -mt-10 sm:-mt-16 w-full max-w-[1280px] px-4 sm:px-6">
-      <div className="rounded-3xl border border-border bg-card/95 p-3 shadow-2xl backdrop-blur-md dark:bg-card/90">
+      <div className="rounded-xl border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md dark:bg-card/90">
         {/* Tab Navigation */}
         <div className="flex gap-1 overflow-x-auto border-b border-border/60 pb-2.5 sm:justify-start">
           <button
             type="button"
             onClick={() => setActiveTab("packages")}
-            className={`flex items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "packages"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -85,7 +85,7 @@ export default function TravelActionPanel({
           <button
             type="button"
             onClick={() => setActiveTab("umrah")}
-            className={`flex items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "umrah"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -98,7 +98,7 @@ export default function TravelActionPanel({
           <button
             type="button"
             onClick={() => setActiveTab("visa")}
-            className={`flex items-center gap-2 whitespace-nowrap rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "visa"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -112,7 +112,7 @@ export default function TravelActionPanel({
           <button
             type="button"
             onClick={() => setActiveTab("flights")}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "flights"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -129,7 +129,7 @@ export default function TravelActionPanel({
           <button
             type="button"
             onClick={() => setActiveTab("hotels")}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-2xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "hotels"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -155,7 +155,7 @@ export default function TravelActionPanel({
                 <select
                   value={selectedDestination}
                   onChange={(e) => setSelectedDestination(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <option value="">All Destinations</option>
                   {destinations.map((d) => (
@@ -173,7 +173,7 @@ export default function TravelActionPanel({
                 <select
                   value={selectedDuration}
                   onChange={(e) => setSelectedDuration(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <option value="">Any Duration</option>
                   <option value="1-3">Short Getaway (1–3 Days)</option>
@@ -187,13 +187,13 @@ export default function TravelActionPanel({
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Traveler Type
                 </label>
-                <div className="flex h-12 items-center rounded-xl border border-input bg-muted/20 px-3.5 text-sm text-muted-foreground">
+                <div className="flex h-12 items-center rounded-lg border border-input bg-muted/20 px-3.5 text-sm text-muted-foreground">
                   <Users className="mr-2 size-4 text-primary" />
                   <span>Solo, Couple, or Family</span>
                 </div>
               </div>
 
-              <Button type="submit" className="h-12 rounded-xl text-sm font-bold gap-2">
+              <Button type="submit" className="h-12 rounded-lg text-sm font-bold gap-2">
                 <Search className="size-4" />
                 Find Packages
               </Button>
@@ -213,13 +213,13 @@ export default function TravelActionPanel({
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
-                <Button asChild variant="outline" className="rounded-xl h-11">
+                <Button asChild variant="outline" className="rounded-lg h-11">
                   <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
                     <Headphones className="mr-2 size-4" />
                     {phone?.trim() ? "Call Hajj Specialist" : "Contact Hajj Specialist"}
                   </a>
                 </Button>
-                <Button asChild className="rounded-xl h-11">
+                <Button asChild className="rounded-lg h-11">
                   <Link href="/packages?category=hajj-umrah">
                     View Umrah Packages
                   </Link>
@@ -238,7 +238,7 @@ export default function TravelActionPanel({
                 <select
                   value={selectedVisaDest}
                   onChange={(e) => setSelectedVisaDest(e.target.value)}
-                  className="h-12 w-full rounded-xl border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   <option value="">Choose Country (Dubai, Malaysia, Singapore, Saudi Arabia, etc.)...</option>
                   {destinations.map((d) => (
@@ -249,7 +249,7 @@ export default function TravelActionPanel({
                 </select>
               </div>
 
-              <Button type="submit" className="h-12 rounded-xl text-sm font-bold gap-2">
+              <Button type="submit" className="h-12 rounded-lg text-sm font-bold gap-2">
                 <FileCheck2 className="size-4" />
                 Check Visa Requirements
               </Button>
@@ -258,7 +258,7 @@ export default function TravelActionPanel({
 
           {/* TAB 4: Flights - External Redirect or Internal Service */}
           {activeTab === "flights" && (
-            <div className="flex flex-col gap-4 rounded-2xl bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 rounded-lg bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs font-semibold text-primary">
                   <Plane className="size-4" />
@@ -273,21 +273,21 @@ export default function TravelActionPanel({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <Button asChild variant="outline" size="sm" className="rounded-xl h-10">
+                <Button asChild variant="outline" size="sm" className="rounded-lg h-10">
                   <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
                     <Headphones className="mr-1.5 size-4" />
                     Offline Airline Desk
                   </a>
                 </Button>
                 {flightRedirectUrl?.trim() ? (
-                  <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
+                  <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
                     <a href={flightRedirectUrl.trim()} target="_blank" rel="noopener noreferrer">
                       <span>Search Global Flights</span>
                       <ExternalLink className="size-3.5" />
                     </a>
                   </Button>
                 ) : (
-                  <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
+                  <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
                     <Link href={`/services/${flightSlug}` as Route}>
                       <span>Flight Desk Services</span>
                     </Link>
@@ -299,7 +299,7 @@ export default function TravelActionPanel({
 
           {/* TAB 5: Hotels - External Redirect or Internal Service */}
           {activeTab === "hotels" && (
-            <div className="flex flex-col gap-4 rounded-2xl bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 rounded-lg bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <div className="flex items-center gap-2 text-xs font-semibold text-primary">
                   <Building2 className="size-4" />
@@ -314,21 +314,21 @@ export default function TravelActionPanel({
               </div>
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
-                <Button asChild variant="outline" size="sm" className="rounded-xl h-10">
+                <Button asChild variant="outline" size="sm" className="rounded-lg h-10">
                   <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
                     <Headphones className="mr-1.5 size-4" />
                     Concierge Hotel Desk
                   </a>
                 </Button>
                 {hotelRedirectUrl?.trim() ? (
-                  <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
+                  <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
                     <a href={hotelRedirectUrl.trim()} target="_blank" rel="noopener noreferrer">
                       <span>Search Worldwide Hotels</span>
                       <ExternalLink className="size-3.5" />
                     </a>
                   </Button>
                 ) : (
-                  <Button asChild size="sm" className="rounded-xl h-10 gap-1.5">
+                  <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
                     <Link href={`/services/${hotelSlug}` as Route}>
                       <span>Hotel Desk Services</span>
                     </Link>

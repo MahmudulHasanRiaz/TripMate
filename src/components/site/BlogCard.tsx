@@ -54,8 +54,8 @@ export function BlogCard({
   return (
     <article
       className={cn(
-        "group flex flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm transition-all duration-300 ease-out-quint",
-        "hover:-translate-y-0.5 hover:shadow-lg",
+        "group flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 ease-out",
+        "hover:-translate-y-1.5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5",
       )}
     >
       <Link href={href as Route} className="block">

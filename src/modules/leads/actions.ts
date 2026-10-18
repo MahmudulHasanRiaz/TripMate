@@ -427,3 +427,46 @@ export const logFollowUpAction = leadAction<unknown, LeadActionResult<LeadIdRef>
     return { ok: true, data: { id: parsed.data.id } };
   },
 );
+
+const consultationInputSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(120),
+  phone: z.string().trim().min(3, "Phone number is required").max(50),
+  service: z.string().trim().optional(),
+  travelDate: z.string().trim().optional(),
+  notes: z.string().trim().max(1000).optional(),
+});
+
+export type ConsultationInput = z.infer<typeof consultationInputSchema>;
+
+export async function submitConsultationAction(raw: ConsultationInput): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const parsed = consultationInputSchema.safeParse(raw);
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message || "Validation failed" };
+    }
+    const { name, phone, service, travelDate, notes } = parsed.data;
+    const combinedMessage = [
+      service ? `Service: ${service}` : null,
+      travelDate ? `Target Date: ${travelDate}` : null,
+      notes ? `Notes: ${notes}` : null,
+    ].filter(Boolean).join(" | ");
+
+    await insertLeadPublic({
+      source: "direct",
+      name,
+      phone,
+      message: combinedMessage || "Consultation request from website",
+      formData: {
+        service: service || "",
+        travelDate: travelDate || "",
+        notes: notes || "",
+      },
+    });
+
+    updateTag(CACHE_TAGS.leads);
+    return { ok: true };
+  } catch (err) {
+    console.error("[leads] submitConsultationAction error:", err);
+    return { ok: false, error: "Failed to submit request. Please try again." };
+  }
+}

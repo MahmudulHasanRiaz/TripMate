@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { MessageCircle, Phone } from "lucide-react";
+import { ArrowRight, MessageCircle, Phone, Sparkles } from "lucide-react";
 
 import { telLink, whatsappLink } from "./currency";
 
@@ -10,17 +10,10 @@ type CTASectionProps = {
   sub?: ReactNode;
   ctaLabel: string;
   ctaHref: string;
-  /** Bengali-market closing sections must offer a phone (and WhatsApp) path. */
   phone?: string;
   whatsapp?: boolean;
 };
 
-/**
- * Closing conversion band used at the bottom of public pages (spec §3
- * CTASection + §2.1 "one primary CTA per viewport"). The band carries exactly
- * one primary action; the phone + WhatsApp links are quiet, non-competing
- * escapes for the market's preferred contact channels.
- */
 export function CTASection({
   headline,
   sub,
@@ -29,50 +22,62 @@ export function CTASection({
   phone,
   whatsapp = true,
 }: CTASectionProps) {
-  // tel/wa hrefs are null when the site has no usable phone (unset or
-  // whitespace-only) — render those escapes only when the href actually exists.
   const telHref = telLink(phone ?? "");
   const waHref = whatsapp ? whatsappLink(phone ?? "") : null;
+
   return (
-    <section className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">
-      <div className="overflow-hidden rounded-2xl bg-primary px-6 py-12 text-primary-foreground sm:px-12 lg:py-16">
-        <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
-          <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-balance sm:text-4xl">
+    <section className="relative overflow-hidden mx-auto w-full max-w-[1400px] px-4 py-16 sm:py-20 lg:px-8">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent px-6 py-14 text-primary-foreground shadow-2xl sm:px-12 sm:py-20 lg:px-16">
+        {/* Subtle Islamic / Ambient Starburst Pattern */}
+        <div className="pointer-events-none absolute -right-24 -top-24 size-96 rounded-full bg-white/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 size-96 rounded-full bg-black/15 blur-3xl" />
+
+        <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-6 text-center">
+          {/* Eyebrow */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-xs font-semibold tracking-wide text-white backdrop-blur-md">
+            <Sparkles className="size-3.5" />
+            <span>Begin Your Spiritual Odyssey with TripMate</span>
+          </div>
+
+          <h2 className="font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
             {headline}
           </h2>
+
           {sub ? (
-            <p className="max-w-xl text-lg leading-relaxed text-primary-foreground/85">
+            <p className="max-w-2xl text-sm leading-relaxed text-white/90 sm:text-base lg:text-lg">
               {sub}
             </p>
           ) : null}
-          <div className="mt-2 flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
+
+          <div className="mt-4 flex flex-col items-center gap-4 sm:flex-row sm:gap-4">
             <Link
               href={ctaHref as Route}
-              className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary-foreground px-8 text-sm font-semibold text-primary transition-colors hover:opacity-90"
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-white px-8 text-sm font-bold text-gray-900 shadow-xl transition-all duration-200 hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98]"
             >
-              {ctaLabel}
+              <span>{ctaLabel}</span>
+              <ArrowRight className="size-4" />
             </Link>
-            {telHref ? (
-              <span className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
-                <a
-                  href={telHref}
-                  className="inline-flex min-h-11 items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"
-                >
-                  <Phone className="size-4" aria-hidden="true" />
-                  <span dir="ltr">{phone}</span>
-                </a>
-                {waHref ? (
-                  <a
-                    href={waHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-11 items-center gap-2 text-sm font-medium underline-offset-4 hover:underline"
-                  >
-                    <MessageCircle className="size-4" aria-hidden="true" />
-                    WhatsApp us
-                  </a>
-                ) : null}
-              </span>
+
+            {waHref ? (
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <MessageCircle className="size-4" />
+                <span>Chat on WhatsApp</span>
+              </a>
+            ) : null}
+
+            {telHref && phone ? (
+              <a
+                href={telHref}
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-5 text-sm font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20"
+              >
+                <Phone className="size-4" />
+                <span dir="ltr">{phone}</span>
+              </a>
             ) : null}
           </div>
         </div>

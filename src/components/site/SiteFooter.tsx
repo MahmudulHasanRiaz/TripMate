@@ -1,22 +1,30 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { Facebook, Globe, Instagram, Linkedin, Mail, MapPin, Phone, Twitter, Youtube } from "lucide-react";
+import {
+  Award,
+  Facebook,
+  Globe,
+  Instagram,
+  Linkedin,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Phone,
+  ShieldCheck,
+  Twitter,
+  Youtube,
+} from "lucide-react";
 
 import Logo from "@/components/icons/Logo";
 import type { SiteFooterColumn, SiteFooterSocial } from "@/lib/site-settings";
 
-/**
- * Professional agency footer (§2.11): fully CMS-driven.
- * Columns, links, socials and copyright come from settings.site; sensible
- * defaults render when the agency has not configured them yet. Phone is
- * optional — it renders only when set.
- */
 const DEFAULT_LINKS: { label: string; href: Route }[] = [
-  { label: "Packages", href: "/packages" as Route },
-  { label: "Visa Services", href: "/visa" as Route },
-  { label: "Blog", href: "/blog" as Route },
-  { label: "Customer Portal", href: "/account" as Route },
-  { label: "About", href: "/about-us" as Route },
+  { label: "VIP Umrah Packages", href: "/packages" as Route },
+  { label: "Hajj 2026 Registration", href: "/packages" as Route },
+  { label: "Fast-Track Visa Desk", href: "/visa" as Route },
+  { label: "Travel Journal & Guides", href: "/blog" as Route },
+  { label: "Pilgrim Customer Portal", href: "/account" as Route },
+  { label: "About Our Agency", href: "/about-us" as Route },
 ];
 
 const SOCIAL_ICONS: Record<string, typeof Facebook> = {
@@ -50,10 +58,21 @@ export function SiteFooter({
   footerSocials,
   copyright,
 }: SiteFooterProps) {
+  const cleanPhone = phone ? phone.replace(/[^0-9+]/g, "") : "";
+
   const columns =
     footerColumns && footerColumns.length > 0
       ? footerColumns
-      : [{ title: "Explore", links: DEFAULT_LINKS.map((l) => ({ label: l.label, href: l.href })) }];
+      : [
+          {
+            title: "Journeys & Services",
+            links: DEFAULT_LINKS.slice(0, 3).map((l) => ({ label: l.label, href: l.href })),
+          },
+          {
+            title: "Agency & Support",
+            links: DEFAULT_LINKS.slice(3).map((l) => ({ label: l.label, href: l.href })),
+          },
+        ];
 
   const socials =
     footerSocials && footerSocials.length > 0
@@ -65,28 +84,43 @@ export function SiteFooter({
         ];
 
   return (
-    <footer className="border-t border-border bg-secondary/40">
-      <div className="mx-auto grid w-full max-w-[1400px] gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] lg:px-8">
-        {/* Brand */}
+    <footer className="border-t border-border bg-card/60 backdrop-blur-md">
+      {/* Upper Footer Grid */}
+      <div className="mx-auto grid w-full max-w-[1400px] gap-10 px-4 py-16 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.2fr] lg:px-8">
+        {/* Brand & Mission */}
         <div className="space-y-4">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="text-primary">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="" className="h-7 w-auto" />
+                <img src={logoUrl} alt="" className="h-8 w-auto" />
               ) : (
-                <Logo className="size-6" aria-hidden="true" />
+                <Logo className="size-7" aria-hidden="true" />
               )}
             </span>
-            <span className="font-display text-lg font-semibold tracking-tight">
+            <span className="font-display text-xl font-bold tracking-tight text-foreground">
               {title}
             </span>
           </Link>
-          <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+          <p className="max-w-sm text-xs sm:text-sm leading-relaxed text-muted-foreground">
             {footerDescription ||
-              "Hajj, Umrah, tours, flights and visa — one trusted agency for every journey."}
+              "Bangladesh's premier luxury travel & pilgrimage agency. Approved by the Ministry of Hajj & Umrah, Saudi Arabia. Dedicated to seamless spiritual excellence."}
           </p>
-          <ul className="flex items-center gap-1">
+
+          {/* Accreditation Badges */}
+          <div className="pt-2 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary/60 px-2.5 py-1 text-[11px] font-semibold text-foreground">
+              <Award className="size-3 text-primary" />
+              IATA Accredited
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary/60 px-2.5 py-1 text-[11px] font-semibold text-foreground">
+              <ShieldCheck className="size-3 text-emerald-500" />
+              Ministry Approved
+            </span>
+          </div>
+
+          {/* Social Icons */}
+          <ul className="flex items-center gap-1 pt-2">
             {socials.map((social) => {
               const Icon = SOCIAL_ICONS[social.network.toLowerCase()] ?? Globe;
               return (
@@ -96,9 +130,9 @@ export function SiteFooter({
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={social.network}
-                    className="inline-flex size-11 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    className="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-background text-muted-foreground transition-all hover:border-primary/50 hover:bg-primary/10 hover:text-primary"
                   >
-                    <Icon className="size-5" aria-hidden="true" />
+                    <Icon className="size-4" aria-hidden="true" />
                   </a>
                 </li>
               );
@@ -106,19 +140,19 @@ export function SiteFooter({
           </ul>
         </div>
 
-        {/* Configured link columns */}
-        {columns.slice(0, 2).map((column) => (
+        {/* Link Columns */}
+        {columns.map((column) => (
           <nav key={column.title} aria-label={`Footer — ${column.title}`}>
-            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-foreground">
               {column.title}
             </h2>
-            <ul className="mt-4 space-y-1">
+            <ul className="mt-4 space-y-2.5">
               {column.links.map((link) => (
                 <li key={`${column.title}-${link.label}`}>
                   {link.href.startsWith("/") && !link.href.startsWith("//") ? (
                     <Link
                       href={link.href as Route}
-                      className="flex min-h-11 items-center rounded-md text-sm text-foreground/80 transition-colors hover:text-foreground"
+                      className="inline-block text-xs text-muted-foreground transition-colors hover:text-primary hover:translate-x-0.5 transform duration-150"
                     >
                       {link.label}
                     </Link>
@@ -127,7 +161,7 @@ export function SiteFooter({
                       href={link.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex min-h-11 items-center rounded-md text-sm text-foreground/80 transition-colors hover:text-foreground"
+                      className="inline-block text-xs text-muted-foreground transition-colors hover:text-primary hover:translate-x-0.5 transform duration-150"
                     >
                       {link.label}
                     </a>
@@ -138,19 +172,25 @@ export function SiteFooter({
           </nav>
         ))}
 
-        {/* Contact — phone only when configured */}
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Contact
+        {/* Coordinates & WhatsApp Button */}
+        <div className="space-y-4">
+          <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-foreground">
+            Dhaka &amp; Makkah Offices
           </h2>
-          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+          <ul className="space-y-3 text-xs text-muted-foreground">
+            {address ? (
+              <li className="flex items-start gap-2.5 leading-relaxed">
+                <MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                <span>{address}</span>
+              </li>
+            ) : null}
             {phone ? (
               <li>
                 <a
-                  href={`tel:${phone.replace(/[^+\d]/g, "")}`}
-                  className="flex min-h-11 items-start gap-2 text-foreground/85 transition-colors hover:text-foreground"
+                  href={`tel:${cleanPhone}`}
+                  className="flex items-center gap-2.5 text-foreground font-medium transition-colors hover:text-primary"
                 >
-                  <Phone className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                  <Phone className="size-4 shrink-0 text-primary" aria-hidden="true" />
                   <span dir="ltr">{phone}</span>
                 </a>
               </li>
@@ -159,27 +199,46 @@ export function SiteFooter({
               <li>
                 <a
                   href={`mailto:${email}`}
-                  className="flex min-h-11 items-start gap-2 text-foreground/85 transition-colors hover:text-foreground"
+                  className="flex items-center gap-2.5 transition-colors hover:text-primary"
                 >
-                  <Mail className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                  {email}
+                  <Mail className="size-4 shrink-0 text-primary" aria-hidden="true" />
+                  <span>{email}</span>
                 </a>
               </li>
             ) : null}
-            {address ? (
-              <li className="flex items-start gap-2">
-                <MapPin className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                {address}
-              </li>
-            ) : null}
           </ul>
+
+          {cleanPhone && (
+            <div className="pt-2">
+              <a
+                href={`https://wa.me/${cleanPhone.replace("+", "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-10 px-4 shadow-sm transition-all"
+              >
+                <MessageCircle className="size-4" />
+                <span>24/7 WhatsApp Hotline</span>
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="border-t border-border/70">
-        <div className="mx-auto flex w-full max-w-[1400px] flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row lg:px-8">
-          <p>{copyright || `© ${title}. All rights reserved.`}</p>
-          <p dir="ltr">Made with care in Bangladesh.</p>
+      {/* Bottom Legal Band */}
+      <div className="border-t border-border">
+        <div className="mx-auto flex w-full max-w-[1400px] flex-col items-center justify-between gap-3 px-4 py-6 text-[11px] text-muted-foreground sm:flex-row lg:px-8">
+          <p>{copyright || `© 2026 ${title}. All rights reserved.`}</p>
+          <div className="flex items-center gap-4">
+            <Link href={"/terms" as Route} className="hover:text-foreground transition-colors">
+              Terms &amp; Policies
+            </Link>
+            <span>•</span>
+            <Link href={"/privacy" as Route} className="hover:text-foreground transition-colors">
+              Privacy Statement
+            </Link>
+            <span>•</span>
+            <span dir="ltr">Dhaka · Makkah · Madinah</span>
+          </div>
         </div>
       </div>
     </footer>

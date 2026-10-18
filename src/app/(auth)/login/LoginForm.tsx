@@ -68,12 +68,16 @@ export default function LoginForm() {
         password: values.password,
       });
       if (res.error) {
-        // Uniform copy regardless of the underlying server error.
-        setAuthError(INVALID_CREDENTIALS);
+        setAuthError(res.error.message || INVALID_CREDENTIALS);
         return;
       }
-      // Fresh RSC render of "/" with the new session cookie.
-      router.replace("/");
+      const userRole = (res.data?.user as { role?: string } | undefined)?.role;
+      const target =
+        userRole && ["superadmin", "admin", "staff"].includes(userRole)
+          ? "/admin"
+          : "/";
+      router.replace(target);
+      router.refresh();
     } catch {
       setAuthError(INVALID_CREDENTIALS);
     } finally {

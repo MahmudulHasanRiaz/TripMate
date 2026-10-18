@@ -107,8 +107,8 @@
   --color-ring: hsl(var(--ring));
 
   --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 4px);
-  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-lg: 0 10px 30px -10px rgb(0 0 0 / 0.15);
@@ -338,5 +338,26 @@
   .prose-tripmate th {
     background: hsl(var(--secondary));
     font-weight: 600;
+  }
+
+  /* Luxury Public Site Utility Tokens */
+  .gradient-text-luxury {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .ambient-orb-primary {
+    background: radial-gradient(circle, hsla(var(--primary), 0.15) 0%, transparent 70%);
+  }
+
+  .ambient-orb-accent {
+    background: radial-gradient(circle, hsla(var(--accent), 0.15) 0%, transparent 70%);
+  }
+
+  .glass-island {
+    background: hsla(var(--background), 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 }

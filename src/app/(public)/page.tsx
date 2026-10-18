@@ -114,22 +114,26 @@ export default async function Home() {
           ctaHref={home.ctaHref}
           imageSrc={home.imageUrl}
           imageAlt={home.imageAlt}
+          destinations={destinations}
+          categories={categories}
+          phone={site.phone}
         />
-      ) : null}
-
-      <TravelActionPanel
-        destinations={destinations}
-        categories={categories}
-        flightRedirectUrl={flightCategory?.redirectUrl}
-        flightSlug={flightCategory?.slug ?? "flights"}
-        hotelRedirectUrl={hotelCategory?.redirectUrl}
-        hotelSlug={hotelCategory?.slug ?? "hotels"}
-        phone={site.phone}
-      />
-
-      <div className="mt-8 sm:mt-12">
-        <TrustStrip />
-      </div>
+      ) : (
+        <>
+          <TravelActionPanel
+            destinations={destinations}
+            categories={categories}
+            flightRedirectUrl={flightCategory?.redirectUrl}
+            flightSlug={flightCategory?.slug ?? "flights"}
+            hotelRedirectUrl={hotelCategory?.redirectUrl}
+            hotelSlug={hotelCategory?.slug ?? "hotels"}
+            phone={site.phone}
+          />
+          <div className="mt-8 sm:mt-12">
+            <TrustStrip />
+          </div>
+        </>
+      )}
 
       {displayPackages.length > 0 && home.showFeatured ? (
         <section className="bg-background">
@@ -154,11 +158,13 @@ export default async function Home() {
                   href={`/packages/${pkg.slug}`}
                   title={pkg.title}
                   destination={pkg.destination?.name ?? pkg.category.name}
+                  category={pkg.category?.name}
                   imageSrc={pkg.coverImage?.url ?? ""}
                   imageAlt={pkg.coverImage?.alt ?? pkg.title}
                   durationDays={pkg.durationDays ?? 1}
                   rating={pkg.rating ?? undefined}
                   price={pkg.price ?? 0}
+                  currency={pkg.currency ?? "BDT"}
                 />
               ))}
             </div>
