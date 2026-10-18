@@ -83,13 +83,17 @@ docker run --rm -v tripmate_tripmate_uploads:/data -v "$PWD":/out alpine \
 - `SKIP_DB_MIGRATE=1` is an escape hatch, not a workflow (loud drift warning).
 - Volumes survive stack deletion unless removed explicitly. **Deleting
   `tripmate_pgdata` destroys the database.**
+- Keep the **same stack name** on every redeploy: it is the compose project
+  name (and the prefix of `<name>_tripmate_pgdata`). A rename creates a second,
+  parallel copy — the old containers keep their host ports and the old volume
+  gets orphaned.
 
 ## 5. Troubleshooting (seen in practice)
 
 | Symptom | Cause → fix |
 |---|---|
 | Stack deploys but only Postgres appears | Compose path points at `docker-compose.yml` (app is behind the `app` profile) → use `docker-compose.portainer.yml`. |
-| `Bind for 0.0.0.0:5433 failed: port is already allocated` | Another container/stack (often a previous deploy) owns the host port → `docker ps --filter publish=5433`, remove the stale container; or set a unique `POSTGRES_PORT`/`APP_PORT`. Empty value = default port. |
+| `Bind for 0.0.0.0:5433 failed: port is already allocated` | A container **outside this stack** owns the host port. Find it: `docker ps --filter publish=5433 --format '{{.Names}} (project: {{.Label "com.docker.compose.project"}})'` — usually an **older deploy under a different stack name** (renaming/duplicating a stack leaves the old copy running; Portainer only replaces same-name stacks). Fix: Stacks → the old stack → **Delete** (its containers go, named volumes survive) or `docker rm -f <name>`, then redeploy. If the holder is an unrelated service: change `POSTGRES_PORT` (e.g. 5434) in the stack env → Update the stack — the app connects over the internal network, so the host port only affects external access. |
 | `AUTH_SECRET is required` / `APP_URL is required` at deploy | Exactly what it says — paste the missing variable (Portainer env, advanced mode). |
 | App restarts in a loop, logs mention `ECONNREFUSED`/auth for DB | `POSTGRES_*` changed **after** the volume was initialized (volume keeps the original credentials) → revert, or recreate the volume (destroys data), or `ALTER USER` inside the old DB. |
 | Login/links point to `localhost` | `APP_URL` still the default or the dev `.env` value → set the public URL and redeploy. |
