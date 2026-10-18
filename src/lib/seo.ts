@@ -15,6 +15,22 @@ export function origin(): string {
   return getEnv().APP_URL.replace(/\/+$/, "");
 }
 
+// ---- favicon resolution ---------------------------------------------------------
+
+/** Shipped default icon (public/favicon.svg) used when settings carry none. */
+export const DEFAULT_FAVICON_URL = "/favicon.svg";
+
+/**
+ * Resolve the browser-tab icon from settings.site.faviconUrl. The admin form
+ * stores "" or whitespace when unset (site-settings-validation urlOrEmpty), so
+ * blank input must degrade to the shipped default — never to an empty href
+ * (which leaves the browser showing a stale/fallback icon forever).
+ */
+export function resolveFaviconUrl(faviconUrl: string | null | undefined): string {
+  const trimmed = faviconUrl?.trim();
+  return trimmed ? trimmed : DEFAULT_FAVICON_URL;
+}
+
 // ---- searchEngineVisibility decision -------------------------------------------
 
 /**

@@ -1,6 +1,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 
-import { seoVisibilityDecision } from "@/lib/seo";
+import { DEFAULT_FAVICON_URL, resolveFaviconUrl, seoVisibilityDecision } from "@/lib/seo";
 
 const VALID_SECRET = "a".repeat(32);
 
@@ -77,5 +77,36 @@ describe("lib/seo seoVisibilityDecision()", () => {
     // visible site is enumerated in BOTH — never mixed.
     expect(seoVisibilityDecision(true).includeSitemapUrls).toBe(true);
     expect(seoVisibilityDecision(false).includeSitemapUrls).toBe(false);
+  });
+});
+
+// The root layout's generateMetadata feeds settings.site.faviconUrl into the
+// <head> icon. The route wiring itself stays uncovered (same documented gap as
+// robots/sitemap above — the layout pulls next/font and the DB reader), so the
+// resolution rule is pinned here as a pure helper.
+describe("lib/seo resolveFaviconUrl()", () => {
+  it("returns the stored URL when set (relative uploads path)", () => {
+    expect(resolveFaviconUrl("/uploads/brand/favicon.png")).toBe(
+      "/uploads/brand/favicon.png",
+    );
+  });
+
+  it("returns the stored URL when set (absolute external URL)", () => {
+    expect(resolveFaviconUrl("https://cdn.example/fav.ico")).toBe(
+      "https://cdn.example/fav.ico",
+    );
+  });
+
+  it("trims surrounding whitespace", () => {
+    expect(resolveFaviconUrl("  /uploads/favicon.ico  ")).toBe(
+      "/uploads/favicon.ico",
+    );
+  });
+
+  it("falls back to the shipped default for empty/nullish input", () => {
+    expect(resolveFaviconUrl("")).toBe(DEFAULT_FAVICON_URL);
+    expect(resolveFaviconUrl("   ")).toBe(DEFAULT_FAVICON_URL);
+    expect(resolveFaviconUrl(null)).toBe(DEFAULT_FAVICON_URL);
+    expect(resolveFaviconUrl(undefined)).toBe(DEFAULT_FAVICON_URL);
   });
 });
