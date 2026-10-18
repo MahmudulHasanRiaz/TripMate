@@ -31,7 +31,9 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import {
   DB_ERROR_HINTS,
+  collectErrorCodes,
   describeConnectionTarget,
+  isRetryableDbError,
   journalReadiness,
   resolveMigrationDatabaseUrl,
 } from "./migrate-lib.mjs";
@@ -69,7 +71,31 @@ try {
   console.log(
     `[auto-migrate] source: ${resolved.source} — applying pending migrations from ${migrationsFolder} ...`,
   );
-  await migrate(drizzle(client), { migrationsFolder });
+
+  // Bounded retry for transient connect/DNS failures: at boot the postgres
+  // container may still be being (re)created or the network DNS not warm yet.
+  // Permanent errors (auth, missing database, ...) fail fast — no retry.
+  const retriesRaw = Number(process.env.AUTO_MIGRATE_RETRIES ?? "5");
+  const retries = Number.isInteger(retriesRaw) && retriesRaw > 0 ? retriesRaw : 5;
+  const delayRaw = Number(process.env.AUTO_MIGRATE_RETRY_DELAY_MS ?? "3000");
+  const retryDelayMs = Number.isFinite(delayRaw) && delayRaw >= 0 ? delayRaw : 3000;
+  const db = drizzle(client);
+
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await migrate(db, { migrationsFolder });
+      break;
+    } catch (err) {
+      const code = collectErrorCodes(err)[0];
+      if (attempt >= retries || !isRetryableDbError(code)) {
+        throw err;
+      }
+      console.error(
+        `[auto-migrate] attempt ${attempt}/${retries} failed (${code}) — retrying in ${retryDelayMs}ms ...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    }
+  }
 
   // §1.2: prove the schema is fully migrated — count applied rows against the
   // committed journal and name anything missing. Never assume migrate() "did
@@ -115,17 +141,17 @@ try {
   // cause chain. Print it all, plus the non-secret connection target, or the
   // failure is undiagnosable from Portainer logs.
   const chain = [];
-  const codes = new Set();
   const seen = new Set();
   for (let cur = err; cur && !seen.has(cur); cur = cur.cause) {
     seen.add(cur);
-    if (cur.code) codes.add(cur.code);
     const message = String(cur.message ?? cur).replace(/\s*\n\s*/g, " ").trim();
     chain.push(`${message}${cur.code ? ` [${cur.code}]` : ""}`);
   }
 
   const target = describeConnectionTarget(resolved.url);
-  const hints = [...codes].map((code) => DB_ERROR_HINTS[code]).filter(Boolean);
+  const hints = collectErrorCodes(err)
+    .map((code) => DB_ERROR_HINTS[code])
+    .filter(Boolean);
 
   console.error(
     [

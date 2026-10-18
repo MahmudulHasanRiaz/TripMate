@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   DB_ERROR_HINTS,
+  collectErrorCodes,
   describeConnectionTarget,
   isPooledUrl,
+  isRetryableDbError,
   journalReadiness,
   pooledUrlReason,
   resolveMigrationDatabaseUrl,
@@ -196,5 +198,29 @@ describe("DB_ERROR_HINTS", () => {
     for (const code of ["28P01", "3D000", "ECONNREFUSED", "ENOTFOUND"] as const) {
       expect(DB_ERROR_HINTS[code]).toBeTruthy();
     }
+  });
+});
+
+describe("collectErrorCodes + isRetryableDbError", () => {
+  it("walks the cause chain and collects driver codes in order", () => {
+    const wrapped = new Error("Failed query: CREATE SCHEMA ...");
+    wrapped.cause = Object.assign(new Error("getaddrinfo EAI_AGAIN postgres"), {
+      code: "EAI_AGAIN",
+    });
+    expect(collectErrorCodes(wrapped)).toEqual(["EAI_AGAIN"]);
+    expect(collectErrorCodes(new Error("plain"))).toEqual([]);
+  });
+
+  it("only network/connect races are retryable — SQLSTATE auth/schema errors fail fast", () => {
+    for (const code of ["ECONNREFUSED", "EAI_AGAIN", "ENOTFOUND", "ETIMEDOUT", "ECONNRESET"]) {
+      expect(isRetryableDbError(code)).toBe(true);
+    }
+    for (const code of ["28P01", "3D000", "42501", undefined]) {
+      expect(isRetryableDbError(code)).toBe(false);
+    }
+  });
+
+  it("has a hint for EAI_AGAIN — the mixed-network signature seen in real deploys", () => {
+    expect(DB_ERROR_HINTS.EAI_AGAIN).toContain("docker ps");
   });
 });

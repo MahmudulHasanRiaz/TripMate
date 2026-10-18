@@ -73,6 +73,7 @@ describe("auto-migrate script — failure diagnostics", () => {
     // is undiagnosable from Portainer logs.
     const res = run({
       DATABASE_URL: "postgresql://dbuser:sekretpw9@127.0.0.1:1/tripmate",
+      AUTO_MIGRATE_RETRIES: "1",
     });
     expect(res.status).toBe(1);
     const out = `${res.stdout}\n${res.stderr}`;
@@ -82,6 +83,26 @@ describe("auto-migrate script — failure diagnostics", () => {
     expect(out).toContain("127.0.0.1:1/tripmate");
     expect(out).toContain("as dbuser");
     expect(out).not.toContain("sekretpw9");
+    expect(out).not.toContain("retrying in");
+  }, 30_000);
+
+  it("retries transient connect failures a bounded number of times, then fails with the full diagnostics", () => {
+    // Recreate races (postgres container still being created, DNS not warm)
+    // must not insta-loop the app container: attempt 1 retries, the final
+    // attempt falls through to the FATAL block. Retry count is env-tunable so
+    // this test runs in ~100ms instead of the 5×3000ms production default.
+    const res = run({
+      DATABASE_URL: "postgresql://dbuser:sekretpw9@127.0.0.1:1/tripmate",
+      AUTO_MIGRATE_RETRIES: "2",
+      AUTO_MIGRATE_RETRY_DELAY_MS: "50",
+    });
+    expect(res.status).toBe(1);
+    const out = `${res.stdout}\n${res.stderr}`;
+    expect(out).toContain("attempt 1/2 failed (ECONNREFUSED) — retrying in 50ms");
+    expect(out).not.toContain("attempt 2/2 failed (ECONNREFUSED) — retrying");
+    expect(out).toContain("migration run failed");
+    expect(out).toContain("ECONNREFUSED");
+    expect(out).toContain("target: 127.0.0.1:1/tripmate as dbuser");
   }, 30_000);
 });
 

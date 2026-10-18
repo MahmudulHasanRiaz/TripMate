@@ -239,7 +239,48 @@ export const DB_ERROR_HINTS = {
     "permission denied — the role lacks rights on this database (CREATE on schema public usually). Grant it or use the role that owns the database.",
   ECONNREFUSED:
     "cannot reach postgres — wrong host/port, or the server is not accepting connections yet. Check DATABASE_URL host/port and that the postgres service is up.",
+  EAI_AGAIN:
+    "temporary DNS failure resolving the postgres hostname inside the container — the app container cannot see a `postgres` service on its network. " +
+    "Typical leftover state from earlier deploys: stale containers or a recreated network from a renamed/duplicated stack. " +
+    "Check `docker ps -a --filter name=tripmate` to see whether tripmate-postgres exists on the same network as tripmate-app, remove stale containers/networks (volumes survive) and redeploy a single stack.",
   ENOTFOUND: "cannot resolve the postgres hostname — check the host part of DATABASE_URL (stack service names only resolve inside the stack network).",
   ETIMEDOUT: "postgres did not answer in time — check host/port reachability and firewall rules.",
   ECONNRESET: "the connection to postgres was reset mid-handshake — often TLS/network issues or the server restarting.",
 };
+
+/**
+ * Driver codes that mean "the server/network is not there YET" — worth a
+ * bounded retry at boot (container recreates, DNS warm-up, server restarting).
+ * SQLSTATE auth/schema errors (28P01, 3D000, ...) are permanent and fail fast.
+ */
+const RETRYABLE_DB_ERROR_CODES = new Set([
+  "ECONNREFUSED",
+  "EAI_AGAIN",
+  "ENOTFOUND",
+  "ETIMEDOUT",
+  "ECONNRESET",
+]);
+
+/** @param {string | undefined | null} code */
+export function isRetryableDbError(code) {
+  return typeof code === "string" && RETRYABLE_DB_ERROR_CODES.has(code);
+}
+
+/**
+ * Walk an error's cause chain and collect every driver code it carries
+ * (Node network codes like ECONNREFUSED, Postgres SQLSTATEs like 28P01).
+ *
+ * @param {unknown} err
+ * @returns {string[]}
+ */
+export function collectErrorCodes(err) {
+  const codes = [];
+  const seen = new Set();
+  for (let cur = /** @type {any} */ (err); cur && !seen.has(cur); cur = cur.cause) {
+    seen.add(cur);
+    if (typeof cur.code === "string" && !codes.includes(cur.code)) {
+      codes.push(cur.code);
+    }
+  }
+  return codes;
+}
