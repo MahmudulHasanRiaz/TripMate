@@ -1,7 +1,34 @@
 import type { Metadata } from "next";
+import { Geist, Geist_Mono, Hind_Siliguri } from "next/font/google";
 import { requireRole } from "@/lib/auth-helpers";
 import { menuForRole } from "@/lib/admin-menu";
+import { cn } from "@/lib/utils";
 import AdminShell from "./AdminShell";
+import "./admin.css";
+
+/**
+ * Admin v3 typography (spec: docs/superpowers/specs/2026-10-18-admin-redesign-design.md):
+ * Geist for UI, Geist Mono for numerals, Hind Siliguri for Bengali glyphs.
+ * Loaded from THIS layout so the public site never fetches these families.
+ */
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
+const hindSiliguri = Hind_Siliguri({
+  subsets: ["bengali", "latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-hind",
+  display: "swap",
+});
 
 /** Admin is never indexed (§2.2): always noindex, nofollow. */
 export const metadata: Metadata = {
@@ -35,15 +62,24 @@ export default async function AdminLayout({
   const session = await requireRole("superadmin", "admin", "staff");
 
   return (
-    <AdminShell
-      menu={menuForRole(session.user.role)}
-      user={{
-        name: session.user.name,
-        email: session.user.email,
-        role: session.user.role,
-      }}
+    <div
+      className={cn(
+        geist.variable,
+        geistMono.variable,
+        hindSiliguri.variable,
+        "admin-root",
+      )}
     >
-      {children}
-    </AdminShell>
+      <AdminShell
+        menu={menuForRole(session.user.role)}
+        user={{
+          name: session.user.name,
+          email: session.user.email,
+          role: session.user.role,
+        }}
+      >
+        {children}
+      </AdminShell>
+    </div>
   );
 }

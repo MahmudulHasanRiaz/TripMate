@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, type CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Route } from "next";
@@ -34,7 +35,6 @@ import { signOutAction } from "@/lib/auth-actions";
 import type { AdminMenuItem } from "@/lib/admin-menu";
 import type { UserRole } from "@/modules/users/permissions";
 import Logo from "@/components/icons/Logo";
-import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -87,6 +87,22 @@ const MENU_ICONS: Record<string, LucideIcon> = {
   "trash-2": Trash2,
 };
 
+/**
+ * One accent color per nav group — the artifact reference's color-coded rail.
+ * The value lands on each menu button as a `--k` custom property; admin.css
+ * uses it for the icon color, the active tint and the active inset ring.
+ * Groups not listed fall back to the theme primary.
+ */
+const GROUP_ACCENTS: Record<string, string> = {
+  Overview: "var(--c-blue)",
+  Sales: "var(--c-green)",
+  Customers: "var(--c-cyan)",
+  Products: "var(--c-violet)",
+  Content: "var(--c-pink)",
+  Finance: "var(--c-amber)",
+  Settings: "var(--c-orange)",
+};
+
 type AdminUser = {
   name: string;
   email: string;
@@ -102,6 +118,14 @@ export default function AdminShell({
   user: AdminUser;
   children: React.ReactNode;
 }) {
+  // Mirror the admin scope onto <body> so Radix portals (dialogs, sheets,
+  // dropdowns, toasts) — which mount outside the .admin-root wrapper — also
+  // resolve the admin tokens and skins.
+  useEffect(() => {
+    document.body.setAttribute("data-admin", "");
+    return () => document.body.removeAttribute("data-admin");
+  }, []);
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -113,13 +137,13 @@ export default function AdminShell({
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4 md:px-6">
+        <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center gap-2 border-b bg-background/85 px-3 backdrop-blur md:px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="ml-auto flex items-center gap-3">
             <HeaderUserMenu user={user} />
           </div>
         </header>
-        <div className="w-full max-w-[1600px] flex-1 px-4 py-6 md:px-6 md:py-8 min-[1400px]:px-8">
+        <div className="w-full max-w-[1600px] flex-1 px-4 py-5 md:px-6 md:py-6 min-[1400px]:px-8">
           {children}
         </div>
         <Toaster />
@@ -186,10 +210,11 @@ function SidebarNav({ menu }: { menu: AdminMenuItem[] }) {
                     <SidebarMenuButton
                       asChild
                       aria-current={active ? "page" : undefined}
-                      className={cn(
-                        active &&
-                          "bg-sidebar-primary font-medium text-sidebar-primary-foreground hover:bg-sidebar-primary hover:text-sidebar-primary-foreground",
-                      )}
+                      style={
+                        {
+                          "--k": GROUP_ACCENTS[group.name],
+                        } as CSSProperties
+                      }
                     >
                       <Link href={item.href as Route} onClick={go}>
                         <Icon aria-hidden="true" />
@@ -235,7 +260,7 @@ function HeaderUserMenu({ user }: { user: AdminUser }) {
           className="flex cursor-pointer items-center gap-2 rounded-full p-1 pr-2 outline-hidden transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent"
         >
           <Avatar className="size-8">
-            <AvatarFallback className="bg-primary text-xs text-primary-foreground">
+            <AvatarFallback className="bg-gradient-to-br from-violet-500 to-pink-500 text-xs font-medium text-white">
               {initials(user.name, user.email)}
             </AvatarFallback>
           </Avatar>
