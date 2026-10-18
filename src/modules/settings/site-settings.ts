@@ -328,7 +328,37 @@ export async function getPublicSiteSettings(): Promise<SiteSettings> {
   cacheTag(CACHE_TAGS.settings);
   cacheLife("hours");
 
-  return getSiteSettings();
+  // Inline the DB access rather than delegating to getSiteSettings() — the
+  // non-cached wrapper adds a try/catch layer over the module-scoped postgres
+  // client, and Next.js Cache Components detects the client's connection-pool
+  // promise as "shared state from the outer render scope" when filling the
+  // cache entry. Self-contained reads avoid that.
+  const raw = await getSetting("site");
+  const row = asRow(raw);
+  const footer = row.footerDescription;
+  const columns = Array.isArray(row.footerColumns)
+    ? (row.footerColumns as FooterColumn[]).filter((c) => c && typeof c.title === "string")
+    : [];
+  const socials = Array.isArray(row.footerSocials)
+    ? (row.footerSocials as FooterSocial[]).filter((s) => s && typeof s.href === "string")
+    : [];
+  const copyright = row.copyright;
+  return {
+    title: mergedString(row, "title", DEFAULT_SITE_SETTINGS.title),
+    phone: mergedString(row, "phone", DEFAULT_SITE_SETTINGS.phone),
+    email: mergedString(row, "email", DEFAULT_SITE_SETTINGS.email),
+    address: mergedString(row, "address", DEFAULT_SITE_SETTINGS.address),
+    logoUrl: mergedString(row, "logoUrl", DEFAULT_SITE_SETTINGS.logoUrl),
+    faviconUrl: mergedString(row, "faviconUrl", DEFAULT_SITE_SETTINGS.faviconUrl),
+    searchEngineVisibility:
+      typeof row.searchEngineVisibility === "boolean"
+        ? row.searchEngineVisibility
+        : DEFAULT_SITE_SETTINGS.searchEngineVisibility,
+    footerDescription: typeof footer === "string" && footer !== "" ? footer : null,
+    footerColumns: columns,
+    footerSocials: socials,
+    copyright: typeof copyright === "string" && copyright !== "" ? copyright : null,
+  };
 }
 
 /**
@@ -344,5 +374,37 @@ export async function getPublicHomeSettings(): Promise<HomeSettings> {
   cacheTag(CACHE_TAGS.settings);
   cacheLife("hours");
 
-  return getHomeSettings();
+  // Same self-contained pattern as getPublicSiteSettings above — inline the
+  // DB access so the cache fill never joins the module-scoped postgres
+  // client's connection-pool promise from the outer render scope.
+  const raw = await getSetting("home");
+  const row = asRow(raw);
+  const text = (key: string): string | null => {
+    const value = row[key];
+    return typeof value === "string" && value !== "" ? value : null;
+  };
+  const arrayOf = (key: string): unknown[] | null => {
+    const value = row[key];
+    return Array.isArray(value) && value.length > 0 ? (value as unknown[]) : null;
+  };
+  return {
+    heroHeadline: text("heroHeadline"),
+    heroSub: text("heroSub"),
+    heroImage: text("heroImage"),
+    heroButtonLabel: text("heroButtonLabel"),
+    heroButtonLink: text("heroButtonLink"),
+    heroImageAlt: text("heroImageAlt"),
+    featuredKicker: text("featuredKicker"),
+    featuredTitle: text("featuredTitle"),
+    featuredLead: text("featuredLead"),
+    ctaHeadline: text("ctaHeadline"),
+    ctaSub: text("ctaSub"),
+    stats: (arrayOf("stats") as HomeStat[] | null) ?? null,
+    testimonials: (arrayOf("testimonials") as HomeTestimonial[] | null) ?? null,
+    showHero: row.showHero !== false,
+    showFeatured: row.showFeatured !== false,
+    showCta: row.showCta !== false,
+    showStats: row.showStats !== false,
+    showTestimonials: row.showTestimonials !== false,
+  };
 }

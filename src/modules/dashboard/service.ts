@@ -1,6 +1,7 @@
 import "server-only";
 import { and, eq, sql, type SQLWrapper } from "drizzle-orm";
 import { db } from "@/db/client";
+import { withTimeout } from "@/lib/with-timeout";
 // Cross-module-table reads follow the established convention (bookings reads
 // catalog listings; expenses reads bookings orders + payments + catalog): the
 // dashboard is an aggregate over every funnel table, and it reuses
@@ -98,28 +99,22 @@ function clampDays(days: number | undefined): number {
   return Math.min(365, Math.max(1, Math.floor(days)));
 }
 
-export const DASHBOARD_QUERY_TIMEOUT_MS = 10_000;
+export const DASHBOARD_QUERY_TIMEOUT_MS = 30_000;
 
 /**
- * Guard any DB query promise with a strict timeout so dashboard queries
- * never hang forever on pooler stalls or network drops.
+ * Guard any DB query promise with a strict deadline so dashboard queries
+ * never hang forever on pooler stalls or network drops. The pool bounds
+ * execution server-side (statement_timeout in db/connection.ts); this bounds
+ * the user's wait — a late-but-healthy query surfaces as the dashboard's
+ * error card instead of a blank page hanging for minutes, and the pool
+ * self-heals in the background.
  */
 export async function withQueryTimeout<T>(
   promise: Promise<T>,
   ms = DASHBOARD_QUERY_TIMEOUT_MS,
   label = "dashboard-query",
 ): Promise<T> {
-  let timer: NodeJS.Timeout | undefined;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      reject(new Error(`Dashboard query timed out after ${ms}ms [${label}]`));
-    }, ms);
-  });
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
+  return withTimeout(promise, ms, `Dashboard query timed out after ${ms}ms [${label}]`);
 }
 
 // ---- KPIs -------------------------------------------------------------------------
@@ -142,7 +137,7 @@ export async function getDashboardKpis(): Promise<DashboardKpis> {
           .select({
             total: sql<number>`count(*)::int`,
             converted: sql<number>`(count(*) filter (where ${leads.status} = 'converted'))::int`,
-            today: sql<number>`(count(*) filter (where date(${leads.createdAt}) = current_date))::int`,
+            today: sql<number>`(count(*) filter (where ${leads.createdAt} >= current_date AND ${leads.createdAt} < current_date + 1))::int`,
             unassigned: sql<number>`(count(*) filter (where ${leads.assignedTo} is null))::int`,
           })
           .from(leads),
@@ -152,7 +147,8 @@ export async function getDashboardKpis(): Promise<DashboardKpis> {
             revenueThisMonth: sql<string>`coalesce(
               (sum(${payments.amount}) filter (
                 where ${payments.status} = 'verified'
-                  and date_trunc('month', ${payments.updatedAt}) = date_trunc('month', current_date)
+                  and ${payments.updatedAt} >= date_trunc('month', current_date)
+                  and ${payments.updatedAt} < date_trunc('month', current_date) + interval '1 month'
               )),
               0
             )`,
@@ -175,7 +171,8 @@ export async function getDashboardKpis(): Promise<DashboardKpis> {
             costOfSalesThisMonth: sql<string>`coalesce(
               (sum(${orders.costPrice}) filter (
                 where ${orders.status} in ('confirmed', 'completed')
-                  and date_trunc('month', ${orders.updatedAt}) = date_trunc('month', current_date)
+                  and ${orders.updatedAt} >= date_trunc('month', current_date)
+                  and ${orders.updatedAt} < date_trunc('month', current_date) + interval '1 month'
               )),
               0
             )`,
@@ -300,7 +297,8 @@ function rangeDays(from: string, to: string): number {
 export async function getDashboardRangeKpis(range: DashboardRange): Promise<DashboardRangeKpis> {
   const from = sql`(${range.from}::date)`;
   const to = sql`(${range.to}::date)`;
-  const inRange = (col: SQLWrapper) => sql`date(${col}) >= ${from} and date(${col}) <= ${to}`;
+  const inRange = (col: SQLWrapper) =>
+    sql`${col} >= ${from}::timestamp AND ${col} < (${to}::date + 1)::timestamp`;
 
   const [payRows, orderRows, expRows, leadRows, dueRows, fuRows] =
     await withQueryTimeout(
@@ -410,10 +408,10 @@ export async function getProfitByService(range: DashboardRange): Promise<ProfitB
         and(
           eq(payments.orderId, orders.id),
           eq(payments.status, "verified"),
-          sql`date(${payments.updatedAt}) >= ${from} and date(${payments.updatedAt}) <= ${to}`,
+          sql`${payments.updatedAt} >= ${from}::timestamp AND ${payments.updatedAt} < (${to}::date + 1)::timestamp`,
         ),
       )
-      .where(sql`date(${orders.createdAt}) >= ${from} and date(${orders.createdAt}) <= ${to}`)
+      .where(sql`${orders.createdAt} >= ${from}::timestamp AND ${orders.createdAt} < (${to}::date + 1)::timestamp`)
       .groupBy(orders.type),
     DASHBOARD_QUERY_TIMEOUT_MS,
     "profit-by-service",
@@ -499,9 +497,9 @@ export async function getDashboardTrend(opts: { days?: number } = {}): Promise<D
   const days = clampDays(opts.days);
   const windowStart = sql`current_date - ${days - 1}::int`;
 
-  const leadDay = sql`to_char(date(${leads.createdAt}), 'YYYY-MM-DD')`;
-  const orderDay = sql`to_char(date(${orders.createdAt}), 'YYYY-MM-DD')`;
-  const revenueDay = sql`to_char(date(${payments.updatedAt}), 'YYYY-MM-DD')`;
+  const leadDay = sql`to_char(${leads.createdAt}, 'YYYY-MM-DD')`;
+  const orderDay = sql`to_char(${orders.createdAt}, 'YYYY-MM-DD')`;
+  const revenueDay = sql`to_char(${payments.updatedAt}, 'YYYY-MM-DD')`;
 
   const [todayRows, leadRows, orderRows, revenueRows] = await withQueryTimeout(
     Promise.all([
