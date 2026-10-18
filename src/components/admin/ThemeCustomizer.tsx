@@ -122,6 +122,46 @@ function hexToHslString(hex: string): string {
   }
 }
 
+// Editable hex field paired with the swatch: commits on every valid six-digit
+// entry (live preview updates while typing) and reverts to the canonical token
+// value on blur when the text is not a valid hex color.
+function HexColorInput({
+  value,
+  label,
+  onCommit,
+}: {
+  value: string;
+  label: string;
+  onCommit: (hex: string) => void;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const text = draft ?? value;
+
+  const normalize = (candidate: string): string | null => {
+    const clean = candidate.trim().replace(/^#/, "").toLowerCase();
+    if (!/^[0-9a-f]{6}$/.test(clean)) return null;
+    return String.fromCharCode(35) + clean;
+  };
+
+  return (
+    <input
+      type="text"
+      value={text}
+      spellCheck={false}
+      autoComplete="off"
+      aria-label={`${label} hex value`}
+      title="Paste or type a hex code"
+      className="h-8 w-20 rounded-md border border-input bg-background px-2 font-mono text-[11px] uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const next = normalize(e.target.value);
+        if (next) onCommit(next);
+      }}
+      onBlur={() => setDraft(null)}
+    />
+  );
+}
+
 const COLOR_LABELS: { key: keyof ThemeColors; label: string; desc: string }[] = [
   { key: "primary", label: "Primary Brand", desc: "Main brand color, primary buttons, active states" },
   { key: "secondary", label: "Secondary Surface", desc: "Subtle backgrounds, container fills, section tints" },
@@ -587,9 +627,11 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
                     className="size-8 cursor-pointer rounded-md border border-border bg-transparent p-0"
                     title={`Click to pick ${item.label}`}
                   />
-                  <span className="font-mono text-[11px] text-muted-foreground select-all">
-                    {hex}
-                  </span>
+                  <HexColorInput
+                    value={hex}
+                    label={item.label}
+                    onCommit={(next) => handleColorChange(item.key, next)}
+                  />
                 </div>
               </div>
             );

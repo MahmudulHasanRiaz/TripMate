@@ -27,6 +27,7 @@ export type ThemeTemplateKey =
   | "royal"
   | "sunset"
   | "minimal"
+  | "flightblu"
   | "custom";
 
 export type ThemeTemplate = {
@@ -194,6 +195,33 @@ export const THEME_TEMPLATES: Record<ThemeTemplateKey, ThemeTemplate> = {
       border: "220 15% 89%",
       input: "220 10% 55%",
       ring: "220 16% 14%",
+      success: "142 72% 29%",
+      warning: "32 95% 38%",
+      destructive: "2 70% 41%",
+    },
+  },
+  flightblu: {
+    id: "flightblu",
+    name: "Flight Blu",
+    description: "Brand azure with sun-gold highlights and cool sky-tinted neutrals. Built for the FlightBlu logo.",
+    badge: "Brand",
+    colors: {
+      primary: "213 91% 46%",
+      primaryForeground: "0 0% 100%",
+      secondary: "212 45% 95%",
+      secondaryForeground: "222 47% 12%",
+      accent: "38 92% 50%",
+      accentForeground: "33 27% 9%",
+      accentText: "32 75% 30%",
+      background: "210 45% 98%",
+      foreground: "222 47% 11%",
+      card: "0 0% 100%",
+      cardForeground: "222 47% 11%",
+      muted: "212 35% 94%",
+      mutedForeground: "215 18% 42%",
+      border: "214 30% 88%",
+      input: "215 15% 55%",
+      ring: "213 91% 50%",
       success: "142 72% 29%",
       warning: "32 95% 38%",
       destructive: "2 70% 41%",

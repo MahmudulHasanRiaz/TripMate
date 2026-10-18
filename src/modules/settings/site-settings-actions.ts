@@ -40,7 +40,7 @@ export type SettingsActionResult =
   | { ok: false; code: string; error: string };
 
 const themeSettingsSchema = z.object({
-  template: z.enum(["signature", "ocean", "emerald", "royal", "sunset", "minimal", "custom"]),
+  template: z.enum(["signature", "ocean", "emerald", "royal", "sunset", "minimal", "flightblu", "custom"]),
   colors: z.record(z.string()).optional(),
 });
 
