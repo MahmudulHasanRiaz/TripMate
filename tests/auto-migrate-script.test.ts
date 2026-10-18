@@ -64,6 +64,27 @@ describe("auto-migrate script — fail fast on transaction-pooler config", () =>
   }, 30_000);
 });
 
+describe("auto-migrate script — failure diagnostics", () => {
+  it("surfaces the underlying driver cause and the connection target (not just the wrapped query)", () => {
+    // Port 1 on loopback refuses instantly — no database needed. drizzle wraps
+    // the driver error: message = 'Failed query: CREATE SCHEMA ...', the real
+    // reason (ECONNREFUSED / 28P01 / 3D000) lives in err.cause. The script must
+    // print the cause chain and the non-secret target, or every deploy failure
+    // is undiagnosable from Portainer logs.
+    const res = run({
+      DATABASE_URL: "postgresql://dbuser:sekretpw9@127.0.0.1:1/tripmate",
+    });
+    expect(res.status).toBe(1);
+    const out = `${res.stdout}\n${res.stderr}`;
+    expect(out).toContain("migration run failed");
+    expect(out).toContain("ECONNREFUSED");
+    expect(out.toLowerCase()).toContain("cannot reach postgres");
+    expect(out).toContain("127.0.0.1:1/tripmate");
+    expect(out).toContain("as dbuser");
+    expect(out).not.toContain("sekretpw9");
+  }, 30_000);
+});
+
 describe("auto-migrate script — SKIP_DB_MIGRATE escape hatch", () => {
   it("exits 0 with a loud drift warning and never touches the DB", () => {
     const res = run({ SKIP_DB_MIGRATE: "1" });

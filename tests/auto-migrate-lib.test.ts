@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  DB_ERROR_HINTS,
+  describeConnectionTarget,
   isPooledUrl,
   journalReadiness,
   pooledUrlReason,
@@ -165,5 +167,34 @@ describe("journalReadiness", () => {
   it("returns applied tags in journal order", () => {
     const report = journalReadiness(journal, [3000, 1000, 2000]);
     expect(report.appliedTags).toEqual(["0000_init", "0001_add_users", "0002_add_orders"]);
+  });
+});
+
+describe("describeConnectionTarget", () => {
+  it("describes host:port/database as user and never leaks the password", () => {
+    const target = describeConnectionTarget(
+      "postgresql://dbuser:sekretpw9@db.internal:5599/trip%20mate",
+    );
+    expect(target).toBe("db.internal:5599/trip mate as dbuser");
+    expect(target).not.toContain("sekretpw9");
+  });
+
+  it("defaults the port to 5432 and the user to postgres", () => {
+    expect(describeConnectionTarget("postgresql://h/tripmate")).toBe(
+      "h:5432/tripmate as postgres",
+    );
+  });
+
+  it("degrades safely on empty or unparseable input", () => {
+    expect(describeConnectionTarget("")).toBe("(no DATABASE_URL)");
+    expect(describeConnectionTarget("not a url")).toBe("(unparseable connection URL)");
+  });
+});
+
+describe("DB_ERROR_HINTS", () => {
+  it("covers the codes that actually happen on deploys", () => {
+    for (const code of ["28P01", "3D000", "ECONNREFUSED", "ENOTFOUND"] as const) {
+      expect(DB_ERROR_HINTS[code]).toBeTruthy();
+    }
   });
 });

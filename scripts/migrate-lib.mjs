@@ -200,3 +200,46 @@ export function journalReadiness(journalEntries, appliedWhens) {
     verified: missingTags.length === 0 && extraCount === 0,
   };
 }
+
+/**
+ * Non-secret description of where a connection URL points:
+ * "host:port/database as user". Passwords are NEVER included — deploy logs
+ * (Portainer container logs) are widely readable and must stay credential-free.
+ *
+ * @param {string} url
+ * @returns {string}
+ */
+export function describeConnectionTarget(url) {
+  if (!url) return "(no DATABASE_URL)";
+  try {
+    const parsed = new URL(url);
+    const database = decodeURIComponent(parsed.pathname.replace(/^\//, "")) || "(none)";
+    const user = decodeURIComponent(parsed.username || "postgres");
+    const port = parsed.port || "5432";
+    return `${parsed.hostname}:${port}/${database} as ${user}`;
+  } catch {
+    return "(unparseable connection URL)";
+  }
+}
+
+/**
+ * Human hints for the driver error codes that actually happen on deploys.
+ * Postgres SQLSTATE codes + Node network codes; unknown codes get no hint.
+ */
+export const DB_ERROR_HINTS = {
+  "28P01":
+    "password authentication failed — the password does not match what the postgres data volume was initialized with. " +
+    "Reuse the original POSTGRES_PASSWORD, or reset it in the running database (ALTER USER ... WITH PASSWORD), or start from a fresh volume.",
+  "28000":
+    "the server rejected this role/password combination — check POSTGRES_USER / POSTGRES_PASSWORD against the postgres service.",
+  "3D000":
+    "the database does not exist on this server — POSTGRES_DB (or the database name in DATABASE_URL) differs from what the postgres volume was initialized with. " +
+    "Rename/recreate the database, or fix the variable.",
+  "42501":
+    "permission denied — the role lacks rights on this database (CREATE on schema public usually). Grant it or use the role that owns the database.",
+  ECONNREFUSED:
+    "cannot reach postgres — wrong host/port, or the server is not accepting connections yet. Check DATABASE_URL host/port and that the postgres service is up.",
+  ENOTFOUND: "cannot resolve the postgres hostname — check the host part of DATABASE_URL (stack service names only resolve inside the stack network).",
+  ETIMEDOUT: "postgres did not answer in time — check host/port reachability and firewall rules.",
+  ECONNRESET: "the connection to postgres was reset mid-handshake — often TLS/network issues or the server restarting.",
+};

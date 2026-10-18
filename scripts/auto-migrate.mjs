@@ -29,7 +29,12 @@ import path from "node:path";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { journalReadiness, resolveMigrationDatabaseUrl } from "./migrate-lib.mjs";
+import {
+  DB_ERROR_HINTS,
+  describeConnectionTarget,
+  journalReadiness,
+  resolveMigrationDatabaseUrl,
+} from "./migrate-lib.mjs";
 
 const skip = (process.env.SKIP_DB_MIGRATE ?? "").trim() === "1";
 if (skip) {
@@ -104,7 +109,32 @@ try {
     exitCode = 1;
   }
 } catch (err) {
-  console.error(`[auto-migrate] FATAL: migration run failed: ${err?.message ?? err}`);
+  // drizzle wraps driver failures: err.message is only
+  // `Failed query: CREATE SCHEMA ...` — the real reason (ECONNREFUSED, 28P01
+  // password auth failed, 3D000 database does not exist, ...) lives in the
+  // cause chain. Print it all, plus the non-secret connection target, or the
+  // failure is undiagnosable from Portainer logs.
+  const chain = [];
+  const codes = new Set();
+  const seen = new Set();
+  for (let cur = err; cur && !seen.has(cur); cur = cur.cause) {
+    seen.add(cur);
+    if (cur.code) codes.add(cur.code);
+    const message = String(cur.message ?? cur).replace(/\s*\n\s*/g, " ").trim();
+    chain.push(`${message}${cur.code ? ` [${cur.code}]` : ""}`);
+  }
+
+  const target = describeConnectionTarget(resolved.url);
+  const hints = [...codes].map((code) => DB_ERROR_HINTS[code]).filter(Boolean);
+
+  console.error(
+    [
+      `[auto-migrate] FATAL: migration run failed: ${chain.shift()}`,
+      ...chain.map((c) => `  caused by: ${c}`),
+      `  target: ${target} (source: ${resolved.source})`,
+      ...hints.map((h) => `  HINT: ${h}`),
+    ].join("\n"),
+  );
   exitCode = 1;
 } finally {
   await client.end();
