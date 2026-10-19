@@ -1,13 +1,75 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { MessageCircle, Phone } from "lucide-react";
+
+import { InstagramIcon, MessengerIcon, WhatsAppIcon } from "./brand-icons";
 
 import { cn } from "@/lib/utils";
 import {
   resolveChatChannels,
   type ContactChannels,
 } from "./contact-channels";
+
+/**
+ * Routes where the page ships its OWN pinned bottom action bar (price + Book
+ * + Call + WhatsApp) — the global widget would stack a second floating
+ * column on top of it and crowd the same corner (Follow-up 08). Keep this
+ * list in sync with any future page that renders a full-width fixed bottom
+ * bar:
+ *  - /packages/[slug]  → <PackageMobileBar /> (fixed inset-x-0 bottom-0 <lg)
+ *  - /l/[slug]         → LandingRenderer's fixed bottom CTA strip
+ */
+const WIDGET_SUPPRESSED_ROUTE_PATTERNS = [/^\/packages\/[^/]+/, /^\/l\/[^/]+/];
+
+/**
+ * pathname reader that NEVER touches the prerender-sensitive flight path
+ * (usePathname() under Cache Components must be inside <Suspense>; our plain
+ * layout render should not pay that tax). Reading window.location via
+ * useSyncExternalStore keeps the widget a pure Client Content leaf:
+ *  - SSR snapshot is "" → not suppressed → the widget renders (and promptly
+ *    returns null anyway because the FAB appears only after scrolling)
+ *  - soft navigations notify through popstate plus a one-time history shim
+ */
+const pathnameListeners = new Set<() => void>();
+let historyPatched = false;
+
+function notifyPathnameListeners() {
+  for (const listener of pathnameListeners) listener();
+}
+
+function patchHistoryOnce() {
+  if (historyPatched) return;
+  historyPatched = true;
+  for (const method of ["pushState", "replaceState"] as const) {
+    const original = window.history[method].bind(window.history) as (
+      data: unknown,
+      unused: string,
+      url?: string | URL,
+    ) => void;
+    window.history[method] = ((
+      data: unknown,
+      unused: string,
+      url?: string | URL,
+    ) => {
+      original(data, unused, url);
+      notifyPathnameListeners();
+    }) as typeof window.history.pushState;
+  }
+}
+
+function subscribePathname(callback: () => void) {
+  patchHistoryOnce();
+  pathnameListeners.add(callback);
+  window.addEventListener("popstate", callback);
+  return () => {
+    pathnameListeners.delete(callback);
+    window.removeEventListener("popstate", callback);
+  };
+}
+
+const getClientPathname = () => window.location.pathname;
+const getServerPathname = () => "";
 
 export type { ContactChannels };
 
@@ -28,6 +90,17 @@ type ChatWidgetProps = {
  */
 export function ChatWidget({ channels, siteName }: ChatWidgetProps) {
   const items = resolveChatChannels(channels);
+  const pathname = useSyncExternalStore(
+    subscribePathname,
+    getClientPathname,
+    getServerPathname,
+  );
+  // Pages with their own pinned bottom bar own the "book/call/chat" moment;
+  // the global widget deliberately disappears there instead of fighting it
+  // for the same corner of the screen.
+  const suppressed = WIDGET_SUPPRESSED_ROUTE_PATTERNS.some((p) =>
+    p.test(pathname ?? ""),
+  );
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const fabRef = useRef<HTMLButtonElement>(null);
@@ -68,7 +141,7 @@ export function ChatWidget({ channels, siteName }: ChatWidgetProps) {
     };
   }, [open, close]);
 
-  if (items.length === 0 || !visible) return null;
+  if (items.length === 0 || !visible || suppressed) return null;
 
   const brand = siteName?.trim() ? ` · ${siteName.trim()}` : "";
 
@@ -154,18 +227,12 @@ export function ChatWidget({ channels, siteName }: ChatWidgetProps) {
 }
 
 function ChannelIcon({ kind }: { kind: "whatsapp" | "messenger" | "call" | "instagram" }) {
-  if (kind === "whatsapp") return <MessageCircle className="size-5" aria-hidden="true" />;
+  // WhatsApp/Messenger/Instagram carry the OFFICIAL brand glyphs (see
+  // brand-icons.tsx); they are brand claims, not generic symbols. The call
+  // channel is a plain phone action, so lucide's Phone stays appropriate
+  // there — it is not a brand mark.
+  if (kind === "whatsapp") return <WhatsAppIcon className="size-5" />;
   if (kind === "call") return <Phone className="size-5" aria-hidden="true" />;
-  if (kind === "messenger") {
-    return (
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-5">
-        <path d="M12 2C6.36 2 2 6.13 2 11.7c0 2.91 1.19 5.44 3.14 7.17.16.14.25.35.25.57l.05 1.78c.02.41.45.63.78.42l2.03-1.32c.15-.1.34-.13.52-.08 1.07.31 2.2.47 3.38.47 5.64 0 10-4.13 10-9.7S17.64 2 12 2zm2.9 6.6-2.6 4.11c-.42.66-1.32.83-1.94.36l-2.02-1.5a.62.62 0 0 0-.73 0l-2.78 2.1c-.55.42-1.28-.25-.87-.8l2.6-4.11c.42-.66 1.32-.83 1.94-.36l2.02 1.5c.2.15.48.15.68.01l2.83-2.11c.55-.41 1.28.25.87.8z" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="size-5">
-      <path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.72 3.72 0 0 1-1.38-.9 3.72 3.72 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16M12 0C8.74 0 8.33.01 7.05.07 5.78.13 4.9.33 4.14.63c-.79.3-1.46.72-2.13 1.38A5.88 5.88 0 0 0 .63 4.14C.33 4.9.13 5.78.07 7.05.01 8.33 0 8.74 0 12s.01 3.67.07 4.95c.06 1.27.26 2.15.56 2.91.3.79.72 1.46 1.38 2.13.67.66 1.34 1.08 2.13 1.38.76.3 1.64.5 2.91.56C8.33 23.99 8.74 24 12 24s3.67-.01 4.95-.07c1.27-.06 2.15-.26 2.91-.56a5.88 5.88 0 0 0 2.13-1.38 5.88 5.88 0 0 0 1.38-2.13c.3-.76.5-1.64.56-2.91.06-1.28.07-1.69.07-4.95s-.01-3.67-.07-4.95c-.06-1.27-.26-2.15-.56-2.91a5.88 5.88 0 0 0-1.38-2.13A5.88 5.88 0 0 0 19.86.63C19.1.33 18.22.13 16.95.07 15.67.01 15.26 0 12 0zm0 5.84A6.16 6.16 0 1 0 18.16 12 6.16 6.16 0 0 0 12 5.84zm0 10.15A4 4 0 1 1 16 12a4 4 0 0 1-4 3.99zm7.85-10.4a1.44 1.44 0 1 1-2.88 0 1.44 1.44 0 0 1 2.88 0z" />
-    </svg>
-  );
+  if (kind === "messenger") return <MessengerIcon className="size-5" />;
+  return <InstagramIcon className="size-5" />;
 }

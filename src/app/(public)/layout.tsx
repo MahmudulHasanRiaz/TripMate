@@ -93,7 +93,9 @@ export default async function PublicLayout({
       {/* Rain fan-out chat widget: 100% settings-driven (Admin → Settings →
           Contact Channels). WhatsApp falls back to the main site phone when
           no dedicated number is set; call falls back the same way. Zero
-          configured channels → the widget hides itself. */}
+          configured channels → the widget hides itself. No Suspense needed:
+          route suppression reads window.location via useSyncExternalStore
+          (Client Content stays out of the prerender-sensitive flight path). */}
       <ChatWidget
         siteName={site.title}
         channels={{

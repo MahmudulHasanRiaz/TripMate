@@ -1,4 +1,6 @@
-import { CalendarClock, Mail, MessageCircle, Phone, Star } from "lucide-react";
+import { CalendarClock, Mail, Phone, Star } from "lucide-react";
+
+import { WhatsAppIcon } from "@/components/site/brand-icons";
 
 import { formatMoney, telLink, whatsappLink } from "@/components/site/currency";
 import { BookingForm } from "@/components/site/BookingForm";
@@ -108,7 +110,7 @@ export function PackageEnquiryCard({
             rel="noopener noreferrer"
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
           >
-            <MessageCircle className="size-4 text-primary" aria-hidden="true" />
+            <WhatsAppIcon className="size-4 text-primary" aria-hidden="true" />
             Chat on WhatsApp
           </a>
         ) : null}
@@ -189,7 +191,7 @@ export function PackageMobileBar({
               aria-label="Chat on WhatsApp"
               className="inline-flex size-11 items-center justify-center rounded-md border border-border bg-background text-foreground transition-colors hover:bg-secondary"
             >
-              <MessageCircle className="size-5 text-primary" aria-hidden="true" />
+              <WhatsAppIcon className="size-5 text-primary" aria-hidden="true" />
             </a>
           ) : null}
           <a

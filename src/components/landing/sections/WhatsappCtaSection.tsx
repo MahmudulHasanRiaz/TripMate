@@ -1,4 +1,4 @@
-import { MessageCircle } from "lucide-react";
+import { WhatsAppIcon } from "@/components/site/brand-icons";
 import type { WhatsappCtaConfig } from "@/modules/landing-pages/section-types";
 import { Button } from "@/components/ui/button";
 
@@ -33,7 +33,7 @@ export function WhatsappCtaSection({
           className="h-11 min-h-[44px] min-w-[44px] shrink-0 rounded-lg px-4 text-sm font-semibold shadow-xs"
         >
           <a href={waUrl} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="mr-2 size-4" aria-hidden="true" />
+            <WhatsAppIcon className="mr-2 size-4" aria-hidden="true" />
             WhatsApp
           </a>
         </Button>
@@ -58,7 +58,7 @@ export function WhatsappCtaSection({
           className="h-11 rounded-lg px-6 font-semibold shadow-sm"
         >
           <a href={waUrl} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="mr-2 size-5" aria-hidden="true" />
+            <WhatsAppIcon className="mr-2 size-5" aria-hidden="true" />
             Chat on WhatsApp
           </a>
         </Button>
