@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { withRetry } from "@/lib/with-retry";
 import { withTimeout } from "@/lib/with-timeout";
-import { hasPermission, type UserRole } from "@/modules/users/permissions";
+import { hasPermission, isAdminPanelRole, type UserRole } from "@/modules/users/permissions";
 
 export type Session = {
   user: { id: string; email: string; name: string; role: UserRole; phone?: string | null };
@@ -71,6 +71,17 @@ export async function requireRole(...roles: UserRole[]): Promise<Session> {
   const session = await requireSession();
   if (!roles.includes(session.user.role)) redirect("/");
   return session;
+}
+
+/**
+ * One decision for "may this session open /admin": server-derived from the
+ * Better Auth session, the single source the public header's Admin link uses.
+ * Server-side derivation is deliberate — the client session fetch could
+ * return a stale/cached role, so customers must never be trusted to render
+ * the entry point themselves.
+ */
+export function canAccessAdminPanel(session: Session | null): boolean {
+  return isAdminPanelRole(session?.user.role ?? "customer");
 }
 
 export async function requirePermission(key: string): Promise<Session> {

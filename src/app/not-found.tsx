@@ -27,7 +27,15 @@ export default function NotFound() {
   return (
     <>
       <SkipLink />
-      <SiteHeader title={site.title} logoUrl={site.logoUrl} />
+      {/* Anonymous chrome by design (a 404 must never depend on the session
+          read): signedIn/canAccessAdmin false — the /admin route tree still
+          guards itself server-side regardless of what this header shows. */}
+      <SiteHeader
+        title={site.title}
+        logoUrl={site.logoUrl}
+        signedIn={false}
+        canAccessAdmin={false}
+      />
       <main
         id="main"
         tabIndex={-1}

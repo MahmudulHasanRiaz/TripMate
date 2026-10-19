@@ -44,6 +44,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   customer: [],
 };
 
+/**
+ * Roles that may open the /admin panel tree — the SAME list
+ * app/admin/layout.tsx guards with. Every ENTRY POINT to the panel (the
+ * public header's Admin link included) must derive its visibility from this
+ * constant, never an inline array: inline lists drift and leak the panel to
+ * customers on role renames.
+ */
+export const ADMIN_PANEL_ROLES = ["superadmin", "admin", "staff"] as const;
+
+export function isAdminPanelRole(role: UserRole): boolean {
+  return (ADMIN_PANEL_ROLES as readonly string[]).includes(role);
+}
+
 export function hasPermission(
   role: UserRole,
   userPermissions: string[] | null,

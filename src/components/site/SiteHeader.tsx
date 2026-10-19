@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
@@ -8,7 +8,6 @@ import { LogIn, Menu, Phone, Sparkles, User, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import Logo from "@/components/icons/Logo";
-import { authClient } from "@/lib/auth-client";
 import { ThemeToggle } from "./ThemeToggle";
 
 export type PublicNavItem = {
@@ -28,9 +27,17 @@ export type SiteHeaderProps = {
   logoUrl: string;
   phone?: string;
   overHero?: boolean;
+  /** Was a session resolves server-side? Drives Sign-in vs portal links. */
+  signedIn: boolean;
+  /**
+   * May this session open /admin (ADMIN_PANEL_ROLES)? Derived SERVER-side in
+   * the (public) layout — never from the client session fetch, so a cached
+   * or flaky client session can never show an Admin button to a customer.
+   */
+  canAccessAdmin: boolean;
 };
 
-export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
+export function SiteHeader({ title, logoUrl, phone, signedIn, canAccessAdmin }: SiteHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const cleanPhone = phone ? phone.replace(/[^0-9+]/g, "") : "";
@@ -129,18 +136,39 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
             </a>
           )}
 
-          {/* User Auth or Account — session is isolated in its own island so a
-              slow/failing /api/auth/session fetch on a tunnel domain can never
-              throw the whole header (menu + theme toggle) into a dead state. */}
-          <div className="hidden sm:flex items-center">
-            <Suspense
-              fallback={
-                <span className="h-8 w-20 animate-pulse rounded-xl bg-muted/70" aria-hidden="true" />
-              }
+          {/* User Auth or Account — signedIn/canAccessAdmin are resolved by
+              the server (SiteHeaderGate in the (public) layout), so no client
+              session fetch can flake here; the Admin link only exists when
+              the session's role is in ADMIN_PANEL_ROLES. Customers, logged in
+              or not, never receive it — the markup isn't even sent. */}
+          {!signedIn ? (
+            <Link
+              href={"/login" as Route}
+              className="hidden sm:inline-flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
             >
-              <HeaderSessionDesktop />
-            </Suspense>
-          </div>
+              <LogIn className="size-3.5" />
+              <span>Sign in</span>
+            </Link>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5">
+              {canAccessAdmin && (
+                <Link
+                  href={"/admin" as Route}
+                  className="flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-all"
+                >
+                  <Sparkles className="size-3" />
+                  <span>Admin</span>
+                </Link>
+              )}
+              <Link
+                href={"/account" as Route}
+                className="flex items-center gap-1.5 rounded-xl border border-border bg-secondary/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary hover:border-primary/40 transition-all"
+              >
+                <User className="size-3.5 text-primary" />
+                <span>My Portal</span>
+              </Link>
+            </div>
+          )}
 
           {/* Theme Switcher Toggle */}
           <ThemeToggle />
@@ -178,13 +206,37 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
             ))}
 
             <div className="mt-2 pt-3 border-t border-border flex flex-col gap-2">
-              <Suspense
-                fallback={
-                  <span className="h-10 w-full animate-pulse rounded-xl bg-muted/70" aria-hidden="true" />
-                }
-              >
-                <HeaderSessionMobile onNavigate={() => setMobileMenuOpen(false)} />
-              </Suspense>
+              {!signedIn ? (
+                <Link
+                  href={"/login" as Route}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
+                >
+                  <LogIn className="size-4" />
+                  <span>Sign In to Account</span>
+                </Link>
+              ) : (
+                <>
+                  {canAccessAdmin && (
+                    <Link
+                      href={"/admin" as Route}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
+                    >
+                      <Sparkles className="size-4" />
+                      <span>Admin Dashboard</span>
+                    </Link>
+                  )}
+                  <Link
+                    href={"/account" as Route}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
+                  >
+                    <User className="size-4 text-primary" />
+                    <span>My Bookings &amp; Portal</span>
+                  </Link>
+                </>
+              )}
 
               {cleanPhone && (
                 <a
@@ -205,89 +257,3 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
   );
 }
 
-/**
- * Session-dependent header links, isolated as their own client islands.
- *
- * ROOT CAUSE of the "dead header on mobile via tunnel" report: this used to
- * live inline in SiteHeader via `authClient.useSession()`. On a tunnel domain
- * (https://mac.riaz.com.bd -> localhost:3000) the session fetch runs against
- * a different origin than the dev server's init host / better-auth baseURL,
- * so it can suspend, hang, or throw — and because it shared the header's
- * render scope, the failure took down the menu button and ThemeToggle with
- * it (clicks did nothing). Wrapped in <Suspense> here, a failing session
- * degrades to Sign-in instead of a dead header.
- */
-function HeaderSessionDesktop() {
-  const { data: session } = authClient.useSession();
-  const role = (session?.user as { role?: string } | undefined)?.role || "";
-  if (session?.user) {
-    return (
-      <div className="flex items-center gap-1.5">
-        {["superadmin", "admin", "staff"].includes(role) && (
-          <Link
-            href={"/admin" as Route}
-            className="flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-all"
-          >
-            <Sparkles className="size-3" />
-            <span>Admin</span>
-          </Link>
-        )}
-        <Link
-          href={"/account" as Route}
-          className="flex items-center gap-1.5 rounded-xl border border-border bg-secondary/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary hover:border-primary/40 transition-all"
-        >
-          <User className="size-3.5 text-primary" />
-          <span>My Portal</span>
-        </Link>
-      </div>
-    );
-  }
-  return (
-    <Link
-      href={"/login" as Route}
-      className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
-    >
-      <LogIn className="size-3.5" />
-      <span>Sign in</span>
-    </Link>
-  );
-}
-
-function HeaderSessionMobile({ onNavigate }: { onNavigate: () => void }) {
-  const { data: session } = authClient.useSession();
-  const role = (session?.user as { role?: string } | undefined)?.role || "";
-  if (session?.user) {
-    return (
-      <>
-        {["superadmin", "admin", "staff"].includes(role) && (
-          <Link
-            href={"/admin" as Route}
-            onClick={onNavigate}
-            className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
-          >
-            <Sparkles className="size-4" />
-            <span>Admin Dashboard</span>
-          </Link>
-        )}
-        <Link
-          href={"/account" as Route}
-          onClick={onNavigate}
-          className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
-        >
-          <User className="size-4 text-primary" />
-          <span>My Bookings &amp; Portal</span>
-        </Link>
-      </>
-    );
-  }
-  return (
-    <Link
-      href={"/login" as Route}
-      onClick={onNavigate}
-      className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
-    >
-      <LogIn className="size-4" />
-      <span>Sign In to Account</span>
-    </Link>
-  );
-}

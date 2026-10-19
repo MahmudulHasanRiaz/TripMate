@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
-import { getSiteSettings } from "@/lib/site-settings";
+import { getSiteSettings, type SiteSettings } from "@/lib/site-settings";
 import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { buildThemeCssVariables } from "@/modules/settings/theme";
 import { getPublicThemeSettings } from "@/modules/settings/theme-service";
+import { canAccessAdminPanel, getSession } from "@/lib/auth-helpers";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -77,11 +78,12 @@ export default async function PublicLayout({
       <SkipLink />
       {/* SiteHeader's client-side usePathname() suspends on routes whose
           dynamic params are request-time-only (e.g. /packages/[slug] fallback
-          slugs — no generateStaticParams). The Suspense boundary keeps the
-          shell prerendered and lets the header stream in after; the skeleton
-          mirrors the floating-island header so nothing jumps. */}
+          slugs — no generateStaticParams), and the session read stops
+          prerendering too. The Suspense boundary keeps the shell prerendered
+          and lets the header stream in after; the skeleton mirrors the
+          floating-island header so nothing jumps. */}
       <Suspense fallback={<SiteHeaderFallback />}>
-        <SiteHeader title={site.title} logoUrl={site.logoUrl} phone={site.phone} />
+        <SiteHeaderGate site={site} />
       </Suspense>
       {/* tabIndex=-1 makes main a valid skip-link target; outline-none keeps
           the whole-page focus target from drawing a giant focus ring. */}
@@ -114,6 +116,27 @@ export default async function PublicLayout({
         copyright={site.copyright}
       />
     </>
+  );
+}
+
+/**
+ * Streaming header shell: resolves the session SERVER-side and derives the
+ * Admin-button visibility from ADMIN_PANEL_ROLES (canAccessAdminPanel) so the
+ * decision lives in guarded server code, not in the client's
+ * authClient.useSession() — a stale or flaky client session could otherwise
+ * surface the panel entry point to an ordinary customer. Session-dependent
+ * flags are passed to the client header as plain booleans.
+ */
+async function SiteHeaderGate({ site }: { site: SiteSettings }) {
+  const session = await getSession();
+  return (
+    <SiteHeader
+      title={site.title}
+      logoUrl={site.logoUrl}
+      phone={site.phone}
+      signedIn={Boolean(session?.user)}
+      canAccessAdmin={canAccessAdminPanel(session)}
+    />
   );
 }
 
