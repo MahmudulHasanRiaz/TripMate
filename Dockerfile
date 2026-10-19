@@ -28,9 +28,14 @@
 
 # --- deps: full dependency install (dev deps included — the builder needs
 # the Next/Turbopack + drizzle-kit/tsx toolchain; they never reach the runner).
+# patches/ ships too: postinstall runs patch-package, which scans ./patches —
+# without it the runtime AND the .d.ts of the patched package stay pristine
+# and TS2353 rejects the patched-in options (seen on connection.ts). Image
+# must verify the exact same patches the dev checkout verified.
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY patches ./patches
 RUN npm ci
 
 # --- deps-prod: production-only node_modules for the runner. Turbopack bundles
@@ -41,6 +46,7 @@ RUN npm ci
 FROM node:24-alpine AS deps-prod
 WORKDIR /app
 COPY package.json package-lock.json ./
+COPY patches ./patches
 RUN npm ci --omit=dev
 
 # --- builder: compile the standalone output.
