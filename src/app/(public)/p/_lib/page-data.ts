@@ -31,7 +31,7 @@ export type StaticPageData = {
 export async function getStaticPageData(slug: string): Promise<StaticPageData | null> {
   "use cache";
   cacheTag(CACHE_TAGS.pages);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const page = await getPublishedPageBySlug(slug);
   if (!page) return null;

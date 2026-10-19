@@ -359,13 +359,13 @@ export async function updateHomeSettings(input: HomeSettingsInput): Promise<Home
  * (searchEngineVisibility included — that flag is exactly what the metadata
  * robots decision needs). 'use cache' + cacheTag means an admin save calling
  * updateTag(CACHE_TAGS.settings) refreshes every public metadata read at once;
- * cacheLife("hours") keeps the lifetime explicit. Plain strings/booleans/null
+ * cacheLife("minutes") keeps the lifetime explicit. Plain strings/booleans/null
  * only — no Dates, so the entry is fully serializable.
  */
 export async function getPublicSiteSettings(): Promise<SiteSettings> {
   "use cache";
   cacheTag(CACHE_TAGS.settings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   // Inline the DB access rather than delegating to getSiteSettings() — the
   // non-cached wrapper adds a try/catch layer over the module-scoped postgres
@@ -417,7 +417,7 @@ export async function getPublicSiteSettings(): Promise<SiteSettings> {
 export async function getPublicHomeSettings(): Promise<HomeSettings> {
   "use cache";
   cacheTag(CACHE_TAGS.settings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   // Same self-contained pattern as getPublicSiteSettings above — inline the
   // DB access so the cache fill never joins the module-scoped postgres

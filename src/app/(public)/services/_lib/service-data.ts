@@ -105,7 +105,7 @@ function toCardData(listing: ListingWithRefs): ServiceListingCard {
 export async function getServicePageData(slug: string): Promise<ServicePageData | null> {
   "use cache";
   cacheTag(CACHE_TAGS.listings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const category = await getCategoryBySlug(slug);
   if (!category) return null;

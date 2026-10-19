@@ -32,6 +32,27 @@ permissions:
   contents: read
 
 jobs:
+  # Lockfile-sync gate (Follow-up 07 §5.2): `npm ci` exits non-zero the moment
+  # package.json and package-lock.json describe different dependency trees —
+  # the exact silent-drift class that once reached the Docker deps stage
+  # before CI caught it. Deliberately dependency-only: no DB, no build, runs
+  # on every push/PR (does not wait for the `changes` gate) and finishes in
+  # roughly the install time.
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install deps (npm 12, parity with quality job)
+        run: |
+          npm install -g npm@12
+          npm ci --no-audit --no-fund
+
   changes:
     runs-on: ubuntu-latest
     outputs:
