@@ -6,10 +6,10 @@ import {
   CheckCircle2,
   ExternalLink,
   Mail,
-  MessageCircle,
   Phone,
   ShoppingBag,
 } from "lucide-react";
+import { WhatsAppIcon } from "@/components/site/brand-icons";
 
 import { getSiteSettings } from "@/lib/site-settings";
 import { detailMetadata } from "@/lib/seo-meta";
@@ -375,7 +375,7 @@ function ContactOptions({
             rel="noopener noreferrer"
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-background px-5 text-sm font-semibold text-foreground transition-colors hover:bg-secondary"
           >
-            <MessageCircle className="size-4 text-primary" aria-hidden="true" />
+            <WhatsAppIcon className="size-4 text-primary" aria-hidden="true" />
             Chat on WhatsApp
           </a>
         ) : null}

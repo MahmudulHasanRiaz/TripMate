@@ -76,12 +76,14 @@ export default function TravelActionPanel({
   return (
     <div className="relative z-20 mx-auto -mt-10 sm:-mt-16 w-full max-w-[1280px] px-4 sm:px-6">
       <div className="rounded-xl border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md dark:bg-card/90">
-        {/* Tab Navigation */}
-        <div className="flex gap-1 overflow-x-auto border-b border-border/60 pb-2.5 sm:justify-start">
+        {/* Tab Navigation — horizontal scroll with snap + right-edge fade
+            affordance so the clipped "next tab" reads as swipeable on
+            narrow phones instead of looking silently cut off. */}
+        <div className="flex gap-1 overflow-x-auto border-b border-border/60 pb-2.5 sm:justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_0%,black_calc(100%_-_36px),transparent_100%)]">
           <button
             type="button"
             onClick={() => setActiveTab("packages")}
-            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "packages"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -94,7 +96,7 @@ export default function TravelActionPanel({
           <button
             type="button"
             onClick={() => setActiveTab("umrah")}
-            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "umrah"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -107,7 +109,7 @@ export default function TravelActionPanel({
           <button
             type="button"
             onClick={() => setActiveTab("visa")}
-            className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "visa"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -121,7 +123,7 @@ export default function TravelActionPanel({
           <button
             type="button"
             onClick={() => setActiveTab("flights")}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "flights"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -138,7 +140,7 @@ export default function TravelActionPanel({
           <button
             type="button"
             onClick={() => setActiveTab("hotels")}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "hotels"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"

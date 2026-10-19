@@ -12,7 +12,6 @@ import {
   CreditCard,
   FileCheck,
   Loader2,
-  MessageCircle,
   Phone,
   ShieldCheck,
   Wallet,
@@ -24,6 +23,7 @@ import {
   type CreateOrderResult,
 } from "@/modules/bookings/actions";
 import { formatMoney, telLink, whatsappLink } from "@/components/site/currency";
+import { WhatsAppIcon } from "@/components/site/brand-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -324,7 +324,7 @@ export function ServiceOptionsSelector({
                 rel="noopener noreferrer"
                 className="inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-xs font-semibold text-foreground hover:bg-secondary"
               >
-                <MessageCircle className="size-3.5 text-primary" aria-hidden="true" />
+                <WhatsAppIcon className="size-3.5 text-primary" aria-hidden="true" />
                 WhatsApp
               </a>
             ) : null}

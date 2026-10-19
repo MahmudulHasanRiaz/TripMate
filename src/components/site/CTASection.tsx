@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowRight, MessageCircle, Phone, Sparkles } from "lucide-react";
+import { ArrowRight, Phone, Sparkles } from "lucide-react";
+
+import { WhatsAppIcon } from "./brand-icons";
 
 import { telLink, whatsappLink } from "./currency";
 
@@ -68,7 +70,7 @@ export function CTASection({
                 rel="noopener noreferrer"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98]"
               >
-                <MessageCircle className="size-4" />
+                <WhatsAppIcon className="size-4" />
                 <span>Chat on WhatsApp</span>
               </a>
             ) : null}

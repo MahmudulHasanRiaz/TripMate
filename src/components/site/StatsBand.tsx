@@ -1,3 +1,5 @@
+import { Reveal } from "@/components/site/Reveal";
+
 export type Stat = {
   /** Display numeral — e.g. "12+", "25,000+", "4.9/5". */
   value: string;
@@ -15,12 +17,14 @@ export function StatsBand({ stats }: { stats: Stat[] }) {
     <section className="border-y border-border/60 bg-secondary">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-14 lg:px-8 lg:py-16">
         <ul className="grid grid-cols-2 gap-x-6 gap-y-10 text-center lg:grid-cols-4">
-          {stats.map((stat) => (
+          {stats.map((stat, statIdx) => (
             <li key={stat.label}>
-              <p className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-                {stat.value}
-              </p>
-              <p className="mt-2 text-sm text-muted-foreground">{stat.label}</p>
+              <Reveal delay={statIdx * 80}>
+                <p className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
+                  {stat.value}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">{stat.label}</p>
+              </Reveal>
             </li>
           ))}
         </ul>

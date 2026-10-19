@@ -8,12 +8,12 @@ import {
   Headphones,
   Mail,
   MapPin,
-  MessageCircle,
   Phone,
   ShieldCheck,
   User,
   Users,
 } from "lucide-react";
+import { WhatsAppIcon } from "./brand-icons";
 import { Button } from "@/components/ui/button";
 import { submitConsultationAction } from "@/modules/leads/actions";
 
@@ -151,7 +151,7 @@ export function HumanConcierge({
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-11 px-6 shadow-md transition-all"
                       >
-                        <MessageCircle className="size-4" />
+                        <WhatsAppIcon className="size-4" />
                         Open WhatsApp Chat
                       </a>
                     )}
@@ -290,7 +290,7 @@ export function HumanConcierge({
                         <span>Submitting Request...</span>
                       ) : (
                         <>
-                          <MessageCircle className="size-4" />
+                          <WhatsAppIcon className="size-4" />
                           <span>Request Custom Itinerary &amp; Quote</span>
                         </>
                       )}
@@ -355,7 +355,7 @@ export function HumanConcierge({
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs">
-                        <MessageCircle className="size-4" />
+                        <WhatsAppIcon className="size-4" />
                       </div>
                       <div>
                         <div className="text-xs font-bold text-foreground">Direct WhatsApp Chat</div>

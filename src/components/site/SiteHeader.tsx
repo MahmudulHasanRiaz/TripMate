@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { LogIn, Menu, Phone, Sparkles, User, X } from "lucide-react";
+import { LogIn, Menu, Sparkles, User, X } from "lucide-react";
+
+import { WhatsAppIcon } from "./brand-icons";
 
 import { cn } from "@/lib/utils";
 import Logo from "@/components/icons/Logo";
@@ -131,7 +133,7 @@ export function SiteHeader({ title, logoUrl, phone, signedIn, canAccessAdmin }: 
               rel="noopener noreferrer"
               className="hidden md:inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-all"
             >
-              <Phone className="size-3" />
+              <WhatsAppIcon className="size-3.5" />
               <span>Concierge</span>
             </a>
           )}
@@ -245,7 +247,7 @@ export function SiteHeader({ title, logoUrl, phone, signedIn, canAccessAdmin }: 
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-700 transition-colors shadow-sm"
                 >
-                  <Phone className="size-3.5" />
+                  <WhatsAppIcon className="size-4" />
                   <span>Chat on WhatsApp ({phone})</span>
                 </a>
               )}

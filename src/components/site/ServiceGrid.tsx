@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/site/Reveal";
 
 export type ServiceGridItem = {
   slug: string;
@@ -112,22 +113,25 @@ export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
 
         if (item.external) {
           return (
-            <a
-              key={item.slug}
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block h-full"
-            >
-              {cardContent}
-            </a>
+            <Reveal key={item.slug} delay={idx * 80} className="block h-full">
+              <a
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block h-full"
+              >
+                {cardContent}
+              </a>
+            </Reveal>
           );
         }
 
         return (
-          <Link key={item.slug} href={item.href as Route} className="block h-full">
-            {cardContent}
-          </Link>
+          <Reveal key={item.slug} delay={idx * 80} className="block h-full">
+            <Link href={item.href as Route} className="block h-full">
+              {cardContent}
+            </Link>
+          </Reveal>
         );
       })}
     </div>

@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import localFont from "next/font/local";
 import Script from "next/script";
 
 import { themeColor } from "../../theme-colors";
@@ -8,16 +8,20 @@ import { resolveFaviconUrl } from "@/lib/seo";
 import { themeInitScript } from "@/lib/theme";
 import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 
-const display = Fraunces({
-  subsets: ["latin"],
+// Self-hosted variable fonts (latin) — the network to fonts.gstatic.com on the
+// owner's machine flaked hard enough to 500 every request (next/font/google's
+// fetch, Follow-up 08 session). Same two families, same CSS variables
+// (--font-fraunces / --font-inter), zero network at build/dev time.
+const display = localFont({
+  src: "./fonts/fraunces-var-latin.woff2",
   variable: "--font-fraunces",
-  weight: ["600", "700"],
+  display: "swap",
 });
 
-const body = Inter({
-  subsets: ["latin"],
+const body = localFont({
+  src: "./fonts/inter-var-latin.woff2",
   variable: "--font-inter",
-  weight: ["400", "600"],
+  display: "swap",
 });
 
 /**

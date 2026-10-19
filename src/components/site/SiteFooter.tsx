@@ -8,12 +8,12 @@ import {
   Linkedin,
   Mail,
   MapPin,
-  MessageCircle,
   Phone,
   ShieldCheck,
   Twitter,
   Youtube,
 } from "lucide-react";
+import { WhatsAppIcon } from "./brand-icons";
 
 import Logo from "@/components/icons/Logo";
 import type { SiteFooterColumn, SiteFooterSocial } from "@/lib/site-settings";
@@ -216,7 +216,7 @@ export function SiteFooter({
                 rel="noopener noreferrer"
                 className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-10 px-4 shadow-sm transition-all"
               >
-                <MessageCircle className="size-4" />
+                <WhatsAppIcon className="size-4" />
                 <span>24/7 WhatsApp Hotline</span>
               </a>
             </div>
