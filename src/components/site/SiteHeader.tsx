@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
+import { usePathname } from "next/navigation";
 import { LogIn, Menu, Phone, Sparkles, User, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -32,7 +33,6 @@ export type SiteHeaderProps = {
 export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { data: session } = authClient.useSession();
   const cleanPhone = phone ? phone.replace(/[^0-9+]/g, "") : "";
 
   useEffect(() => {
@@ -41,6 +41,33 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  // Lock body scroll while the mobile menu is open — otherwise the fixed
+  // header + page scroll fight on touch devices and taps feel "dead".
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileMenuOpen]);
+
+  // Close the mobile menu on route change / Escape so a stale open menu
+  // never traps touches after navigation (mobile browsers keep the header
+  // mounted across navigations).
+  const pathname = usePathname();
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mobileMenuOpen]);
 
   return (
     <header className="fixed top-2.5 sm:top-4 inset-x-0 mx-auto w-[calc(100%-1.25rem)] sm:w-[calc(100%-2.5rem)] max-w-6xl z-50 transition-all duration-300">
@@ -99,36 +126,17 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
             </a>
           )}
 
-          {/* User Auth or Account */}
+          {/* User Auth or Account — session is isolated in its own island so a
+              slow/failing /api/auth/session fetch on a tunnel domain can never
+              throw the whole header (menu + theme toggle) into a dead state. */}
           <div className="hidden sm:flex items-center">
-            {session?.user ? (
-              <div className="flex items-center gap-1.5">
-                {["superadmin", "admin", "staff"].includes((session.user as { role?: string }).role || "") && (
-                  <Link
-                    href={"/admin" as Route}
-                    className="flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-all"
-                  >
-                    <Sparkles className="size-3" />
-                    <span>Admin</span>
-                  </Link>
-                )}
-                <Link
-                  href={"/account" as Route}
-                  className="flex items-center gap-1.5 rounded-xl border border-border bg-secondary/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary hover:border-primary/40 transition-all"
-                >
-                  <User className="size-3.5 text-primary" />
-                  <span>My Portal</span>
-                </Link>
-              </div>
-            ) : (
-              <Link
-                href={"/login" as Route}
-                className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
-              >
-                <LogIn className="size-3.5" />
-                <span>Sign in</span>
-              </Link>
-            )}
+            <Suspense
+              fallback={
+                <span className="h-8 w-20 animate-pulse rounded-xl bg-muted/70" aria-hidden="true" />
+              }
+            >
+              <HeaderSessionDesktop />
+            </Suspense>
           </div>
 
           {/* Theme Switcher Toggle */}
@@ -139,7 +147,9 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
             type="button"
             onClick={() => setMobileMenuOpen((o) => !o)}
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            className="flex size-9 items-center justify-center rounded-xl border border-border bg-card text-foreground hover:bg-muted transition-colors lg:hidden"
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-nav-panel"
+            className="flex size-9 cursor-pointer touch-manipulation items-center justify-center rounded-xl border border-border bg-card text-foreground hover:bg-muted transition-colors lg:hidden"
           >
             {mobileMenuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
@@ -148,7 +158,9 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
 
       {/* Floating Sub-Card for Mobile Navigation (Never a jarring flat sheet) */}
       {mobileMenuOpen && (
-        <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-background/95 dark:bg-card/95 p-4 shadow-2xl backdrop-blur-2xl animate-in fade-in slide-in-from-top-3 duration-200 lg:hidden">
+        <div
+          id="mobile-nav-panel"
+          className="mt-2 overflow-hidden rounded-2xl border border-border bg-background/95 dark:bg-card/95 p-4 shadow-2xl backdrop-blur-2xl animate-in fade-in slide-in-from-top-3 duration-200 lg:hidden">
           <nav aria-label="Mobile Navigation" className="flex flex-col gap-1">
             {NAV_ITEMS.map((item) => (
               <Link
@@ -163,37 +175,13 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
             ))}
 
             <div className="mt-2 pt-3 border-t border-border flex flex-col gap-2">
-              {session?.user ? (
-                <>
-                  {["superadmin", "admin", "staff"].includes((session.user as { role?: string }).role || "") && (
-                    <Link
-                      href={"/admin" as Route}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
-                    >
-                      <Sparkles className="size-4" />
-                      <span>Admin Dashboard</span>
-                    </Link>
-                  )}
-                  <Link
-                    href={"/account" as Route}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
-                  >
-                    <User className="size-4 text-primary" />
-                    <span>My Bookings &amp; Portal</span>
-                  </Link>
-                </>
-              ) : (
-                <Link
-                  href={"/login" as Route}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
-                >
-                  <LogIn className="size-4" />
-                  <span>Sign In to Account</span>
-                </Link>
-              )}
+              <Suspense
+                fallback={
+                  <span className="h-10 w-full animate-pulse rounded-xl bg-muted/70" aria-hidden="true" />
+                }
+              >
+                <HeaderSessionMobile onNavigate={() => setMobileMenuOpen(false)} />
+              </Suspense>
 
               {cleanPhone && (
                 <a
@@ -211,5 +199,92 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
         </div>
       )}
     </header>
+  );
+}
+
+/**
+ * Session-dependent header links, isolated as their own client islands.
+ *
+ * ROOT CAUSE of the "dead header on mobile via tunnel" report: this used to
+ * live inline in SiteHeader via `authClient.useSession()`. On a tunnel domain
+ * (https://mac.riaz.com.bd -> localhost:3000) the session fetch runs against
+ * a different origin than the dev server's init host / better-auth baseURL,
+ * so it can suspend, hang, or throw — and because it shared the header's
+ * render scope, the failure took down the menu button and ThemeToggle with
+ * it (clicks did nothing). Wrapped in <Suspense> here, a failing session
+ * degrades to Sign-in instead of a dead header.
+ */
+function HeaderSessionDesktop() {
+  const { data: session } = authClient.useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role || "";
+  if (session?.user) {
+    return (
+      <div className="flex items-center gap-1.5">
+        {["superadmin", "admin", "staff"].includes(role) && (
+          <Link
+            href={"/admin" as Route}
+            className="flex items-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary/20 transition-all"
+          >
+            <Sparkles className="size-3" />
+            <span>Admin</span>
+          </Link>
+        )}
+        <Link
+          href={"/account" as Route}
+          className="flex items-center gap-1.5 rounded-xl border border-border bg-secondary/80 px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary hover:border-primary/40 transition-all"
+        >
+          <User className="size-3.5 text-primary" />
+          <span>My Portal</span>
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <Link
+      href={"/login" as Route}
+      className="flex items-center gap-1 rounded-xl px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-secondary hover:text-foreground transition-all"
+    >
+      <LogIn className="size-3.5" />
+      <span>Sign in</span>
+    </Link>
+  );
+}
+
+function HeaderSessionMobile({ onNavigate }: { onNavigate: () => void }) {
+  const { data: session } = authClient.useSession();
+  const role = (session?.user as { role?: string } | undefined)?.role || "";
+  if (session?.user) {
+    return (
+      <>
+        {["superadmin", "admin", "staff"].includes(role) && (
+          <Link
+            href={"/admin" as Route}
+            onClick={onNavigate}
+            className="flex items-center gap-2 rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/20 transition-colors"
+          >
+            <Sparkles className="size-4" />
+            <span>Admin Dashboard</span>
+          </Link>
+        )}
+        <Link
+          href={"/account" as Route}
+          onClick={onNavigate}
+          className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
+        >
+          <User className="size-4 text-primary" />
+          <span>My Bookings &amp; Portal</span>
+        </Link>
+      </>
+    );
+  }
+  return (
+    <Link
+      href={"/login" as Route}
+      onClick={onNavigate}
+      className="flex items-center gap-2 rounded-xl bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-secondary/80 transition-colors"
+    >
+      <LogIn className="size-4" />
+      <span>Sign In to Account</span>
+    </Link>
   );
 }

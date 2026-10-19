@@ -32,8 +32,57 @@ function readR2Hostname(): string | null {
   }
 }
 
+/**
+ * Dev-only origins allowed to fetch dev assets / HMR / RSC payloads.
+ *
+ * ROOT CAUSE of "works on localhost, dead buttons on mobile via tunnel":
+ * Next.js blocks cross-origin requests to dev-only endpoints by default. When
+ * the dev server is opened through a tunnel domain (e.g.
+ * https://mac.riaz.com.bd -> localhost:3000), the browser origin no longer
+ * matches the server's init hostname, so chunk/HMR/RSC fetches are rejected,
+ * hydration never completes, and every client island (ThemeToggle, mobile
+ * menu, TravelActionPanel tabs, service cards) stays dead — clicks do nothing.
+ * Desktop on http://localhost:3000 keeps working because the origin matches.
+ *
+ * Fix: whitelist the tunnel host (+ common tunnel wildcards). Entries are
+ * bare hostnames (docs: allowedDevOrigins.md). APP_URL's hostname and
+ * ALLOWED_DEV_ORIGINS (comma-separated, e.g. "mac.example.com,*.example.com")
+ * are merged in automatically so operators never edit this file per tunnel.
+ */
+function readAllowedDevOrigins(): string[] {
+  const defaults = [
+    "mac.riaz.com.bd",
+    "*.riaz.com.bd",
+    "*.trycloudflare.com",
+    "*.ngrok-free.app",
+    "*.ngrok.io",
+    "*.loca.lt",
+    "*.cfargotunnel.com",
+  ];
+  const fromEnv =
+    process.env.ALLOWED_DEV_ORIGINS?.split(",")
+      .map((s) => s.trim())
+      .filter(Boolean) ?? [];
+  let fromAppUrl: string[] = [];
+  try {
+    const raw = process.env.APP_URL?.trim();
+    if (raw) {
+      const host = new URL(raw).hostname.trim();
+      if (host) fromAppUrl = [host];
+    }
+  } catch {
+    // Invalid APP_URL is reported by src/lib/env.ts validation — ignore here.
+  }
+  return [...new Set([...defaults, ...fromEnv, ...fromAppUrl])];
+}
+
 const nextConfig: NextConfig = {
   typedRoutes: true,
+  // Tunnel fix (mobile dead buttons): Next.js blocks cross-origin fetches of
+  // dev-only assets/HMR/RSC payloads. When the dev server is opened via
+  // https://mac.riaz.com.bd -> localhost:3000, HTML loads but JS chunks are
+  // rejected, hydration never completes and every client island stays dead.
+  allowedDevOrigins: readAllowedDevOrigins(),
   async redirects() {
     return [
       // §2.3: evergreen pages moved /p/[slug] → /{slug}. Config-level

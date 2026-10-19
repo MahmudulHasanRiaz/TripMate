@@ -15,16 +15,38 @@ export const auth = betterAuth({
   }),
   trustedOrigins: async (request) => {
     const origin = request?.headers?.get("origin");
+    // Tunnel fix (mobile session fetch): better-auth rejects cross-origin
+    // session calls unless the origin is trusted. The tunnel domain
+    // (https://mac.riaz.com.bd -> localhost:3000) is a different origin from
+    // APP_URL, so mobile session reads failed and — before the header
+    // isolation fix — took the whole header down with them. APP_URL's own
+    // origin + ALLOWED_DEV_ORIGINS are always trusted; the request origin
+    // echo below stays as a dev convenience.
     const allowed = [
       "http://localhost:3000",
       "http://localhost:8080",
+      "https://mac.riaz.com.bd",
+      "https://*.riaz.com.bd",
       "https://*.run.app",
       "https://*.google.com",
     ];
-    if (origin) {
-      return [...allowed, origin];
+    const fromEnv =
+      process.env.ALLOWED_DEV_ORIGINS?.split(",")
+        .map((s) => s.trim())
+        .filter(Boolean) ?? [];
+    try {
+      const raw = process.env.APP_URL?.trim();
+      if (raw) {
+        const url = new URL(raw);
+        if (url.origin) fromEnv.push(url.origin);
+      }
+    } catch {
+      // Invalid APP_URL is reported by src/lib/env.ts validation — ignore here.
     }
-    return allowed;
+    if (origin) {
+      return [...allowed, ...fromEnv, origin];
+    }
+    return [...allowed, ...fromEnv];
   },
   advanced: {
     database: {

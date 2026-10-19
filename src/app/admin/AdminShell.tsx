@@ -112,10 +112,12 @@ type AdminUser = {
 export default function AdminShell({
   menu,
   user,
+  brand,
   children,
 }: {
   menu: AdminMenuItem[];
   user: AdminUser;
+  brand: { title: string; logoUrl: string };
   children: React.ReactNode;
 }) {
   // Mirror the admin scope onto <body> so Radix portals (dialogs, sheets,
@@ -130,7 +132,7 @@ export default function AdminShell({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <SidebarBrand />
+          <SidebarBrand title={brand.title} logoUrl={brand.logoUrl} />
         </SidebarHeader>
         <SidebarContent>
           <SidebarNav menu={menu} />
@@ -152,13 +154,19 @@ export default function AdminShell({
   );
 }
 
-/** Brand lockup pinned to the top of the rail. */
-function SidebarBrand() {
+/** Brand lockup pinned to the top of the rail — settings-driven: the site
+ *  title + logo configured in Admin → Settings → Brand, never hardcoded. */
+function SidebarBrand({ title, logoUrl }: { title: string; logoUrl: string }) {
   return (
     <Link href="/admin" className="flex items-center gap-2 px-2 py-1">
-      <Logo className="size-6 text-primary" aria-hidden="true" />
-      <span className="font-display text-lg font-semibold tracking-tight">
-        TripMate
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={logoUrl} alt="" className="size-6 rounded-md object-contain" />
+      ) : (
+        <Logo className="size-6 text-primary" aria-hidden="true" />
+      )}
+      <span className="font-display text-lg font-semibold tracking-tight truncate">
+        {title}
       </span>
     </Link>
   );

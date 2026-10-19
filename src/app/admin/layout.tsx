@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Hind_Siliguri } from "next/font/google";
 import { requireRole } from "@/lib/auth-helpers";
 import { menuForRole } from "@/lib/admin-menu";
+import { getSiteSettings } from "@/lib/site-settings";
 import { cn } from "@/lib/utils";
 import AdminShell from "./AdminShell";
 import "./admin.css";
@@ -60,6 +61,21 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   const session = await requireRole("superadmin", "admin", "staff");
+  // Settings-driven brand (Admin → Settings → Brand): the sidebar lockup
+  // shows the configured site title + logo, falling back to TripMate only
+  // before the setup wizard seeds a `site` row. Same cached reader the
+  // public header/footer use, so an admin save lands everywhere in one hop.
+  // Best-effort: a settings read failure must never lock staff out of admin.
+  let brand = { title: "TripMate", logoUrl: "" };
+  try {
+    const site = await getSiteSettings();
+    brand = {
+      title: site.title?.trim() || "TripMate",
+      logoUrl: site.logoUrl || "",
+    };
+  } catch {
+    // Fallback above stays.
+  }
 
   return (
     <div
@@ -72,6 +88,7 @@ export default async function AdminLayout({
     >
       <AdminShell
         menu={menuForRole(session.user.role)}
+        brand={brand}
         user={{
           name: session.user.name,
           email: session.user.email,

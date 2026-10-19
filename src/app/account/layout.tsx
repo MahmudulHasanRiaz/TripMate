@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireSession } from "@/lib/auth-helpers";
 import { signOutAction } from "@/lib/auth-actions";
+import { getSiteSettings } from "@/lib/site-settings";
 import { AccountNav } from "./AccountNav";
 
 /** Customer portal is never indexed (§2.2). */
@@ -17,6 +18,15 @@ export default async function AccountLayout({
   children: React.ReactNode;
 }) {
   const session = await requireSession();
+  // Settings-driven brand (same reader the public header/admin shell use):
+  // the portal shows the configured site name, never a hardcoded string.
+  let siteTitle = "TripMate";
+  try {
+    const site = await getSiteSettings();
+    if (site.title?.trim()) siteTitle = site.title.trim();
+  } catch {
+    // Fallback above stays — a settings failure must never lock customers out.
+  }
 
   return (
     <div className="flex min-h-svh flex-col bg-background">
@@ -24,7 +34,7 @@ export default async function AccountLayout({
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6 gap-4">
           <div className="flex items-center gap-6">
             <Link href="/" className="font-display text-lg font-semibold tracking-tight text-foreground hover:text-primary transition-colors">
-              TripMate
+              {siteTitle}
             </Link>
             <AccountNav />
           </div>
