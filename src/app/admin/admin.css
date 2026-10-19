@@ -197,7 +197,7 @@ html.dark :is(.admin-root, body[data-admin]) {
    3. Sidebar — grouped, color-coded, dense
    ========================================================================== */
 
-.admin-root [data-slot="sidebar-group-label"] {
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-group-label"] {
   height: auto;
   padding: 0.125rem 0.5rem 0.25rem;
   font-size: 0.625rem;
@@ -207,11 +207,11 @@ html.dark :is(.admin-root, body[data-admin]) {
   color: hsl(var(--muted-foreground));
 }
 
-.admin-root [data-slot="sidebar-menu"] {
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-menu"] {
   gap: 0.125rem;
 }
 
-.admin-root [data-slot="sidebar-menu-button"] {
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-menu-button"] {
   height: 2rem;
   padding: 0.25rem 0.5rem;
   border-radius: calc(var(--radius));
@@ -225,7 +225,7 @@ html.dark :is(.admin-root, body[data-admin]) {
     box-shadow 0.18s ease;
 }
 
-.admin-root [data-slot="sidebar-menu-button"] svg {
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-menu-button"] svg {
   width: 1.0625rem;
   height: 1.0625rem;
   color: var(--k, hsl(var(--muted-foreground)));
@@ -233,19 +233,19 @@ html.dark :is(.admin-root, body[data-admin]) {
   transition: opacity 0.18s ease;
 }
 
-.admin-root [data-slot="sidebar-menu-button"]:hover {
-  background: hsl(var(--sidebar-accent));
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-menu-button"]:hover {
+  background: var(--sidebar-accent);
   color: hsl(var(--foreground));
   transform: translateX(2px);
 }
 
-.admin-root [data-slot="sidebar-menu-button"]:hover svg {
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-menu-button"]:hover svg {
   opacity: 1;
 }
 
 /* Active route: per-section tint + inset ring + soft icon glow. --k is set
    per item by AdminShell from the group accent map. */
-.admin-root [data-slot="sidebar-menu-button"][aria-current="page"] {
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-menu-button"][aria-current="page"] {
   background: color-mix(
     in srgb,
     var(--k, hsl(var(--primary))) 13%,
@@ -257,7 +257,7 @@ html.dark :is(.admin-root, body[data-admin]) {
     color-mix(in srgb, var(--k, hsl(var(--primary))) 26%, transparent);
 }
 
-.admin-root [data-slot="sidebar-menu-button"][aria-current="page"] svg {
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-menu-button"][aria-current="page"] svg {
   opacity: 1;
   filter: drop-shadow(
     0 0 6px color-mix(in srgb, var(--k, hsl(var(--primary))) 70%, transparent)
@@ -265,7 +265,7 @@ html.dark :is(.admin-root, body[data-admin]) {
 }
 
 /* Brand mark: gradient tile like the artifact. */
-.admin-root [data-slot="sidebar-header"] a svg {
+:is(.admin-root, body[data-admin]) [data-slot="sidebar-header"] a svg {
   color: hsl(var(--primary));
 }
 
@@ -406,8 +406,8 @@ body[data-admin] [data-slot="dropdown-menu-content"] {
 }
 
 body[data-admin] [data-slot="sidebar"][data-mobile="true"] {
-  background: hsl(var(--sidebar));
-  border-color: hsl(var(--sidebar-border));
+  background: var(--sidebar);
+  border-color: var(--sidebar-border);
 }
 
 /* ==========================================================================
