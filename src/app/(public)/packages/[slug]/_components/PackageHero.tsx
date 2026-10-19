@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowLeft, CalendarClock, MapPin, Star } from "lucide-react";
+import { ArrowLeft, CalendarClock, Images, MapPin, Sparkles, Star } from "lucide-react";
 
 import type { PackageDetailData } from "../../_lib/catalog-data";
 
@@ -10,11 +10,13 @@ import type { PackageDetailData } from "../../_lib/catalog-data";
  * (spec §3 PackageDetailLayout "hero"). Category + destination chips deep-link
  * into the index's filters (`?cat=` / `?dest=`); no cover configured falls
  * back to a quiet gradient band so a listing without imagery never renders a
- * broken image.
+ * broken image. Everything here is driven by the listing row: the "Featured"
+ * badge and the "+N photos" jump pill appear only when the data says so.
  */
 export function PackageHero({ data }: { data: PackageDetailData }) {
   const cover = data.cover;
   const hasCover = Boolean(cover?.url);
+  const photoCount = data.gallery.length + (cover?.url ? 1 : 0);
 
   return (
     <section
@@ -32,28 +34,37 @@ export function PackageHero({ data }: { data: PackageDetailData }) {
             sizes="100vw"
             className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/25" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/25" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent" />
         </>
       ) : (
         <div className="absolute inset-0 bg-muted/40" aria-hidden="true" />
       )}
 
-      <div className="relative z-10 mx-auto w-full max-w-[1400px] px-4 pb-10 pt-12 lg:px-8 lg:pb-14 lg:pt-16">
+      <div className="relative z-10 mx-auto flex min-h-[24rem] w-full max-w-[1400px] flex-col justify-end px-4 pb-12 pt-14 lg:min-h-[30rem] lg:px-8 lg:pb-16 lg:pt-16">
         <Link
           href="/packages"
-          className={`mb-8 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline ${
-            hasCover ? "text-white/85 hover:text-white" : "text-muted-foreground hover:text-foreground"
+          className={`mb-auto inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full px-3 text-sm font-medium transition-colors ${
+            hasCover
+              ? "-ml-3 text-white/85 hover:bg-white/10 hover:text-white"
+              : "-ml-3 text-muted-foreground hover:bg-secondary hover:text-foreground"
           }`}
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           All packages
         </Link>
 
-        <div className="max-w-3xl">
+        <div className="mt-8 max-w-3xl">
           <div className="flex flex-wrap items-center gap-2">
+            {data.isFeatured ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground shadow-sm">
+                <Sparkles className="size-3.5" aria-hidden="true" />
+                Featured
+              </span>
+            ) : null}
             <Link
               href={`/packages?cat=${data.category.slug}` as Route}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 py-1 text-xs font-semibold backdrop-blur-sm transition-colors ${
+              className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-4 py-1 text-xs font-semibold backdrop-blur-sm transition-colors ${
                 hasCover
                   ? "border-white/25 bg-white/10 text-white hover:bg-white/20"
                   : "border-border bg-background text-foreground hover:bg-secondary"
@@ -68,7 +79,7 @@ export function PackageHero({ data }: { data: PackageDetailData }) {
             {data.destination ? (
               <Link
                 href={`/packages?dest=${data.destination.slug}` as Route}
-                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 py-1 text-xs font-medium backdrop-blur-sm transition-colors ${
+                className={`inline-flex min-h-9 items-center gap-1.5 rounded-full border px-4 py-1 text-xs font-medium backdrop-blur-sm transition-colors ${
                   hasCover
                     ? "border-white/25 bg-white/10 text-white/90 hover:bg-white/20"
                     : "border-border bg-background text-muted-foreground hover:bg-secondary hover:text-foreground"
@@ -89,7 +100,7 @@ export function PackageHero({ data }: { data: PackageDetailData }) {
           </h1>
 
           <div
-            className={`mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm ${
+            className={`mt-6 flex flex-wrap items-center gap-x-6 gap-y-2.5 text-sm ${
               hasCover ? "text-white/90" : "text-muted-foreground"
             }`}
           >
@@ -102,8 +113,29 @@ export function PackageHero({ data }: { data: PackageDetailData }) {
             {typeof data.rating === "number" ? (
               <span className="inline-flex items-center gap-2">
                 <Star className="size-4 fill-accent text-accent" aria-hidden="true" />
-                <span className="font-medium text-accent-text">{data.rating.toFixed(1)} / 5</span>
+                <span
+                  className={`font-medium tabular-nums ${hasCover ? "text-accent" : "text-accent-text"}`}
+                >
+                  {data.rating.toFixed(1)}
+                  <span className={hasCover ? "text-white/70" : "text-muted-foreground"}>
+                    {" "}
+                    / 5
+                  </span>
+                </span>
               </span>
+            ) : null}
+            {photoCount > 0 ? (
+              <a
+                href="#package-gallery"
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1 -mx-3 transition-colors ${
+                  hasCover
+                    ? "text-white/85 hover:bg-white/10 hover:text-white"
+                    : "hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <Images className="size-4 text-accent" aria-hidden="true" />
+                {photoCount} {photoCount === 1 ? "photo" : "photos"}
+              </a>
             ) : null}
           </div>
         </div>

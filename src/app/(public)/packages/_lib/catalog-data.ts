@@ -64,6 +64,8 @@ export type PackageDetailData = {
   rating: number | null;
   price: number | null;
   currency: string;
+  /** Pinned/featured listing (admin-managed) → hero badge. */
+  isFeatured: boolean;
   itinerary: { day: string; title: string; details: string }[];
   inclusions: string[];
   exclusions: string[];
@@ -214,6 +216,7 @@ export async function getPackageDetailData(slug: string): Promise<PackageDetailD
     rating: listing.rating,
     price: listing.price,
     currency: listing.currency,
+    isFeatured: listing.isFeatured,
     itinerary: listing.itinerary,
     inclusions: listing.inclusions,
     exclusions: listing.exclusions,

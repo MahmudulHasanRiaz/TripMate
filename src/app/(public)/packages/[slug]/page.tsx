@@ -141,8 +141,9 @@ async function PackageDetailBody({
           <section aria-labelledby="package-related-heading" className="mt-16 lg:mt-24">
             <h2
               id="package-related-heading"
-              className="font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
+              className="flex items-center gap-3 font-display text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
             >
+              <span aria-hidden="true" className="h-7 w-1 shrink-0 rounded-full bg-accent" />
               You may also like
             </h2>
             <div
