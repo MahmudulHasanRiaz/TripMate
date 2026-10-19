@@ -1,0 +1,2 @@
+# Follow-up 07 directive (transcribed from owner message, 2026-10-19)
+Branch: feat/followup-07-public-cache-admin-theme from origin/main. Never push main. Tasks: 1a/1b/1c/1d stale-cache fix; 2 admin theme toggle; 3 mobile drawer contrast; 4 screenshots sanity-check; 5 deploy hardening (split RUN, CI lockfile job, header comment); 6 discipline (explicit -u push only). Full text in session; ledger tracks execution.
