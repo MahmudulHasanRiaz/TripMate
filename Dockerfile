@@ -13,8 +13,16 @@
 # database is REQUIRED at build time (verified: a build against an
 # unreachable DB fails at export). Rather than depend on an external DB
 # (which Portainer/host builds don't have), the builder starts a throwaway
-# local cluster, migrates + seeds it, builds, and discards it. Nothing from
-# that database reaches the image — only the prerendered cache does.
+# local cluster, migrates + seeds the PRODUCTION BASELINE, builds, and
+# discards it. Nothing from that database reaches the image — only the
+# prerendered cache does.
+#
+# PUBLIC-CONTENT FRESHNESS AFTER DEPLOY: the prerendered cache is only as
+# fresh as the seeded baseline it was built from (Follow-up 07 §1). The seed
+# is the neutral production baseline — NEVER the demo seeder — and public
+# readers cap staleness with cacheLife("minutes") (plus immediate
+# updateTag/revalidateTag bust on admin saves), so a deploy serves at most a
+# few minutes of baseline before the live DB takes over.
 #
 # SCHEMA AUTO-MIGRATION ON EVERY DEPLOY: the runner applies every pending
 # drizzle/ migration at container START (scripts/auto-migrate.mjs) before the
@@ -50,6 +58,11 @@ COPY patches ./patches
 RUN npm ci --omit=dev
 
 # --- builder: compile the standalone output.
+# IDENTITY RULE (Follow-up 07 §1a): the builder seeds the PRODUCTION baseline
+# (npm run db:seed:prod — neutral brand, no posts/packages, fully offline).
+# NOTHING demo-flavored may enter the build path: 'use cache' scopes snapshot
+# whatever the seeded DB contains, and the built cache ships around those
+# snapshots — demo rows here would shadow the live DB after deploy.
 FROM node:24-alpine AS builder
 WORKDIR /app
 # postgresql server+client for the throwaway build cluster. The apk package
@@ -69,17 +82,29 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
 # The only env that changes BUILD OUTPUT (images.remotePatterns in
 # next.config.ts). Passed at build time only when STORAGE_DRIVER=r2.
 ARG R2_PUBLIC_URL=
-# initdb's default pg_hba trusts local TCP, so no password is needed for the
-# throwaway cluster. Socket dir is pinned into /tmp/pg (alpine's build default
-# /run/postgresql does not exist inside a build stage). fsync=off is safe —
-# the cluster is discarded the moment the build finishes. -m immediate stop:
-# nothing else will ever connect.
+# Split per-step RUNs where safe (Follow-up 07 §5.1): a failure banner
+# attributes to exactly one sub-command and every DB-step failure prints the
+# tail of /tmp/pg.log. RULING: initdb is its own layer (daemonless), but the
+# postmaster does NOT survive between RUN steps (each RUN is a fresh
+# container), so start→migrate→seed→build share ONE RUN, separated by banner
+# echoes — same diagnosability, no broken daemon handoff. fsync=off is safe —
+# the cluster is discarded when the build ends.
+RUN set -eu; \
+    echo "=== [builder] initdb ==="; \
+    PGBIN=$(ls -d /usr/libexec/postgresql* | head -n1); \
+    "$PGBIN/initdb" -D /tmp/pg -U postgres -E UTF8 --no-locale
 RUN set -eu; \
     PGBIN=$(ls -d /usr/libexec/postgresql* | head -n1); \
-    "$PGBIN/initdb" -D /tmp/pg -U postgres -E UTF8 --no-locale; \
+    echo "=== [builder] pg start (throwaway cluster) ==="; \
     "$PGBIN/pg_ctl" -D /tmp/pg -l /tmp/pg.log -o "-c listen_addresses=127.0.0.1 -c unix_socket_directories=/tmp/pg -c fsync=off" -w start; \
     export DATABASE_URL="postgresql://postgres@127.0.0.1:5432/postgres"; \
-    npm run db:migrate && npm run db:seed && npm run build; \
+    echo "=== [builder] db:migrate ==="; \
+    npm run db:migrate || { echo "--- pg log (tail) ---"; tail -n 80 /tmp/pg.log; exit 1; }; \
+    echo "=== [builder] db:seed:prod (production baseline; NEVER demo) ==="; \
+    npm run db:seed:prod || { echo "--- pg log (tail) ---"; tail -n 80 /tmp/pg.log; exit 1; }; \
+    echo "=== [builder] next build ==="; \
+    npm run build || { echo "--- pg log (tail) ---"; tail -n 40 /tmp/pg.log; exit 1; }; \
+    echo "=== [builder] pg stop (discard throwaway cluster) ==="; \
     "$PGBIN/pg_ctl" -D /tmp/pg -m immediate stop || true
 
 # --- runner: minimal standalone runtime + boot-time schema migration.
