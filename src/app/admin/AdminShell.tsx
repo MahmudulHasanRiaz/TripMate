@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 import { Toaster } from "@/components/ui/toaster";
+import { ThemeToggle } from "@/components/site/ThemeToggle";
 
 import { signOutAction } from "@/lib/auth-actions";
 import type { AdminMenuItem } from "@/lib/admin-menu";
@@ -142,6 +143,11 @@ export default function AdminShell({
         <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center gap-2 border-b bg-background/85 px-3 backdrop-blur md:px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="ml-auto flex items-center gap-3">
+            {/* Admin-side dark-mode switch — same island as the public chrome
+                (36px target per admin sizing rules): toggles `.dark` on <html>
+                and persists THEME_STORAGE_KEY; the root layout's pre-paint
+                script keeps first paint correct. */}
+            <ThemeToggle />
             <HeaderUserMenu user={user} />
           </div>
         </header>
