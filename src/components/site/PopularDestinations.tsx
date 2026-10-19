@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { ArrowRight, MapPin } from "lucide-react";
 import type { DestinationWithStats } from "@/modules/catalog/service";
 import { formatMoney } from "@/components/site/currency";
+import { Reveal } from "@/components/site/Reveal";
 
 export type PopularDestinationsProps = {
   destinations: DestinationWithStats[];
@@ -44,8 +45,8 @@ export function PopularDestinations({ destinations }: PopularDestinationsProps) 
           {displayDestinations.map((dest, index) => {
             const isMarquee = index === 0;
             return (
+              <Reveal key={dest.id} delay={index * 80} className="h-full">
               <Link
-                key={dest.id}
                 href={`/destinations/${dest.slug}` as Route}
                 className={`group relative overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg ${
                   isMarquee ? "sm:col-span-2 lg:col-span-1" : ""
@@ -96,6 +97,7 @@ export function PopularDestinations({ destinations }: PopularDestinationsProps) 
                   </div>
                 </div>
               </Link>
+              </Reveal>
             );
           })}
         </div>

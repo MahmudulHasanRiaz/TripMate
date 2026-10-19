@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/site/Reveal";
 
 type SectionHeadingProps = {
   /** Tiny uppercase primary label above the title (spec §3 SectionHeading). */
@@ -24,8 +25,10 @@ export function SectionHeading({
   className,
 }: SectionHeadingProps) {
   const centered = align === "center";
+  // Every section opener rises with the same one-time entrance — one shared
+  // motion rhythm across all public sections (Follow-up 08).
   return (
-    <div
+    <Reveal
       className={cn(
         "max-w-2xl",
         centered && "mx-auto text-center",
@@ -45,6 +48,6 @@ export function SectionHeading({
           {lead}
         </p>
       ) : null}
-    </div>
+    </Reveal>
   );
 }

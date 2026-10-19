@@ -27,6 +27,7 @@ import { PackageCard } from "@/components/site/PackageCard";
 import { HumanConcierge } from "@/components/site/HumanConcierge";
 import { BlogCard } from "@/components/site/BlogCard";
 import { CTASection } from "@/components/site/CTASection";
+import { Reveal } from "@/components/site/Reveal";
 
 /**
  * TripMate marketing home — RSC-only, fully cached.
@@ -148,7 +149,8 @@ export default async function Home() {
               </Link>
             </div>
             <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-              {displayPackages.slice(0, 3).map((pkg) => (
+              {displayPackages.slice(0, 3).map((pkg, pkgIdx) => (
+                <Reveal key={pkg.id} delay={pkgIdx * 90} className="h-full">
                 <PackageCard
                   key={pkg.id}
                   href={`/packages/${pkg.slug}`}
@@ -162,6 +164,7 @@ export default async function Home() {
                   price={pkg.price ?? 0}
                   currency={pkg.currency ?? "BDT"}
                 />
+                </Reveal>
               ))}
             </div>
           </div>
@@ -217,7 +220,8 @@ export default async function Home() {
                   data-testid="blog-teaser-grid"
                   className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6"
                 >
-                  {blog.items.slice(0, 3).map((post) => (
+                  {blog.items.slice(0, 3).map((post, postIdx) => (
+                    <Reveal key={post.id} delay={postIdx * 90} className="h-full">
                     <BlogCard
                       key={post.id}
                       href={`/blog/${post.slug}`}
@@ -228,6 +232,7 @@ export default async function Home() {
                       author={post.author?.name ?? `${site.title} Team`}
                       excerpt={post.excerpt ?? ""}
                     />
+                    </Reveal>
                   ))}
                 </div>
                 <div className="mt-12 text-center">

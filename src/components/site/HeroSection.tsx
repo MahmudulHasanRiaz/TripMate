@@ -80,9 +80,12 @@ export function HeroSection({
       <div className="pointer-events-none absolute top-48 right-1/4 size-[400px] rounded-full bg-accent/15 blur-[140px] -z-10" />
 
       <div className="relative mx-auto flex w-full max-w-[1340px] flex-col items-center px-4 sm:px-6 lg:px-8 text-center">
-        {/* Floating Trust Eyebrow Pill */}
-        <div className="mb-6 inline-flex items-center gap-2 sm:gap-2.5 rounded-full border border-border/80 bg-card/85 dark:bg-slate-900/85 px-4 py-1.5 text-xs font-semibold tracking-wide text-foreground shadow-lg backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10">
-          <span className="relative flex size-2">
+        {/* Floating Trust Eyebrow Pill — guaranteed single line everywhere,
+            including 390px phones. On <sm we drop the (redundant with the
+            sparkle + TrustStrip below) live dot and use the shorter 24/7
+            label + tighter type so the chip never wraps or clips. */}
+        <div className="mb-6 inline-flex max-w-full items-center gap-2 sm:gap-2.5 whitespace-nowrap rounded-full border border-border/80 bg-card/85 dark:bg-slate-900/85 px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold tracking-wide text-foreground shadow-lg backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 sm:px-4">
+          <span className="relative hidden size-2 sm:flex">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
           </span>
