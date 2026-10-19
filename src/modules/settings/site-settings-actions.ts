@@ -31,6 +31,7 @@ import { withGuard, GuardError } from "@/lib/guard";
 import type { Session } from "@/lib/auth-helpers";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import { homeSettingsInputSchema, siteSettingsInputSchema } from "./site-settings-validation";
+import { contactChannelsSchema } from "./site-settings-validation";
 import { updateHomeSettings, updateSiteSettings } from "./site-settings";
 import { updateThemeSettings, saveCustomPreset, deleteCustomPreset } from "./theme-service";
 import { type ThemeColors, type ThemeTemplateKey } from "./theme";
@@ -114,6 +115,33 @@ export const saveHomeSettingsAction = settingsAction<unknown>(
       return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
     }
     await updateHomeSettings(parsed.data);
+    updateTag(CACHE_TAGS.settings);
+    return { ok: true };
+  },
+);
+
+/**
+ * Save the floating chat-widget contact channels (WhatsApp, Messenger, Call,
+ * Instagram) WITHOUT touching brand fields. Absent preserves, "" clears
+ * (hides that icon), a value replaces — merged in updateSiteSettings via the
+ * channelText rule. Same settings tag, so the public widget refreshes in one
+ * cache hop.
+ */
+export const saveContactChannelsAction = settingsAction<unknown>(
+  { permission: "settings.manage" },
+  async (input) => {
+    const parsed = contactChannelsSchema.safeParse(input);
+    if (!parsed.success) {
+      return { ok: false, code: "VALIDATION", error: firstIssueMessage(parsed.error) };
+    }
+    const { getSiteSettings } = await import("./site-settings");
+    const current = await getSiteSettings();
+    await updateSiteSettings({
+      ...current,
+      ...parsed.data,
+      footerDescription: current.footerDescription ?? undefined,
+      copyright: current.copyright ?? undefined,
+    });
     updateTag(CACHE_TAGS.settings);
     return { ok: true };
   },

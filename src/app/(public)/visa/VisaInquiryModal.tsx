@@ -20,10 +20,13 @@ export default function VisaInquiryModal({
   visa,
   open,
   onClose,
+  brand,
 }: {
   visa: VisaServiceWithRefs | null;
   open: boolean;
   onClose: () => void;
+  /** Site title for the "Official Visa Assistance" trust line. */
+  brand?: string;
 }) {
   const formId = useId();
   const [isPending, startTransition] = useTransition();
@@ -135,7 +138,7 @@ export default function VisaInquiryModal({
             <DialogHeader>
               <div className="flex items-center gap-2 text-xs font-semibold text-primary">
                 <ShieldCheck className="size-4" />
-                <span>TripMate Official Visa Assistance</span>
+                <span>{brand?.trim() || "TripMate"} Official Visa Assistance</span>
               </div>
               <DialogTitle className="text-xl font-bold">{visa.title}</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">

@@ -7,7 +7,7 @@ import { getPublicThemeSettings } from "@/modules/settings/theme-service";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
-import { FloatingConciergeFAB } from "@/components/site/FloatingConciergeFAB";
+import { ChatWidget } from "@/components/site/ChatWidget";
 import { JsonLd } from "@/components/site/JsonLd";
 
 /**
@@ -80,7 +80,20 @@ export default async function PublicLayout({
       <main id="main" tabIndex={-1} className="outline-none pt-20 sm:pt-24">
         {children}
       </main>
-      <FloatingConciergeFAB phone={site.phone} />
+      {/* Rain fan-out chat widget: 100% settings-driven (Admin → Settings →
+          Contact Channels). WhatsApp falls back to the main site phone when
+          no dedicated number is set; call falls back the same way. Zero
+          configured channels → the widget hides itself. */}
+      <ChatWidget
+        siteName={site.title}
+        channels={{
+          whatsappNumber: site.whatsappNumber || site.phone,
+          whatsappPrefill: site.whatsappPrefill,
+          messengerUsername: site.messengerUsername,
+          callNumber: site.callNumber || site.phone,
+          instagramHandle: site.instagramHandle,
+        }}
+      />
       <SiteFooter
         title={site.title}
         logoUrl={site.logoUrl}

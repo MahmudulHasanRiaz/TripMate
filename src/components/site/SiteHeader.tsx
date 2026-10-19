@@ -53,13 +53,16 @@ export function SiteHeader({ title, logoUrl, phone }: SiteHeaderProps) {
     };
   }, [mobileMenuOpen]);
 
-  // Close the mobile menu on route change / Escape so a stale open menu
-  // never traps touches after navigation (mobile browsers keep the header
-  // mounted across navigations).
+  // Close the mobile menu on route change. Render-time adjustment instead of
+  // an effect: a stale open menu never traps touches after navigation (mobile
+  // browsers keep the header mounted across navigations) without the
+  // cascading render an effect-on-pathname causes.
   const pathname = usePathname();
-  useEffect(() => {
+  const [lastPathname, setLastPathname] = useState(pathname);
+  if (lastPathname !== pathname) {
+    setLastPathname(pathname);
     setMobileMenuOpen(false);
-  }, [pathname]);
+  }
   useEffect(() => {
     if (!mobileMenuOpen) return;
     const onKey = (e: KeyboardEvent) => {

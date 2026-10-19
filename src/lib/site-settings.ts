@@ -22,6 +22,12 @@ export type SiteSettings = {
   footerColumns: SiteFooterColumn[];
   footerSocials: SiteFooterSocial[];
   copyright: string | null;
+  /** Floating chat-widget channels ("" = not configured → icon hidden). */
+  whatsappNumber: string;
+  whatsappPrefill: string | null;
+  messengerUsername: string;
+  callNumber: string;
+  instagramHandle: string;
 };
 
 /** Fallback brand shown before the setup wizard seeds a `site` settings row. */
@@ -35,6 +41,11 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   footerColumns: [],
   footerSocials: [],
   copyright: null,
+  whatsappNumber: "",
+  whatsappPrefill: null,
+  messengerUsername: "",
+  callNumber: "",
+  instagramHandle: "",
 };
 
 /**
@@ -79,5 +90,15 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     footerSocials: socials,
     copyright:
       typeof raw.copyright === "string" && raw.copyright !== "" ? raw.copyright : null,
+    // Chat channels: legacy rows predate these keys → "" = hidden icon.
+    whatsappNumber: typeof raw.whatsappNumber === "string" ? raw.whatsappNumber : "",
+    whatsappPrefill:
+      typeof raw.whatsappPrefill === "string" && raw.whatsappPrefill !== ""
+        ? raw.whatsappPrefill
+        : null,
+    messengerUsername:
+      typeof raw.messengerUsername === "string" ? raw.messengerUsername : "",
+    callNumber: typeof raw.callNumber === "string" ? raw.callNumber : "",
+    instagramHandle: typeof raw.instagramHandle === "string" ? raw.instagramHandle : "",
   };
 }

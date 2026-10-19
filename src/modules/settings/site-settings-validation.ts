@@ -79,6 +79,52 @@ function optionalUrlOrEmpty(max: number, message: string) {
   );
 }
 
+// ---- contact channel helpers (floating chat widget) ---------------------------------
+// Defined BEFORE siteSettingsInputSchema: messenger/instagram rules are const
+// (not hoisted), so they must exist before the schema object evaluates them.
+function optionalPhone(max: number, message: string) {
+  return z.preprocess(
+    (v) => (v === null || v === undefined ? undefined : v),
+    z
+      .string()
+      .trim()
+      .max(max, message)
+      .refine((v) => v === "" || /^[+()\-.\s\d]+$/.test(v), "Enter a valid phone number")
+      .optional(),
+  );
+}
+
+/** Messenger username or page ID (letters, digits, dots — no URL, no spaces). */
+const messengerUsernameRule = z.preprocess(
+  (v) => (v === null || v === undefined ? undefined : v),
+  z
+    .string()
+    .trim()
+    .max(100, "Messenger username must be 100 characters or fewer")
+    .refine(
+      (v) => v === "" || /^[A-Za-z0-9.]+$/.test(v),
+      "Enter just the username (letters, numbers, dots) — not a full URL",
+    )
+    .optional(),
+);
+
+/** Instagram handle (with or without leading @) or a full instagram.com URL. */
+const instagramHandleRule = z.preprocess(
+  (v) => (v === null || v === undefined ? undefined : v),
+  z
+    .string()
+    .trim()
+    .max(150, "Instagram value must be 150 characters or fewer")
+    .refine(
+      (v) =>
+        v === "" ||
+        isHttpUrl(v) ||
+        /^@?[A-Za-z0-9._]+$/.test(v),
+      "Enter the @handle or a full https://instagram.com/… URL",
+    )
+    .optional(),
+);
+
 // ---- site settings input ------------------------------------------------------------
 
 /**
@@ -116,6 +162,15 @@ export const siteSettingsInputSchema = z.object({
     500,
     "Footer description must be 500 characters or fewer",
   ),
+  // Floating chat-widget channels — ALL optional: absent preserves, "" clears
+  // (hides that icon), a value replaces. optionalPhone/messenger/instagram
+  // rules already return optional schemas, so no second .optional() here —
+  // double-optional breaks the inferred input type (never vs string|undefined).
+  whatsappNumber: optionalPhone(30, "WhatsApp number must be 30 characters or fewer"),
+  whatsappPrefill: clearableOptionalText(300, "WhatsApp prefill must be 300 characters or fewer"),
+  messengerUsername: messengerUsernameRule,
+  callNumber: optionalPhone(30, "Call number must be 30 characters or fewer"),
+  instagramHandle: instagramHandleRule,
   footerColumns: z
     .array(
       z.object({
@@ -144,6 +199,27 @@ export const siteSettingsInputSchema = z.object({
   copyright: clearableOptionalText(200, "Copyright must be 200 characters or fewer"),
 });
 export type SiteSettingsInput = z.infer<typeof siteSettingsInputSchema>;
+
+// ---- dedicated contact-channels save schema (admin Contact Channels card) ----
+// Same five fields as standalone object: lets the Contact tab save channels
+// without touching brand fields. Link contracts live in
+// src/components/site/contact-channels.ts:
+//   whatsappNumber -> https://wa.me/<digits>?text=<encoded prefill>
+//   messengerUsername -> https://m.me/<username>
+//   callNumber -> tel:+<digits>
+//   instagramHandle -> https://instagram.com/<handle>
+
+export const contactChannelsSchema = z.object({
+  whatsappNumber: optionalPhone(30, "WhatsApp number must be 30 characters or fewer"),
+  whatsappPrefill: clearableOptionalText(
+    300,
+    "WhatsApp prefill must be 300 characters or fewer",
+  ),
+  messengerUsername: messengerUsernameRule,
+  callNumber: optionalPhone(30, "Call number must be 30 characters or fewer"),
+  instagramHandle: instagramHandleRule,
+});
+export type ContactChannelsInput = z.infer<typeof contactChannelsSchema>;
 
 // ---- home settings input --------------------------------------------------------------
 

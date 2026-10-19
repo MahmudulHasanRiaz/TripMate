@@ -29,10 +29,13 @@ export default function VisaExplorerClient({
   services,
   destinations,
   visaTypes,
+  brand,
 }: {
   services: VisaServiceWithRefs[];
   destinations: Destination[];
   visaTypes: VisaType[];
+  /** Site title — flows into the inquiry modal's trust line. */
+  brand?: string;
 }) {
   const [search, setSearch] = useState("");
   const [selectedDestId, setSelectedDestId] = useState<string>("all");
@@ -329,6 +332,7 @@ export default function VisaExplorerClient({
       {inquiryVisa && (
         <VisaInquiryModal
           visa={inquiryVisa}
+          brand={brand}
           open={Boolean(inquiryVisa)}
           onClose={() => setInquiryVisa(null)}
         />

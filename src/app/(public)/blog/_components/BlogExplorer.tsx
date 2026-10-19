@@ -24,12 +24,15 @@ type SearchParams = Readonly<Record<string, string | string[] | undefined>>;
  */
 export async function BlogExplorer({
   searchParams,
+  authorFallback,
 }: {
   searchParams: SearchParams | Promise<SearchParams>;
+  /** Site-title fallback ("Brand Team") for authorless posts. */
+  authorFallback?: string;
 }) {
   const params = await searchParams;
   const page = positiveInt(first(params.page), 1);
-  const result = await getBlogIndexData(page);
+  const result = await getBlogIndexData(page, authorFallback);
 
   return (
     <>

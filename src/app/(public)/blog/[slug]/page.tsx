@@ -9,6 +9,7 @@ import { ProseMarkdown } from "@/components/site/ProseMarkdown";
 import { Gallery } from "@/components/site/Gallery";
 import { JsonLd } from "@/components/site/JsonLd";
 import { detailMetadata, youtubeEmbedUrl } from "@/lib/seo-meta";
+import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 
 import { getBlogPostData } from "../_lib/blog-data";
 
@@ -50,8 +51,11 @@ export default function BlogPostPage(props: PageProps<"/blog/[slug]">) {
 
 async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const post = await getBlogPostData(slug);
+  const [post, site] = await Promise.all([getBlogPostData(slug), getPublicSiteSettings()]);
   if (!post) notFound();
+
+  const teamFallback = `${site.title?.trim() || "the agency"} Team`;
+  const author = post.author || teamFallback;
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -89,7 +93,7 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
           : undefined,
         author: {
           "@type": "Person",
-          name: post.author || "TripMate Team",
+          name: author,
         },
       },
     ],
@@ -123,7 +127,7 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
           </li>
           <li className="inline-flex items-center gap-1.5">
             <PenLine className="size-4 text-primary" aria-hidden="true" />
-            {post.author}
+            {author}
           </li>
         </ul>
       </header>

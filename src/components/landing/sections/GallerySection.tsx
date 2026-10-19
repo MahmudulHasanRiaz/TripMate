@@ -4,15 +4,18 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 
 type GallerySectionProps = {
   config: GalleryConfig;
+  /** Site title for the fallback image alt ("{brand} journey highlight"). */
+  brand?: string;
 };
 
-export function GallerySection({ config }: GallerySectionProps) {
+export function GallerySection({ config, brand }: GallerySectionProps) {
   const rawImages = config.images || [];
   if (rawImages.length === 0) return null;
 
+  const altFallback = `${brand?.trim() || "Our"} journey highlight`;
   const images = rawImages.map((img) => ({
     src: img.url,
-    alt: img.alt || "TripMate journey highlight",
+    alt: img.alt || altFallback,
   }));
 
   return (

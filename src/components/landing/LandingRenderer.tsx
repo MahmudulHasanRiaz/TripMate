@@ -26,6 +26,8 @@ type LandingRendererProps = {
   formConfig?: FormConfig | null;
   landingSlug?: string;
   mode?: "public" | "preview";
+  /** Site title for brand-aware fallback copy ("Why {brand}"), unset = TripMate-era defaults. */
+  brand?: string;
   className?: string;
 };
 
@@ -39,6 +41,7 @@ export function LandingRenderer({
   formConfig,
   landingSlug = "",
   mode = "public",
+  brand = "",
   className,
 }: LandingRendererProps) {
   // 1. Separate in-flow sections from overlay sections (stickyCta + whatsappCta)
@@ -102,7 +105,7 @@ export function LandingRenderer({
             case "benefits":
               return (
                 <div key={index} className={bgClass}>
-                  <BenefitsSection config={section.config} />
+                  <BenefitsSection config={section.config} brand={brand} />
                 </div>
               );
 
@@ -116,7 +119,7 @@ export function LandingRenderer({
             case "gallery":
               return (
                 <div key={index} className={bgClass}>
-                  <GallerySection config={section.config} />
+                  <GallerySection config={section.config} brand={brand} />
                 </div>
               );
 
@@ -150,6 +153,7 @@ export function LandingRenderer({
                     formConfig={formConfig ?? null}
                     landingSlug={landingSlug}
                     previewMode={mode === "preview"}
+                    brand={brand}
                   />
                 </div>
               );

@@ -75,7 +75,7 @@ export default async function Home() {
     getPublicTestimonials(12).catch(() => []),
   ]);
 
-  const home = readHomeSetting(homeRaw);
+  const home = readHomeSetting(homeRaw, site.title);
 
   const displayPackages =
     featuredPublished.items.length > 0
@@ -128,7 +128,7 @@ export default async function Home() {
       />
 
       <div className="mt-8 sm:mt-12">
-        <TrustStrip />
+        <TrustStrip siteName={site.title} />
       </div>
 
       {displayPackages.length > 0 && home.showFeatured ? (
@@ -225,7 +225,7 @@ export default async function Home() {
                       imageSrc={post.featuredImage?.url ?? ""}
                       imageAlt={post.featuredImage?.alt ?? post.title}
                       date={post.publishedAt ?? post.createdAt}
-                      author={post.author?.name ?? "TripMate Team"}
+                      author={post.author?.name ?? `${site.title} Team`}
                       excerpt={post.excerpt ?? ""}
                     />
                   ))}
@@ -257,6 +257,7 @@ export default async function Home() {
           ctaLabel="Explore packages"
           ctaHref={PACKAGES_HREF}
           phone={site.phone}
+          eyebrow={site.title?.trim() ? `Begin Your Spiritual Odyssey with ${site.title.trim()}` : undefined}
         />
       ) : null}
     </>
@@ -301,7 +302,7 @@ const DEFAULT_SUB =
   "Hajj, Umrah, tours, flights & visa — one trusted agency for every journey.";
 const DEFAULT_CTA_LABEL = "Explore packages";
 
-function readHomeSetting(raw: Record<string, unknown> | null): {
+function readHomeSetting(raw: Record<string, unknown> | null, siteTitle: string): {
   headline: string;
   sub: string;
   ctaLabel: string;
@@ -359,7 +360,7 @@ function readHomeSetting(raw: Record<string, unknown> | null): {
     ctaHeadline: pick("ctaHeadline") ?? "Let's plan your next journey",
     ctaSub:
       pick("ctaSub") ??
-      "From Hajj and Umrah to family holidays and medical travel — talk to a TripMate advisor today.",
+      `From Hajj and Umrah to family holidays and medical travel — talk to a ${siteTitle} advisor today.`,
     stats: rawStats,
     testimonials: rawTestimonials ?? [],
     showHero: raw?.showHero !== false,

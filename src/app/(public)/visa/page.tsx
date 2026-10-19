@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Award, FileCheck2, Headphones, ShieldCheck } from "lucide-react";
+import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { getVisaExplorerData } from "./_lib/visa-data";
 import VisaExplorerClient from "./VisaExplorerClient";
 import { SectionHeading } from "@/components/site/SectionHeading";
 
-export const metadata: Metadata = {
-  title: "Global Visa Services & Immigration Assistance | TripMate",
-  description:
-    "Fast, reliable visa processing for Dubai, Malaysia, Singapore, Saudi Arabia, UK, and Schengen countries. Expert documentation check, transparent embassy fees, and high approval rates.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getPublicSiteSettings();
+  return {
+    title: "Global Visa Services & Immigration Assistance",
+    description:
+      "Fast, reliable visa processing for Dubai, Malaysia, Singapore, Saudi Arabia, UK, and Schengen countries. Expert documentation check, transparent embassy fees, and high approval rates.",
+    openGraph: { title: `${site.title?.trim() || "TripMate"} Global Visa Services` },
+  };
+}
 
 // The page opts out of build-time prerender (instant = false) so the build
 // never fills a prerender cache entry with this DB read — a Vercel build-time
@@ -25,6 +30,8 @@ export default async function VisaPage() {
   await connection();
 
   const { services, destinations, visaTypes } = await getVisaExplorerData();
+  const site = await getPublicSiteSettings();
+  const brand = site.title?.trim() || "TripMate";
 
   return (
     <main className="min-h-screen bg-background pb-20">
@@ -72,6 +79,7 @@ export default async function VisaPage() {
           services={services}
           destinations={destinations}
           visaTypes={visaTypes}
+          brand={brand}
         />
       </section>
 
@@ -80,7 +88,7 @@ export default async function VisaPage() {
         <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
           <SectionHeading
             kicker="Streamlined Process"
-            title="How TripMate Processes Your Visa"
+            title={`How ${brand} Processes Your Visa`}
             lead="Simple 4-step workflow from inquiry to approval."
             align="center"
           />

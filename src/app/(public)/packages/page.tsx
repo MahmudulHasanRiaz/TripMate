@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 import {
   PackagesExplorer,
   PackagesExplorerFallback,
 } from "./_components/PackagesExplorer";
 
-export const metadata: Metadata = {
-  title: "Packages",
-  description:
-    "Browse TripMate's fixed Hajj, Umrah and holiday packages with transparent, all-in pricing — filter by destination, category or budget.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getPublicSiteSettings();
+  const brand = site.title?.trim() || "TripMate";
+  return {
+    title: "Packages",
+    description: `Browse ${brand}'s fixed Hajj, Umrah and holiday packages with transparent, all-in pricing — filter by destination, category or budget.`,
+  };
+}
 
 /**
  * Packages index — /packages.

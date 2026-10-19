@@ -40,8 +40,13 @@ export async function generateMetadata(
   cacheLife("hours");
 
   const { slug } = await props.params;
-  const destination = await getDestinationBySlug(slug, true);
+  const [destination, site] = await Promise.all([
+    getDestinationBySlug(slug, true),
+    getSiteSettings(),
+  ]);
   if (!destination) return { title: "Destination Not Found" };
+
+  const brand = site.title?.trim() || "TripMate";
 
   const title =
     destination.seo && typeof destination.seo.title === "string" && destination.seo.title.trim()
@@ -54,7 +59,7 @@ export async function generateMetadata(
     destination.seo.description.trim()
       ? destination.seo.description.trim()
       : (destination.description?.slice(0, 160) ||
-        `Explore travel itineraries, holiday packages, and visa processing for ${destination.name} with TripMate.`);
+        `Explore travel itineraries, holiday packages, and visa processing for ${destination.name} with ${brand}.`);
 
   return detailMetadata({
     path: `/destinations/${destination.slug}`,

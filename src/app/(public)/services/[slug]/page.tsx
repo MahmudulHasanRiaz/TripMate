@@ -53,14 +53,14 @@ export async function generateMetadata(
   props: PageProps<"/services/[slug]">,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const data = await getServicePageData(slug);
+  const [data, site] = await Promise.all([getServicePageData(slug), getSiteSettings()]);
   if (!data) return { title: "Service not found" };
   // No inline "| TripMate" suffix: the root layout's title.template
-  // ("%s | TripMate") appends it — an inline suffix would double it.
+  // ("%s | {brand}") appends it — an inline suffix would double it.
   return detailMetadata({
     path: `/services/${data.slug}`,
     title: data.name,
-    description: descriptionFor(data),
+    description: descriptionFor(data, site.title?.trim() || "TripMate"),
   });
 }
 
@@ -111,15 +111,17 @@ async function ServicePageBody({ params }: { params: Promise<{ slug: string }> }
   );
 }
 
-function descriptionFor(data: ServicePageData): string {
+/** Brand-aware SEO description; never exposes an unset brand name. */
+function descriptionFor(data: ServicePageData, brand: string): string {
+  const who = brand.trim() ? brand : "us";
   const count = data.listings.length;
   if (data.kind === "package") {
-    return `${data.name} by TripMate — ${count === 0 ? "curated packages with transparent pricing" : `${count} published ${count === 1 ? "package" : "packages"} with fixed itineraries and all-in pricing`}.`;
+    return `${data.name} by ${who} — ${count === 0 ? "curated packages with transparent pricing" : `${count} published ${count === 1 ? "package" : "packages"} with fixed itineraries and all-in pricing`}.`;
   }
   if (data.kind === "redirect") {
-    return `${data.name} — book direct with TripMate's trusted partner.`;
+    return `${data.name} — book direct with ${who}'s trusted partner.`;
   }
-  return `${data.name} at TripMate — tell us your plan and receive a personalised quote.`;
+  return `${data.name} at ${who} — tell us your plan and receive a personalised quote.`;
 }
 
 /** package kind: the category's published listings in a card grid. */
@@ -210,7 +212,7 @@ function InquirySection({
   site,
 }: {
   data: ServicePageData;
-  site: { phone: string; email: string };
+  site: { title: string; phone: string; email: string };
 }) {
   return (
     <section aria-labelledby="inquiry-needs-heading" className="bg-secondary">
@@ -250,7 +252,7 @@ function InquirySection({
               </p>
             </div>
 
-            <ContactOptions name={data.name} phone={site.phone} email={site.email} />
+            <ContactOptions name={data.name} phone={site.phone} email={site.email} brand={site.title?.trim() || "us"} />
           </div>
 
           <div>
@@ -273,7 +275,7 @@ function RedirectSection({
   site,
 }: {
   data: ServicePageData;
-  site: { phone: string; email: string };
+  site: { title: string; phone: string; email: string };
 }) {
   return (
     <section aria-labelledby="partner-heading" className="bg-background">
@@ -311,7 +313,7 @@ function RedirectSection({
               the right partner service.
             </aside>
           ) : (
-            <ContactOptions name={data.name} phone={site.phone} email={site.email} />
+            <ContactOptions name={data.name} phone={site.phone} email={site.email} brand={site.title?.trim() || "us"} />
           )}
         </div>
       </div>
@@ -332,7 +334,12 @@ type ContactProps = {
  * conversion actions, and contact channels are complementary (precedent:
  * PackageEnquiryCard).
  */
-function ContactOptions({ name, phone, email }: ContactProps) {
+function ContactOptions({
+  name,
+  phone,
+  email,
+  brand,
+}: ContactProps & { brand: string }) {
   // tel/wa hrefs are null when the site has no usable phone (unset or
   // whitespace) — render those links only when the href actually exists, so the
   // card never emits a broken `tel:+` / `wa.me/`.
@@ -347,7 +354,7 @@ function ContactOptions({ name, phone, email }: ContactProps) {
         It starts with a conversation
       </p>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        Share what you&apos;re planning and a TripMate advisor will come back with
+        Share what you&apos;re planning and a {brand} advisor will come back with
         your written quote — usually within a few hours on business days.
       </p>
 

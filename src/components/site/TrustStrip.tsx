@@ -1,8 +1,11 @@
 import { Award, CreditCard, Headphones, ShieldCheck } from "lucide-react";
 
-export function TrustStrip() {
+export function TrustStrip({ siteName }: { siteName?: string }) {
+  const label = siteName?.trim()
+    ? `${siteName.trim()} Agency Accreditation and Trust Guarantee`
+    : "Agency Accreditation and Trust Guarantee";
   return (
-    <section aria-label="TripMate Agency Accreditation and Trust Guarantee" className="border-y border-border bg-muted/30 py-6">
+    <section aria-label={label} className="border-y border-border bg-muted/30 py-6">
       <div className="mx-auto w-full max-w-[1400px] px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-8">
           {/* Item 1 */}

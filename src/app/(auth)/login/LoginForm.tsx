@@ -50,7 +50,7 @@ const loginSchema = z.object({
 });
 type LoginValues = z.infer<typeof loginSchema>;
 
-export default function LoginForm() {
+export default function LoginForm({ brand }: { brand?: string }) {
   const router = useRouter();
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -150,7 +150,7 @@ export default function LoginForm() {
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">
-              New to TripMate?{" "}
+              New to {brand?.trim() || "TripMate"}?{" "}
               <Link href="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
                 Create an account
               </Link>

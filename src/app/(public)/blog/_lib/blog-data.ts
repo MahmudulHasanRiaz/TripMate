@@ -67,7 +67,7 @@ export type BlogListData = {
   totalPages: number;
 };
 
-function toCardData(post: PostWithRefs): BlogCardData {
+function toCardData(post: PostWithRefs, authorFallback: string): BlogCardData {
   return {
     id: post.id,
     title: post.title,
@@ -76,12 +76,15 @@ function toCardData(post: PostWithRefs): BlogCardData {
       ? { url: post.featuredImage.url, alt: post.featuredImage.alt ?? post.title }
       : null,
     date: (post.publishedAt ?? post.createdAt).toISOString(),
-    author: post.author?.name ?? "TripMate Team",
+    author: post.author?.name ?? authorFallback,
     excerpt: post.excerpt ?? "",
   };
 }
 
-export async function getBlogIndexData(page: number): Promise<BlogListData> {
+export async function getBlogIndexData(
+  page: number,
+  authorFallback = "",
+): Promise<BlogListData> {
   "use cache";
   cacheTag(CACHE_TAGS.posts);
   cacheLife("hours");
@@ -98,14 +101,17 @@ export async function getBlogIndexData(page: number): Promise<BlogListData> {
   const effectivePage = Math.min(page, totalPages);
 
   return {
-    items: result.items.map(toCardData),
+    items: result.items.map((post) => toCardData(post, authorFallback)),
     total: result.total,
     page: effectivePage,
     totalPages,
   };
 }
 
-export async function getBlogPostData(slug: string): Promise<BlogPostData | null> {
+export async function getBlogPostData(
+  slug: string,
+  authorFallback = "",
+): Promise<BlogPostData | null> {
   "use cache";
   cacheTag(CACHE_TAGS.posts);
   cacheLife("hours");
@@ -124,7 +130,7 @@ export async function getBlogPostData(slug: string): Promise<BlogPostData | null
       : null,
     gallery: post.gallery.map((g) => ({ url: g.url, alt: g.alt ?? post.title })),
     videoUrl: post.videoUrl,
-    author: post.author?.name ?? "TripMate Team",
+    author: post.author?.name ?? authorFallback,
     category: post.category?.name ?? null,
     publishedAt: (post.publishedAt ?? post.createdAt).toISOString(),
     seoTitle: post.seo?.title?.trim() ?? "",

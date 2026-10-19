@@ -44,6 +44,11 @@ export const SITE_SETTING_KEYS = [
   "footerColumns",
   "footerSocials",
   "copyright",
+  "whatsappNumber",
+  "whatsappPrefill",
+  "messengerUsername",
+  "callNumber",
+  "instagramHandle",
 ] as const satisfies readonly (keyof SiteSettings)[];
 
 export type FooterLink = { label: string; href: string };
@@ -62,6 +67,14 @@ export type SiteSettings = {
   footerColumns: FooterColumn[];
   footerSocials: FooterSocial[];
   copyright: string | null;
+  /** Floating chat widget channels — empty string means "not configured,
+   *  hide that icon". whatsappNumber/callNumber keep the operator's
+   *  formatting; digits are extracted at link-build time. */
+  whatsappNumber: string;
+  whatsappPrefill: string | null;
+  messengerUsername: string;
+  callNumber: string;
+  instagramHandle: string;
 };
 
 /** Brand shown before the setup wizard seeds a `site` row — the seed row's own
@@ -80,6 +93,11 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   footerColumns: [],
   footerSocials: [],
   copyright: null,
+  whatsappNumber: "",
+  whatsappPrefill: null,
+  messengerUsername: "",
+  callNumber: "",
+  instagramHandle: "",
 };
 
 /** Project a raw jsonb cell onto Record<string, unknown> (jsonb may hold
@@ -127,6 +145,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       ? (row.footerSocials as FooterSocial[]).filter((s) => s && typeof s.href === "string")
       : [];
     const copyright = row.copyright;
+    const prefill = row.whatsappPrefill;
     return {
       title: mergedString(row, "title", DEFAULT_SITE_SETTINGS.title),
       phone: mergedString(row, "phone", DEFAULT_SITE_SETTINGS.phone),
@@ -142,6 +161,12 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       footerColumns: columns,
       footerSocials: socials,
       copyright: typeof copyright === "string" && copyright !== "" ? copyright : null,
+      // Chat channels: legacy rows predate these keys → empty = hidden icon.
+      whatsappNumber: mergedString(row, "whatsappNumber", ""),
+      whatsappPrefill: typeof prefill === "string" && prefill !== "" ? prefill : null,
+      messengerUsername: mergedString(row, "messengerUsername", ""),
+      callNumber: mergedString(row, "callNumber", ""),
+      instagramHandle: mergedString(row, "instagramHandle", ""),
     };
   } catch (err) {
     console.error("[getSiteSettings] Failed to read or parse site settings, falling back to defaults:", err);
@@ -165,8 +190,17 @@ function mergedText(existing: string | null, incoming: string | undefined): stri
  * the schema and always lands), and the FULL merged row is persisted so the
  * stored value never accretes legacy keys. Returns the row as stored.
  */
-export async function updateSiteSettings(input: SiteSettingsInput): Promise<SiteSettings> {
+export async function updateSiteSettings(
+  input: Omit<SiteSettingsInput, "whatsappPrefill"> & {
+    whatsappPrefill?: string | null;
+  },
+): Promise<SiteSettings> {
   const current = await getSiteSettings();
+  // Channel merge rule: absent (undefined) preserves, "" clears, value replaces.
+  // whatsappPrefill is nullable text (mergedText); the rest are plain strings
+  // where "" means "hide this icon".
+  const channelText = (existing: string, incoming: string | undefined): string =>
+    incoming === undefined ? existing : incoming;
   const next: SiteSettings = {
     title: input.title,
     phone: input.phone,
@@ -179,6 +213,11 @@ export async function updateSiteSettings(input: SiteSettingsInput): Promise<Site
     footerColumns: input.footerColumns ?? current.footerColumns,
     footerSocials: input.footerSocials ?? current.footerSocials,
     copyright: mergedText(current.copyright, input.copyright),
+    whatsappNumber: channelText(current.whatsappNumber, input.whatsappNumber),
+    whatsappPrefill: mergedText(current.whatsappPrefill, input.whatsappPrefill ?? undefined),
+    messengerUsername: channelText(current.messengerUsername, input.messengerUsername),
+    callNumber: channelText(current.callNumber, input.callNumber),
+    instagramHandle: channelText(current.instagramHandle, input.instagramHandle),
   };
   await setSetting("site", next);
   return next;
@@ -343,6 +382,7 @@ export async function getPublicSiteSettings(): Promise<SiteSettings> {
     ? (row.footerSocials as FooterSocial[]).filter((s) => s && typeof s.href === "string")
     : [];
   const copyright = row.copyright;
+  const prefill = row.whatsappPrefill;
   return {
     title: mergedString(row, "title", DEFAULT_SITE_SETTINGS.title),
     phone: mergedString(row, "phone", DEFAULT_SITE_SETTINGS.phone),
@@ -358,6 +398,11 @@ export async function getPublicSiteSettings(): Promise<SiteSettings> {
     footerColumns: columns,
     footerSocials: socials,
     copyright: typeof copyright === "string" && copyright !== "" ? copyright : null,
+    whatsappNumber: mergedString(row, "whatsappNumber", ""),
+    whatsappPrefill: typeof prefill === "string" && prefill !== "" ? prefill : null,
+    messengerUsername: mergedString(row, "messengerUsername", ""),
+    callNumber: mergedString(row, "callNumber", ""),
+    instagramHandle: mergedString(row, "instagramHandle", ""),
   };
 }
 

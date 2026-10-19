@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import "dotenv/config";
 import {
+  contactChannelsSchema,
   homeSettingsInputSchema,
   siteSettingsInputSchema,
 } from "@/modules/settings/site-settings-validation";
@@ -138,6 +139,113 @@ describe("siteSettingsInputSchema", () => {
       expect(parsed.success).toBe(true);
       if (parsed.success) expect(parsed.data.footerDescription).toBe("hello");
     });
+  });
+
+  describe("floating chat-widget channels (whatsapp/messenger/call/instagram)", () => {
+    it("absent, null and empty string are all valid — empties are preserved as \"\"", () => {
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({})).success).toBe(true);
+      expect(
+        siteSettingsInputSchema.safeParse(
+          validSiteInput({ whatsappNumber: null, whatsappPrefill: null, messengerUsername: null, callNumber: null, instagramHandle: null }),
+        ).success,
+      ).toBe(true);
+      const parsed = siteSettingsInputSchema.safeParse(
+        validSiteInput({ whatsappNumber: "", callNumber: "", messengerUsername: "", instagramHandle: "" }),
+      );
+      expect(parsed.success).toBe(true);
+      if (parsed.success) {
+        expect(parsed.data.whatsappNumber).toBe("");
+        expect(parsed.data.callNumber).toBe("");
+      }
+    });
+
+    it("whatsapp/call numbers: phone-shaped values pass, junk refuses", () => {
+      const ok = validSiteInput({ whatsappNumber: "+880 1700 000000", callNumber: "(02)-9015.0011" });
+      expect(siteSettingsInputSchema.safeParse(ok).success).toBe(true);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ whatsappNumber: "8801700000000" })).success).toBe(true);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ whatsappNumber: "call me maybe" })).success).toBe(false);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ whatsappNumber: "javascript:alert(1)" })).success).toBe(false);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ callNumber: "+880;rm -rf /" })).success).toBe(false);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ whatsappNumber: "a".repeat(31) })).success).toBe(false);
+    });
+
+    it("messengerUsername: bare username passes, URLs refuse", () => {
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ messengerUsername: "tripmate.travel" })).success).toBe(true);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ messengerUsername: "@Team" })).success).toBe(false);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ messengerUsername: "https://m.me/tripmate" })).success).toBe(false);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ messengerUsername: "hello world" })).success).toBe(false);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ messengerUsername: "a".repeat(101) })).success).toBe(false);
+    });
+
+    it("instagramHandle: @handle, bare handle or full instagram URL; unsafe URLs refuse", () => {
+      const parse = (v: unknown) => siteSettingsInputSchema.safeParse(validSiteInput({ instagramHandle: v }));
+      expect(parse("@tripmate").success).toBe(true);
+      expect(parse("tripmate.tours").success).toBe(true);
+      expect(parse("https://instagram.com/tripmate/").success).toBe(true);
+      expect(parse("http://instagram.com/tripmate").success).toBe(true);
+      expect(parse("javascript:alert(1)").success).toBe(false);
+      expect(parse(5).success).toBe(false);
+    });
+
+    it("whatsappPrefill: null → absent, empty string stays (clears the prefill), caps at 300", () => {
+      const fromNull = siteSettingsInputSchema.safeParse(validSiteInput({ whatsappPrefill: null }));
+      expect(fromNull.success).toBe(true);
+      if (fromNull.success) expect(fromNull.data.whatsappPrefill).toBeUndefined();
+      const fromEmpty = siteSettingsInputSchema.safeParse(validSiteInput({ whatsappPrefill: "" }));
+      expect(fromEmpty.success).toBe(true);
+      if (fromEmpty.success) expect(fromEmpty.data.whatsappPrefill).toBe("");
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ whatsappPrefill: "a".repeat(300) })).success).toBe(true);
+      expect(siteSettingsInputSchema.safeParse(validSiteInput({ whatsappPrefill: "a".repeat(301) })).success).toBe(false);
+    });
+  });
+});
+
+// ==============================================================================
+// contactChannelsSchema (dedicated Contact-channels card save)
+// ==============================================================================
+
+describe("contactChannelsSchema", () => {
+  it("accepts an empty object (absent preserves every channel server-side)", () => {
+    const parsed = contactChannelsSchema.safeParse({});
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.whatsappNumber).toBeUndefined();
+      expect(parsed.data.whatsappPrefill).toBeUndefined();
+      expect(parsed.data.messengerUsername).toBeUndefined();
+      expect(parsed.data.callNumber).toBeUndefined();
+      expect(parsed.data.instagramHandle).toBeUndefined();
+    }
+  });
+
+  const validChannels = {
+    whatsappNumber: "+880 1700 000000",
+    whatsappPrefill: "Salam! I need help with Umrah.",
+    messengerUsername: "tripmate.travel",
+    callNumber: "+8801700000000",
+    instagramHandle: "@tripmate",
+  };
+
+  it("accepts a fully-populated card payload and trims values", () => {
+    const parsed = contactChannelsSchema.safeParse({ ...validChannels, messengerUsername: "  tripmate.travel  " });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.messengerUsername).toBe("tripmate.travel");
+  });
+
+  it("refuses a WhatsApp number with letters (link builder would throw a digitless wa.me)", () => {
+    expect(contactChannelsSchema.safeParse({ ...validChannels, whatsappNumber: "+88O" }).success).toBe(false);
+  });
+
+  it("whatsappPrefill null normalizes to undefined (preserve), empty string stays (clear)", () => {
+    const fromNull = contactChannelsSchema.safeParse({ whatsappPrefill: null });
+    expect(fromNull.success).toBe(true);
+    if (fromNull.success) expect(fromNull.data.whatsappPrefill).toBeUndefined();
+  });
+
+  it("normalizes instagram URL inputs and rejects m.me URLs for messenger", () => {
+    const ig = contactChannelsSchema.safeParse({ instagramHandle: "https://instagram.com/tripmate/" });
+    expect(ig.success).toBe(true);
+    const mg = contactChannelsSchema.safeParse({ messengerUsername: "https://m.me/tripmate" });
+    expect(mg.success).toBe(false);
   });
 });
 
@@ -288,6 +396,11 @@ describe.skipIf(!integration)("site settings round-trip (integration — Postgre
       footerColumns: [],
       footerSocials: [],
       copyright: null,
+      whatsappNumber: "",
+      whatsappPrefill: null,
+      messengerUsername: "",
+      callNumber: "",
+      instagramHandle: "",
     });
   });
 

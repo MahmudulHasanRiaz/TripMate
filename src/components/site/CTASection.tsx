@@ -12,6 +12,8 @@ type CTASectionProps = {
   ctaHref: string;
   phone?: string;
   whatsapp?: boolean;
+  /** Eyebrow line above the headline — defaults to a brand-aware invite. */
+  eyebrow?: ReactNode;
 };
 
 export function CTASection({
@@ -21,6 +23,7 @@ export function CTASection({
   ctaHref,
   phone,
   whatsapp = true,
+  eyebrow,
 }: CTASectionProps) {
   const telHref = telLink(phone ?? "");
   const waHref = whatsapp ? whatsappLink(phone ?? "") : null;
@@ -36,7 +39,7 @@ export function CTASection({
           {/* Eyebrow */}
           <div className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-xs font-semibold tracking-wide text-white backdrop-blur-md">
             <Sparkles className="size-3.5" />
-            <span>Begin Your Spiritual Odyssey with TripMate</span>
+            <span>{eyebrow ?? "Begin Your Spiritual Odyssey"}</span>
           </div>
 
           <h2 className="font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">

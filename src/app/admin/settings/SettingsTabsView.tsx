@@ -27,6 +27,7 @@ import type { HomeSettings, SiteSettings } from "@/modules/settings/site-setting
 import type { ThemeSettings } from "@/modules/settings/theme";
 import type { PaymentSettings } from "@/modules/payments/validation";
 import ThemeCustomizer from "@/components/admin/ThemeCustomizer";
+import ContactChannelsCard from "./ContactChannelsCard";
 import HomeVisibilityCard from "./HomeVisibilityCard";
 import FooterSettingsCard from "./FooterSettingsCard";
 import SeoIndexingCard from "./SeoIndexingCard";
@@ -521,6 +522,16 @@ export default function SettingsTabsView({
               </Form>
             </CardContent>
           </Card>
+
+          <ContactChannelsCard
+            initial={{
+              whatsappNumber: initialSite.whatsappNumber || "",
+              whatsappPrefill: initialSite.whatsappPrefill ?? null,
+              messengerUsername: initialSite.messengerUsername || "",
+              callNumber: initialSite.callNumber || "",
+              instagramHandle: initialSite.instagramHandle || "",
+            }}
+          />
 
           <Card className="shadow-xs border-border bg-card">
             <CardHeader className="p-4 sm:p-6 pb-4 border-b border-border/60">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-helpers";
+import { getSiteSettings } from "@/lib/site-settings";
 import LoginForm from "./LoginForm";
 
 export const metadata: Metadata = {
@@ -21,9 +22,11 @@ export default async function LoginPage() {
   // shells in later tasks; "/" is always a safe target today.
   if (session) redirect("/");
 
+  const site = await getSiteSettings();
+
   return (
     <main className="flex min-h-svh items-center justify-center bg-background px-4 py-10 text-foreground">
-      <LoginForm />
+      <LoginForm brand={site.title?.trim() || "TripMate"} />
     </main>
   );
 }

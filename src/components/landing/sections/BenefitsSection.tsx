@@ -18,6 +18,8 @@ import { SectionHeading } from "@/components/site/SectionHeading";
 
 type BenefitsSectionProps = {
   config: BenefitsConfig;
+  /** Site title — the fallback kicker is "Why {brand}". */
+  brand?: string;
 };
 
 const BENEFIT_ICONS: Record<string, LucideIcon> = {
@@ -42,15 +44,16 @@ function resolveIcon(iconName?: string): LucideIcon {
   return BENEFIT_ICONS[normalized] ?? Check;
 }
 
-export function BenefitsSection({ config }: BenefitsSectionProps) {
+export function BenefitsSection({ config, brand }: BenefitsSectionProps) {
   const items = config.items || [];
   if (items.length === 0) return null;
+  const kicker = brand?.trim() ? `Why ${brand.trim()}` : "Why us";
 
   return (
     <section className="py-16 sm:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <SectionHeading
-          kicker="Why TripMate"
+          kicker={kicker}
           title="Designed for an exceptional journey"
           align="center"
           className="mb-12 sm:mb-16"

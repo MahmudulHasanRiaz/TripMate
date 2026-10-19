@@ -21,6 +21,8 @@ type LeadFormProps = {
   formConfig: FormConfig | null;
   landingSlug: string;
   previewMode?: boolean;
+  /** Site title for the copy under the submit button. */
+  brand?: string;
 };
 
 function looksLikePhone(val: string): boolean {
@@ -32,7 +34,7 @@ function looksLikeEmail(val: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
 }
 
-export function LeadForm({ formConfig, landingSlug, previewMode = false }: LeadFormProps) {
+export function LeadForm({ formConfig, landingSlug, previewMode = false, brand = "" }: LeadFormProps) {
   const formUid = useId();
   const [isPending, startTransition] = useTransition();
   const [submittedSuccess, setSubmittedSuccess] = useState(false);
@@ -175,7 +177,7 @@ export function LeadForm({ formConfig, landingSlug, previewMode = false }: LeadF
                 Thank you! We&apos;ve received your inquiry.
               </h3>
               <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                A TripMate dedicated specialist will review your details and contact you promptly.
+                A {brand?.trim() || "TripMate"} dedicated specialist will review your details and contact you promptly.
               </p>
             </div>
           ) : (

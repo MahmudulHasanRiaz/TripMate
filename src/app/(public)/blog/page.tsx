@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
+import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { BlogExplorer, BlogExplorerFallback } from "./_components/BlogExplorer";
 
-export const metadata: Metadata = {
-  title: "Journal",
-  description:
-    "TripMate's travel journal — trip notes, destination guides and the stories behind the journeys we plan.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await getPublicSiteSettings();
+  const brand = site.title?.trim() || "the agency";
+  return {
+    title: "Journal",
+    description: `${brand}'s travel journal — trip notes, destination guides and the stories behind the journeys we plan.`,
+  };
+}
 
 /**
  * Blog index — /blog.
@@ -20,7 +24,9 @@ export const metadata: Metadata = {
  * entry revalidated by the CACHE_TAGS.posts contract (see _lib/blog-data.ts).
  * PPR keeps this shell (title band) static while the pageable region streams.
  */
-export default function BlogPage(props: PageProps<"/blog">) {
+export default async function BlogPage(props: PageProps<"/blog">) {
+  const site = await getPublicSiteSettings();
+  const brand = site.title?.trim() || "the agency";
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 pb-16 pt-10 lg:px-8 lg:pb-24 lg:pt-14">
       <header className="max-w-2xl">
@@ -32,13 +38,13 @@ export default function BlogPage(props: PageProps<"/blog">) {
         </h1>
         <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
           Trip notes, destination guides and the stories behind the journeys —
-          written by the TripMate team.
+          written by the {brand} team.
         </p>
       </header>
 
       <div className="mt-10 lg:mt-12">
         <Suspense fallback={<BlogExplorerFallback />}>
-          <BlogExplorer searchParams={props.searchParams} />
+          <BlogExplorer searchParams={props.searchParams} authorFallback={`${brand} Team`} />
         </Suspense>
       </div>
     </div>
