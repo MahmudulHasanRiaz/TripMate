@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { getSiteSettings } from "@/lib/site-settings";
 import { getPublicSiteSettings } from "@/modules/settings/site-settings";
@@ -74,7 +75,14 @@ export default async function PublicLayout({
       <JsonLd data={orgJsonLd} />
       <style id="tripmate-dynamic-theme">{themeCss}</style>
       <SkipLink />
-      <SiteHeader title={site.title} logoUrl={site.logoUrl} phone={site.phone} />
+      {/* SiteHeader's client-side usePathname() suspends on routes whose
+          dynamic params are request-time-only (e.g. /packages/[slug] fallback
+          slugs — no generateStaticParams). The Suspense boundary keeps the
+          shell prerendered and lets the header stream in after; the skeleton
+          mirrors the floating-island header so nothing jumps. */}
+      <Suspense fallback={<SiteHeaderFallback />}>
+        <SiteHeader title={site.title} logoUrl={site.logoUrl} phone={site.phone} />
+      </Suspense>
       {/* tabIndex=-1 makes main a valid skip-link target; outline-none keeps
           the whole-page focus target from drawing a giant focus ring. */}
       <main id="main" tabIndex={-1} className="outline-none pt-20 sm:pt-24">
@@ -106,5 +114,35 @@ export default async function PublicLayout({
         copyright={site.copyright}
       />
     </>
+  );
+}
+
+/**
+ * Pre-rendered stand-in for the streaming SiteHeader (same fixed-island
+ * footprint: %-width + inner paddings + 36px brand chip). aria-hidden — the
+ * interactive header replaces it within the same flush.
+ */
+function SiteHeaderFallback() {
+  return (
+    <div
+      aria-hidden="true"
+      className="fixed top-2.5 inset-x-0 mx-auto w-[calc(100%-1.25rem)] sm:top-4 sm:w-[calc(100%-2.5rem)] max-w-6xl z-50 select-none"
+    >
+      <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/90 py-2.5 pl-3 pr-3 shadow-lg shadow-black/5 sm:py-3 sm:pl-5 sm:pr-3 dark:bg-card/85">
+        <div className="flex shrink-0 items-center gap-2.5">
+          <div className="size-9 animate-pulse rounded-xl bg-muted" />
+          <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+        </div>
+        <div className="hidden lg:flex items-center gap-1">
+          <div className="h-5 w-14 animate-pulse rounded-xl bg-muted" />
+          <div className="h-5 w-16 animate-pulse rounded-xl bg-muted" />
+          <div className="h-5 w-12 animate-pulse rounded-xl bg-muted" />
+        </div>
+        <div className="flex items-center gap-2.5">
+          <div className="hidden h-8 w-20 animate-pulse rounded-xl bg-muted/70 sm:block" />
+          <div className="size-9 animate-pulse rounded-xl bg-muted" />
+        </div>
+      </div>
+    </div>
   );
 }
