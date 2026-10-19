@@ -1,9 +1,8 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type CSSProperties } from "react";
 import {
   BarChart3,
-  Calendar,
   Table as TableIcon,
   TrendingUp,
 } from "lucide-react";
@@ -53,13 +52,32 @@ export default function DashboardTrendView({ trend }: DashboardTrendViewProps) {
 
   const activePoint = hoveredIndex !== null ? trend[hoveredIndex] : null;
 
+  // Geometry for the SVG chart (0–300 × 0–100 viewBox, screen-constant strokes).
+  const gradientId = useId().replace(/:/g, "");
+  const xAt = (index: number) =>
+    trend.length <= 1 ? 150 : (index / (trend.length - 1)) * 300;
+  const yAt = (value: number, max: number) => 96 - (value / max) * 90;
+  const linePath = (values: number[], max: number) =>
+    values
+      .map(
+        (value, index) =>
+          `${index === 0 ? "M" : "L"}${xAt(index).toFixed(2)},${yAt(value, max).toFixed(2)}`,
+      )
+      .join(" ");
+  const areaPath = (values: number[], max: number) =>
+    `${linePath(values, max)} L300,100 L0,100 Z`;
+
   return (
     <Card className="shadow-xs border-border bg-card">
       <CardHeader className="p-4 sm:p-6 pb-2">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <Calendar className="size-4 text-muted-foreground" aria-hidden="true" />
+              <span
+                className="dot-k"
+                style={{ "--k": "var(--c-green)" } as CSSProperties}
+                aria-hidden="true"
+              />
               <CardTitle className="text-base font-semibold tracking-tight">
                 30-Day Activity & Revenue Trend
               </CardTitle>
@@ -193,82 +211,126 @@ export default function DashboardTrendView({ trend }: DashboardTrendViewProps) {
       <CardContent className="p-4 sm:p-6 pt-2">
         {!showTable ? (
           <div className="space-y-3">
-            {/* Visual Token-styled Daily Bar Chart */}
+            {/* Artifact-style line + area chart (screen-constant strokes) */}
             <div
-              className="relative h-56 w-full pt-4 pb-8 flex items-end gap-1 sm:gap-1.5 select-none overflow-x-auto"
+              className="relative h-56 w-full select-none"
               role="group"
               aria-label="30-day activity trend chart. Toggle Data Table for tabular view."
             >
-              {trend.map((point, index) => {
-                const leadHeightPct = Math.round((point.leads / maxVolume) * 100);
-                const orderHeightPct = Math.round((point.orders / maxVolume) * 100);
-                const revHeightPct = Math.round((point.revenue / maxRevenue) * 100);
+              <svg
+                viewBox="0 0 300 100"
+                preserveAspectRatio="none"
+                className="absolute inset-0 h-full w-full overflow-visible"
+                aria-hidden="true"
+              >
+                <defs>
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--c-green)" stopOpacity="0.32" />
+                    <stop offset="100%" stopColor="var(--c-green)" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
 
-                const isHovered = hoveredIndex === index;
+                {/* horizontal grid (dashed, muted) */}
+                {[26, 51, 76].map((y) => (
+                  <line
+                    key={y}
+                    x1="0"
+                    y1={y}
+                    x2="300"
+                    y2={y}
+                    stroke="hsl(var(--border))"
+                    strokeWidth="1"
+                    strokeDasharray="2 6"
+                    opacity="0.55"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                ))}
 
-                return (
-                  <div
-                    key={point.date}
-                    onMouseEnter={() => setHoveredIndex(index)}
-                    onMouseLeave={() => setHoveredIndex(null)}
-                    onFocus={() => setHoveredIndex(index)}
-                    onBlur={() => setHoveredIndex(null)}
-                    tabIndex={0}
-                    aria-label={`${formatShortDate(point.date)}: ${point.leads} leads, ${point.orders} orders, ${formatMoney(point.revenue, "BDT")} revenue`}
-                    className={cn(
-                      "group relative flex-1 min-w-[8px] sm:min-w-[14px] h-full flex flex-col justify-end items-center cursor-pointer rounded-xs transition-colors outline-hidden focus-visible:ring-1 focus-visible:ring-ring",
-                      isHovered && "bg-secondary/40",
-                    )}
-                  >
-                    {/* Bar container */}
-                    <div className="w-full flex items-end justify-center gap-0.5 sm:gap-1 h-40">
-                      {(mode === "all" || mode === "volume") && (
-                        <>
-                          {/* Leads bar */}
-                          <div
-                            className={cn(
-                              "w-1/3 sm:w-2 rounded-t-xs bg-info transition-all duration-200",
-                              isHovered ? "opacity-100" : "opacity-80",
-                            )}
-                            style={{
-                              height: `${point.leads > 0 ? Math.max(4, leadHeightPct) : 0}%`,
-                            }}
-                          />
-                          {/* Orders bar */}
-                          <div
-                            className={cn(
-                              "w-1/3 sm:w-2 rounded-t-xs bg-primary transition-all duration-200",
-                              isHovered ? "opacity-100" : "opacity-80",
-                            )}
-                            style={{
-                              height: `${point.orders > 0 ? Math.max(4, orderHeightPct) : 0}%`,
-                            }}
-                          />
-                        </>
+                {(mode === "all" || mode === "volume") && (
+                  <>
+                    <path
+                      d={linePath(
+                        trend.map((p) => p.leads),
+                        maxVolume,
                       )}
-                      {(mode === "all" || mode === "revenue") && (
-                        /* Revenue bar */
-                        <div
-                          className={cn(
-                            "w-1/3 sm:w-2 rounded-t-xs bg-success transition-all duration-200",
-                            isHovered ? "opacity-100" : "opacity-80",
-                          )}
-                          style={{
-                            height: `${point.revenue > 0 ? Math.max(4, revHeightPct) : 0}%`,
-                          }}
-                        />
+                      fill="none"
+                      stroke="hsl(var(--info))"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                    <path
+                      d={linePath(
+                        trend.map((p) => p.orders),
+                        maxVolume,
                       )}
-                    </div>
+                      fill="none"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="1.5"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      opacity="0.85"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </>
+                )}
 
-                    {/* Date label (spaced out) */}
-                    {(index % 5 === 0 || index === trend.length - 1) && (
-                      <span className="absolute -bottom-6 text-[10px] font-mono text-muted-foreground whitespace-nowrap">
-                        {formatShortDate(point.date)}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
+                {(mode === "all" || mode === "revenue") && (
+                  <>
+                    <path
+                      d={areaPath(
+                        trend.map((p) => p.revenue),
+                        maxRevenue,
+                      )}
+                      fill={`url(#${gradientId})`}
+                    />
+                    <path
+                      d={linePath(
+                        trend.map((p) => p.revenue),
+                        maxRevenue,
+                      )}
+                      fill="none"
+                      stroke="var(--c-green)"
+                      strokeWidth="1.75"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      vectorEffect="non-scaling-stroke"
+                    />
+                  </>
+                )}
+              </svg>
+
+              {/* Invisible hover columns keep per-day hover + a11y labels */}
+              <div className="absolute inset-0 flex gap-0">
+                {trend.map((point, index) => {
+                  const isHovered = hoveredIndex === index;
+                  return (
+                    <div
+                      key={point.date}
+                      onMouseEnter={() => setHoveredIndex(index)}
+                      onMouseLeave={() => setHoveredIndex(null)}
+                      onFocus={() => setHoveredIndex(index)}
+                      onBlur={() => setHoveredIndex(null)}
+                      tabIndex={0}
+                      aria-label={`${formatShortDate(point.date)}: ${point.leads} leads, ${point.orders} orders, ${formatMoney(point.revenue, "BDT")} revenue`}
+                      className={cn(
+                        "h-full flex-1 cursor-pointer rounded-xs outline-hidden transition-colors focus-visible:ring-1 focus-visible:ring-ring",
+                        isHovered && "bg-secondary/30",
+                      )}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* first + last date labels (artifact footer) */}
+              {trend.length > 0 && (
+                <div className="pointer-events-none absolute -bottom-6 left-0 right-0 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+                  <span>{formatShortDate(trend[0].date)}</span>
+                  <span>{formatShortDate(trend[trend.length - 1].date)}</span>
+                </div>
+              )}
             </div>
 
             {/* Quiet baseline footnote */}

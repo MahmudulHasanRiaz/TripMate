@@ -91,13 +91,13 @@ html.dark :is(.admin-root, body[data-admin]) {
   --sidebar-ring: hsl(167 49% 53%);
 
   --c-green: #4ade80;
-  --c-amber: #fcd34d;
-  --c-blue: #93c5fd;
-  --c-red: #fca5a5;
-  --c-violet: #c4b5fd;
-  --c-cyan: #67e8f9;
-  --c-pink: #f9a8d4;
-  --c-orange: #fdba74;
+  --c-amber: #fbbf24;
+  --c-blue: #60a5fa;
+  --c-red: #f87171;
+  --c-violet: #a78bfa;
+  --c-cyan: #22d3ee;
+  --c-pink: #f472b6;
+  --c-orange: #fb923c;
 }
 
 /* ==========================================================================
@@ -226,6 +226,8 @@ html.dark :is(.admin-root, body[data-admin]) {
 }
 
 .admin-root [data-slot="sidebar-menu-button"] svg {
+  width: 1.0625rem;
+  height: 1.0625rem;
   color: var(--k, hsl(var(--muted-foreground)));
   opacity: 0.9;
   transition: opacity 0.18s ease;
@@ -284,6 +286,21 @@ html.dark :is(.admin-root, body[data-admin]) {
       transparent
     );
   background-repeat: no-repeat;
+}
+
+/* Dark canvas stays closer to the artifact's flat near-black. */
+html.dark .admin-root [data-slot="sidebar-inset"] {
+  background-image:
+    radial-gradient(
+      520px 240px at 88% -60px,
+      color-mix(in srgb, var(--c-violet) 6%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      520px 240px at 8% -70px,
+      color-mix(in srgb, var(--c-cyan) 5%, transparent),
+      transparent
+    );
 }
 
 .admin-root [data-slot="table-row"] {
@@ -434,7 +451,9 @@ body[data-admin] [data-slot="sidebar"][data-mobile="true"] {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--k, hsl(var(--primary))) 13%, transparent);
+  background: color-mix(in srgb, var(--k, hsl(var(--primary))) 14%, transparent);
+  box-shadow: inset 0 0 0 1px
+    color-mix(in srgb, var(--k, hsl(var(--primary))) 22%, transparent);
   color: var(--k, hsl(var(--primary)));
 }
 
@@ -444,7 +463,7 @@ body[data-admin] [data-slot="sidebar"][data-mobile="true"] {
 }
 
 html.dark .kpi-chip {
-  background: color-mix(in srgb, var(--k, hsl(var(--primary))) 20%, transparent);
+  background: color-mix(in srgb, var(--k, hsl(var(--primary))) 26%, transparent);
 }
 
 /* Colored left rail on cards / rows */
@@ -465,4 +484,28 @@ html.dark .kpi-chip {
 .kpi-chip-lg svg {
   width: 17px;
   height: 17px;
+}
+
+/* Colored square bullet before card titles (artifact ● marker). */
+.dot-k::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex: none;
+  background: var(--k, hsl(var(--primary)));
+}
+
+/* Alert / queue cards: colored rail + soft tinted glow (artifact callouts). */
+.stat-glow {
+  border-left: 3px solid var(--k, hsl(var(--primary)));
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--k, hsl(var(--primary))) 7%, transparent),
+    transparent 45%
+  );
+  box-shadow:
+    -14px 0 36px -22px color-mix(in srgb, var(--k, hsl(var(--primary))) 60%, transparent),
+    0 1px 2px rgba(16, 24, 20, 0.04),
+    0 12px 28px -18px rgba(16, 24, 20, 0.14);
 }

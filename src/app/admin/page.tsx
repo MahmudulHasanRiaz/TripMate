@@ -198,7 +198,7 @@ export default async function AdminDashboardPage(props: {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-foreground">
+            <p className="font-mono text-2xl font-bold tracking-tight text-foreground">
               {rangeKpis.leads}
             </p>
             <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
@@ -221,7 +221,7 @@ export default async function AdminDashboardPage(props: {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+            <p className="font-mono text-xl font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
               {formatMoney(rangeKpis.pendingCollections, "BDT")}
             </p>
             <Link
@@ -245,7 +245,7 @@ export default async function AdminDashboardPage(props: {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+            <p className="font-mono text-xl font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
               {formatMoney(rangeKpis.revenue, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -265,7 +265,7 @@ export default async function AdminDashboardPage(props: {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+            <p className="font-mono text-xl font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
               {formatMoney(rangeKpis.costOfSales, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -285,7 +285,7 @@ export default async function AdminDashboardPage(props: {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-emerald-600 dark:text-emerald-400 truncate tabular-nums" data-money>
+            <p className="font-mono text-xl font-bold tracking-tight text-success truncate tabular-nums" data-money>
               {formatMoney(rangeKpis.grossProfit, "BDT")}
             </p>
             <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
@@ -306,7 +306,7 @@ export default async function AdminDashboardPage(props: {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-lg font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+            <p className="font-mono text-xl font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
               {formatMoney(rangeKpis.expenses, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -337,7 +337,7 @@ export default async function AdminDashboardPage(props: {
           <CardContent className="p-3 pt-1">
             <p
               className={cn(
-                "font-mono text-lg font-bold tracking-tight truncate tabular-nums",
+                "font-mono text-xl font-bold tracking-tight truncate tabular-nums",
                 rangeKpis.net >= 0 ? "text-success" : "text-destructive",
               )}
               data-money
@@ -367,7 +367,7 @@ export default async function AdminDashboardPage(props: {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-foreground">
+            <p className="font-mono text-2xl font-bold tracking-tight text-foreground">
               {rangeKpis.followUpsDue}
             </p>
             <Link
@@ -427,7 +427,10 @@ export default async function AdminDashboardPage(props: {
       {/* Queues Section */}
       <div className="grid gap-4 md:grid-cols-3">
         {/* Payment Verification Queue */}
-        <Card className="shadow-xs border-border bg-card">
+        <Card
+          className="stat-glow shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-amber)" } as CSSProperties}
+        >
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -465,7 +468,10 @@ export default async function AdminDashboardPage(props: {
         </Card>
 
         {/* Expense Approval Queue */}
-        <Card className="shadow-xs border-border bg-card">
+        <Card
+          className="stat-glow shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-violet)" } as CSSProperties}
+        >
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -502,11 +508,14 @@ export default async function AdminDashboardPage(props: {
           </CardContent>
         </Card>
         {/* Follow-ups Due Queue */}
-        <Card className="shadow-xs border-border bg-card">
+        <Card
+          className="stat-glow shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-blue)" } as CSSProperties}
+        >
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <span className="kpi-chip" style={{ "--k": "var(--c-violet)" } as CSSProperties}>
+                <span className="kpi-chip" style={{ "--k": "var(--c-blue)" } as CSSProperties}>
                   <Users aria-hidden="true" />
                 </span>
                 <span>Follow-ups Due</span>
@@ -544,7 +553,12 @@ export default async function AdminDashboardPage(props: {
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-sm font-semibold">Lead funnel by stage</CardTitle>
+            <CardTitle
+              className="dot-k flex items-center gap-2 text-sm font-semibold"
+              style={{ "--k": "var(--c-blue)" } as CSSProperties}
+            >
+              Lead funnel by stage
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-1 space-y-2">
             {funnel.map((point, i) => {
@@ -573,7 +587,12 @@ export default async function AdminDashboardPage(props: {
 
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-sm font-semibold">Profit by service</CardTitle>
+            <CardTitle
+              className="dot-k flex items-center gap-2 text-sm font-semibold"
+              style={{ "--k": "var(--c-violet)" } as CSSProperties}
+            >
+              Profit by service
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-1 space-y-2">
             {profitByService.length === 0 ? (
@@ -604,7 +623,12 @@ export default async function AdminDashboardPage(props: {
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">Recent orders</CardTitle>
+              <CardTitle
+                className="dot-k flex items-center gap-2 text-sm font-semibold"
+                style={{ "--k": "var(--c-green)" } as CSSProperties}
+              >
+                Recent orders
+              </CardTitle>
               <Link href={"/admin/orders" as Route} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
                 View all <ArrowRight className="size-3" aria-hidden="true" />
               </Link>
@@ -636,7 +660,12 @@ export default async function AdminDashboardPage(props: {
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-4 pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">Recent payments</CardTitle>
+              <CardTitle
+                className="dot-k flex items-center gap-2 text-sm font-semibold"
+                style={{ "--k": "var(--c-cyan)" } as CSSProperties}
+              >
+                Recent payments
+              </CardTitle>
               <Link href={"/admin/payments" as Route} className="text-xs text-primary hover:underline inline-flex items-center gap-1">
                 Open queue <ArrowRight className="size-3" aria-hidden="true" />
               </Link>
