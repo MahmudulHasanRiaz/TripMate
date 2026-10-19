@@ -34,7 +34,7 @@ import { CTASection } from "@/components/site/CTASection";
  * Cache contract (Next 16 Cache Components): `'use cache'` opts this page's
  * output into the cache; `cacheTag` binds it to the settings/listings/posts
  * tags so an admin mutation calling `revalidateTag(tag, "max")` refreshes it in
- * exactly the right places; `cacheLife("hours")` makes the lifetime explicit
+ * exactly the right places; `cacheLife("minutes")` makes the lifetime explicit
  * (content changes a few times a day at most — the docs recommend always
  * setting a profile rather than relying on the implicit `default`).
  *
@@ -48,7 +48,7 @@ export default async function Home() {
   cacheTag(CACHE_TAGS.listings);
   cacheTag(CACHE_TAGS.posts);
   cacheTag(CACHE_TAGS.orders);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const [
     site,

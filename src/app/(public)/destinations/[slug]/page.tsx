@@ -37,7 +37,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   "use cache";
   cacheTag(CACHE_TAGS.listings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const { slug } = await props.params;
   const [destination, site] = await Promise.all([
@@ -80,7 +80,7 @@ export default function DestinationPage(props: DestinationPageProps) {
 async function DestinationPageBody({ params }: { params: Promise<{ slug: string }> }) {
   "use cache";
   cacheTag(CACHE_TAGS.listings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const { slug } = await params;
   const destination = await getDestinationBySlug(slug, true);

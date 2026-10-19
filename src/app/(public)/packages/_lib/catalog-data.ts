@@ -111,14 +111,16 @@ function toCardData(listing: ListingWithRefs): PackageCardData {
 
 /**
  * One page of published listings for the index grid, cached per filter-key.
- * The "hours" profile means content a few times a day at most is re-fetched on
+ * The "minutes" profile bounds any deploy-time baseline to a few minutes of
+ * staleness before the live read takes over (the old "hours" window let a
+ * build-time snapshot shadow the real DB for hours). Content is re-fetched on
  * its own cadence even without an admin touch (see cacheLife docs — always set
  * an explicit profile rather than riding the implicit `default`).
  */
 export async function searchPackageCards(f: PackageFilters): Promise<PackageListData> {
   "use cache";
   cacheTag(CACHE_TAGS.listings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const toQuery = () => ({
     search: f.q || undefined,
@@ -155,7 +157,7 @@ export async function searchPackageCards(f: PackageFilters): Promise<PackageList
 export async function getPackageFilterOptions(): Promise<PackageFilterOptions> {
   "use cache";
   cacheTag(CACHE_TAGS.listings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const [categories, destinations] = await Promise.all([listCategories(true), listDestinations()]);
   return {
@@ -179,7 +181,7 @@ export async function getPackageFilterOptions(): Promise<PackageFilterOptions> {
 export async function getPackageDetailData(slug: string): Promise<PackageDetailData | null> {
   "use cache";
   cacheTag(CACHE_TAGS.listings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const listing = await getListingBySlug(slug);
   if (!listing) return null;

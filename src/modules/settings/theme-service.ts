@@ -111,7 +111,7 @@ export async function deleteCustomPreset(id: string): Promise<CustomThemePreset[
 export async function getPublicThemeSettings(): Promise<ThemeSettings> {
   "use cache";
   cacheTag(CACHE_TAGS.settings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   return getThemeSettings();
 }

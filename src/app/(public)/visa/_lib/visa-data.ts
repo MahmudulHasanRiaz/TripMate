@@ -23,7 +23,7 @@ export type VisaExplorerData = {
 export async function getVisaExplorerData(): Promise<VisaExplorerData> {
   "use cache";
   cacheTag(CACHE_TAGS.listings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const [services, destinations, visaTypes] = await Promise.all([
     listVisaServices({ activeOnly: true }),

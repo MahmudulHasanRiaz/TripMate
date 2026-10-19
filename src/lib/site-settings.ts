@@ -53,7 +53,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
  * Components contract content pages use (`'use cache'` + `cacheTag`). Tagging
  * with `CACHE_TAGS.settings` means an admin settings mutation that calls
  * `updateTag(CACHE_TAGS.settings)` refreshes the header/footer in exactly the
- * places that read it; `cacheLife("hours")` makes the lifetime explicit
+ * places that read it; `cacheLife("minutes")` makes the lifetime explicit
  * (content changes a few times a day at most — the docs recommend always
  * setting a profile rather than relying on the implicit `default`). The
  * `getSetting` call is server-only, so this module must never be imported from
@@ -63,7 +63,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
 export async function getSiteSettings(): Promise<SiteSettings> {
   "use cache";
   cacheTag(CACHE_TAGS.settings);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const site = await getSetting("site");
   if (!site) return DEFAULT_SITE_SETTINGS;

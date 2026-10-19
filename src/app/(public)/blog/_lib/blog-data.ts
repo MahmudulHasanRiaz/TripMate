@@ -87,7 +87,7 @@ export async function getBlogIndexData(
 ): Promise<BlogListData> {
   "use cache";
   cacheTag(CACHE_TAGS.posts);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   let result = await listPublishedPosts({ page, perPage: BLOG_PER_PAGE });
   const totalPages = result.total === 0 ? 1 : Math.ceil(result.total / BLOG_PER_PAGE);
@@ -114,7 +114,7 @@ export async function getBlogPostData(
 ): Promise<BlogPostData | null> {
   "use cache";
   cacheTag(CACHE_TAGS.posts);
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const post = await getPublishedPostBySlug(slug);
   if (!post) return null;
