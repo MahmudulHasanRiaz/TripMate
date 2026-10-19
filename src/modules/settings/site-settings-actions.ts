@@ -41,7 +41,10 @@ export type SettingsActionResult =
   | { ok: false; code: string; error: string };
 
 const themeSettingsSchema = z.object({
-  template: z.enum(["signature", "ocean", "emerald", "royal", "sunset", "minimal", "flightblu", "custom"]),
+  template: z
+    .enum(["signature", "ocean", "emerald", "royal", "sunset", "minimal", "azure", "custom"])
+    // Legacy key saved by a cached admin bundle before the rename.
+    .or(z.literal("flightblu").transform(() => "azure" as const)),
   colors: z.record(z.string()).optional(),
 });
 

@@ -27,7 +27,7 @@ export type ThemeTemplateKey =
   | "royal"
   | "sunset"
   | "minimal"
-  | "flightblu"
+  | "azure"
   | "custom";
 
 export type ThemeTemplate = {
@@ -40,9 +40,9 @@ export type ThemeTemplate = {
 };
 
 export const THEME_TEMPLATES: Record<ThemeTemplateKey, ThemeTemplate> = {
-  flightblu: {
-    id: "flightblu",
-    name: "Flight Blu",
+  azure: {
+    id: "azure",
+    name: "Azure Horizon",
     description: "Brand azure with sun-gold highlights and cool sky-tinted neutrals. Perfectly matched with the brand identity.",
     badge: "Brand Default",
     colors: {
@@ -51,7 +51,7 @@ export const THEME_TEMPLATES: Record<ThemeTemplateKey, ThemeTemplate> = {
       secondary: "212 45% 95%",
       secondaryForeground: "222 47% 12%",
       accent: "38 92% 50%",
-      accentForeground: "0 0% 100%",
+      accentForeground: "222 47% 11%",
       accentText: "32 80% 28%",
       background: "210 45% 98%",
       foreground: "222 47% 11%",
@@ -394,7 +394,7 @@ export const THEME_TEMPLATES: Record<ThemeTemplateKey, ThemeTemplate> = {
       secondary: "212 45% 95%",
       secondaryForeground: "222 47% 12%",
       accent: "38 92% 50%",
-      accentForeground: "0 0% 100%",
+      accentForeground: "222 47% 11%",
       accentText: "32 80% 28%",
       background: "210 45% 98%",
       foreground: "222 47% 11%",
@@ -448,8 +448,8 @@ export type ThemeSettings = {
 };
 
 export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
-  template: "flightblu",
-  colors: { ...THEME_TEMPLATES.flightblu.colors },
+  template: "azure",
+  colors: { ...THEME_TEMPLATES.azure.colors },
   customPresets: [],
 };
 
@@ -518,12 +518,30 @@ function calibrateForDark(hsl: string, defaultLightness = 62): string {
 }
 
 /**
+ * Legacy template keys that may still exist in stored settings rows or in
+ * admin payloads sent by a cached client bundle. Each maps to the current
+ * equivalent so a site saved under an old key keeps the identical look.
+ */
+export const LEGACY_TEMPLATE_ALIASES: Record<string, ThemeTemplateKey> = {
+  flightblu: "azure",
+};
+
+/**
+ * Resolve a stored/legacy template key to the current one. Returns `null`
+ * when the key matches no template or alias — callers decide the fallback.
+ */
+export function resolveThemeTemplateKey(key: string): ThemeTemplateKey | null {
+  if (key in THEME_TEMPLATES) return key as ThemeTemplateKey;
+  return LEGACY_TEMPLATE_ALIASES[key] ?? null;
+}
+
+/**
  * Generate CSS variable overrides for BOTH :root:not(.dark) AND .dark.
  * Mathematically guarantees zero contrast defects and prevents hover washouts.
  */
 export function buildThemeCssVariables(theme: ThemeSettings | null | undefined): string {
   if (!theme || !theme.colors) return "";
-  const templateKey = theme.template in THEME_TEMPLATES ? theme.template : "flightblu";
+  const templateKey = resolveThemeTemplateKey(theme.template) ?? "azure";
   const baseTemplate = THEME_TEMPLATES[templateKey];
 
   // Light Mode Colors (User merged with template defaults)

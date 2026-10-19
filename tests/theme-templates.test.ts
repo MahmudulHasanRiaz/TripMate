@@ -3,6 +3,7 @@ import {
   THEME_TEMPLATES,
   themeAAPass,
   themeContrastRatio,
+  resolveThemeTemplateKey,
   type ThemeColors,
 } from "@/modules/settings/theme";
 
@@ -48,18 +49,25 @@ describe("theme templates", () => {
     }
   });
 
-  it("registers the Flight Blu brand preset with the logo-derived palette", () => {
-    const template = THEME_TEMPLATES.flightblu;
+  it("registers the Azure Horizon brand preset with the logo-derived palette", () => {
+    const template = THEME_TEMPLATES.azure;
     expect(template).toBeDefined();
-    expect(template.name).toBe("Flight Blu");
+    expect(template.name).toBe("Azure Horizon");
     expect(template.colors.primary).toBe("213 91% 46%");
     expect(template.colors.ring).toBe("213 91% 50%");
     expect(template.colors.accent).toBe("38 92% 50%");
     expect(template.colors.background).toBe("210 45% 98%");
   });
 
-  it("Flight Blu passes every critical contrast pair", () => {
-    const c = THEME_TEMPLATES.flightblu.colors;
+  it("maps the legacy flightblu key onto azure so saved sites keep their look", () => {
+    expect(resolveThemeTemplateKey("flightblu")).toBe("azure");
+    expect(resolveThemeTemplateKey("azure")).toBe("azure");
+    expect(resolveThemeTemplateKey("signature")).toBe("signature");
+    expect(resolveThemeTemplateKey("nope")).toBeNull();
+  });
+
+  it("Azure Horizon passes every critical contrast pair", () => {
+    const c = THEME_TEMPLATES.azure.colors;
     expect(themeContrastRatio(c.primaryForeground, c.primary)).toBeGreaterThanOrEqual(4.5);
     expect(themeContrastRatio(c.secondaryForeground, c.secondary)).toBeGreaterThanOrEqual(4.5);
     expect(themeContrastRatio(c.accentForeground, c.accent)).toBeGreaterThanOrEqual(4.5);

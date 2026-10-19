@@ -6,6 +6,7 @@ import { getSetting, setSetting } from "./service";
 import {
   DEFAULT_THEME_SETTINGS,
   THEME_TEMPLATES,
+  resolveThemeTemplateKey,
   type CustomThemePreset,
   type ThemeColors,
   type ThemeSettings,
@@ -17,13 +18,12 @@ export async function getThemeSettings(): Promise<ThemeSettings> {
   if (!raw || typeof raw !== "object") return DEFAULT_THEME_SETTINGS;
 
   const row = raw as Record<string, unknown>;
-  const templateKey = (
-    typeof row.template === "string" && row.template in THEME_TEMPLATES
-      ? row.template
-      : "signature"
-  ) as ThemeTemplateKey;
-
-  const baseTemplate = THEME_TEMPLATES[templateKey];
+  // resolveThemeTemplateKey maps legacy keys (e.g. "flightblu" → "azure") so
+  // sites saved under a retired key keep the identical palette.
+  const templateKey = resolveThemeTemplateKey(
+    typeof row.template === "string" ? row.template : "",
+  );
+  const baseTemplate = THEME_TEMPLATES[templateKey ?? "signature"];
   const customColors = (
     row.colors && typeof row.colors === "object" ? row.colors : {}
   ) as Record<string, unknown>;
@@ -42,7 +42,7 @@ export async function getThemeSettings(): Promise<ThemeSettings> {
     : [];
 
   return {
-    template: templateKey,
+    template: templateKey ?? "signature",
     colors: mergedColors,
     customPresets,
   };
