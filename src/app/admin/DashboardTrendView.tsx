@@ -291,6 +291,8 @@ export default function DashboardTrendView({ trend }: DashboardTrendViewProps) {
                         trend.map((p) => p.revenue),
                         maxRevenue,
                       )}
+                      pathLength={1}
+                      className="trend-draw trend-line"
                       fill="none"
                       stroke="var(--c-green)"
                       strokeWidth="1.75"

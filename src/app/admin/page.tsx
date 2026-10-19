@@ -34,7 +34,6 @@ import { formatMoney } from "@/components/site/currency";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
 import DashboardTrendView from "./DashboardTrendView";
 import DashboardRangeFilter from "./DashboardRangeFilter";
 
@@ -69,17 +68,25 @@ const ORDER_STATUS_ACCENTS: Record<OrderStatus, string> = {
   cancelled: "var(--c-red)",
 };
 
-/** Per-row accent cycle for ranked lists (funnel stages, profit rows). */
+/** Per-row accent cycle for ranked lists (artifact's 6-colour rotation). */
 const ACCENTS = [
-  "var(--c-green)",
   "var(--c-blue)",
-  "var(--c-amber)",
   "var(--c-violet)",
   "var(--c-cyan)",
+  "var(--c-green)",
+  "var(--c-amber)",
   "var(--c-pink)",
-  "var(--c-orange)",
-  "var(--c-red)",
 ] as const;
+
+/** Stage-coded funnel accents (artifact palette, semantic order). */
+const FUNNEL_ACCENTS: Record<string, string> = {
+  new: "var(--c-blue)",
+  contacted: "var(--c-violet)",
+  qualified: "var(--c-cyan)",
+  negotiating: "var(--c-amber)",
+  converted: "var(--c-green)",
+  lost: "var(--c-red)",
+};
 
 export default async function AdminDashboardPage(props: {
   searchParams: Promise<{ preset?: string; from?: string; to?: string }>;
@@ -172,80 +179,56 @@ export default async function AdminDashboardPage(props: {
   const sections = menuForRole(session.user.role).length;
   void sections;
 
+  /* Artifact header sub-line: "1 Oct – 16 Oct · Monday, 19 October 2026". */
+  const fmtDay = (iso: string) =>
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      timeZone: "UTC",
+    });
+  const todayLabel = new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const rangeLabel = `${fmtDay(range.from)} – ${fmtDay(range.to)} · ${todayLabel}`;
+
   return (
-    <div className="space-y-6">
+    <div className="dash-rise space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SectionHeader
           title="Dashboard"
-          description="Overview of inquiries, orders, payments, expenses, and operational queues."
+          description={rangeLabel}
           icon={LayoutDashboard}
           accent="var(--c-blue)"
         />
         <DashboardRangeFilter preset={range.preset} from={range.from} to={range.to} />
       </div>
 
-      {/* KPI Cards Row (Responsive financial & operational grid) */}
+      {/* KPI Cards Row — artifact tint language: gradient wash, icon chip and
+          value all derive from per-card --k; hover lifts with tinted border. */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Leads / conversion in range */}
-        <Card className="shadow-xs border-border bg-card">
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Leads</span>
-              <span className="kpi-chip" style={{ "--k": "var(--c-blue)" } as CSSProperties}>
-                <Users aria-hidden="true" />
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-1">
-            <p className="font-mono text-2xl font-bold tracking-tight text-foreground">
-              {rangeKpis.leads}
-            </p>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
-              <span>In selected range</span>
-              <Badge variant="secondary" className="text-[10px] px-1 py-0 font-mono">
-                {rangeKpis.leadConversionRate}% conv
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Pending Collections */}
-        <Card className="shadow-xs border-border bg-card">
-          <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Pending Collections</span>
-              <span className="kpi-chip" style={{ "--k": "var(--c-amber)" } as CSSProperties}>
-                <Banknote aria-hidden="true" />
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
-              {formatMoney(rangeKpis.pendingCollections, "BDT")}
-            </p>
-            <Link
-              href={"/admin/payments" as Route}
-              className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
-            >
-              <span>{rangeKpis.pendingPaymentsCount} awaiting verification</span>
-              <ArrowRight className="size-2.5" aria-hidden="true" />
-            </Link>
-          </CardContent>
-        </Card>
-
         {/* Total Revenue */}
-        <Card className="shadow-xs border-border bg-card">
+        <Card
+          className="kpi-card shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-green)" } as CSSProperties}
+        >
           <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between text-[13px] font-medium text-muted-foreground">
               <span>Revenue</span>
-              <span className="kpi-chip" style={{ "--k": "var(--c-green)" } as CSSProperties}>
+              <span className="kpi-chip">
                 <DollarSign aria-hidden="true" />
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+            <p
+              className="kpi-value truncate font-mono text-2xl font-bold tracking-tight tabular-nums"
+              data-money
+            >
               {formatMoney(rangeKpis.revenue, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -255,17 +238,23 @@ export default async function AdminDashboardPage(props: {
         </Card>
 
         {/* Cost of Sales (COGS) */}
-        <Card className="shadow-xs border-border bg-card">
+        <Card
+          className="kpi-card shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-orange)" } as CSSProperties}
+        >
           <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between text-[13px] font-medium text-muted-foreground">
               <span>Cost of Sales</span>
-              <span className="kpi-chip" style={{ "--k": "var(--c-orange)" } as CSSProperties}>
+              <span className="kpi-chip">
                 <Receipt aria-hidden="true" />
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+            <p
+              className="kpi-value truncate font-mono text-2xl font-bold tracking-tight tabular-nums"
+              data-money
+            >
               {formatMoney(rangeKpis.costOfSales, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -275,17 +264,23 @@ export default async function AdminDashboardPage(props: {
         </Card>
 
         {/* Gross Profit */}
-        <Card className="shadow-xs border-border bg-card">
+        <Card
+          className="kpi-card shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-cyan)" } as CSSProperties}
+        >
           <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between text-[13px] font-medium text-muted-foreground">
               <span>Gross Profit</span>
-              <span className="kpi-chip" style={{ "--k": "var(--c-green)" } as CSSProperties}>
+              <span className="kpi-chip">
                 <TrendingUp aria-hidden="true" />
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-success truncate tabular-nums" data-money>
+            <p
+              className="kpi-value truncate font-mono text-2xl font-bold tracking-tight tabular-nums"
+              data-money
+            >
               {formatMoney(rangeKpis.grossProfit, "BDT")}
             </p>
             <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
@@ -296,17 +291,23 @@ export default async function AdminDashboardPage(props: {
         </Card>
 
         {/* Operating Expenses */}
-        <Card className="shadow-xs border-border bg-card">
+        <Card
+          className="kpi-card shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-amber)" } as CSSProperties}
+        >
           <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between text-[13px] font-medium text-muted-foreground">
               <span>Op. Expenses</span>
-              <span className="kpi-chip" style={{ "--k": "var(--c-red)" } as CSSProperties}>
+              <span className="kpi-chip">
                 <Receipt aria-hidden="true" />
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-xl font-bold tracking-tight text-foreground truncate tabular-nums" data-money>
+            <p
+              className="kpi-value truncate font-mono text-2xl font-bold tracking-tight tabular-nums"
+              data-money
+            >
               {formatMoney(rangeKpis.expenses, "BDT")}
             </p>
             <p className="mt-1 text-[11px] text-muted-foreground">
@@ -316,16 +317,16 @@ export default async function AdminDashboardPage(props: {
         </Card>
 
         {/* Net Profit / Loss */}
-        <Card className="shadow-xs border-border bg-card">
+        <Card
+          className="kpi-card shadow-xs border-border bg-card"
+          style={
+            { "--k": rangeKpis.net >= 0 ? "var(--c-green)" : "var(--c-red)" } as CSSProperties
+          }
+        >
           <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+            <CardTitle className="flex items-center justify-between text-[13px] font-medium text-muted-foreground">
               <span>Net Profit</span>
-              <span
-                className="kpi-chip"
-                style={
-                  { "--k": rangeKpis.net >= 0 ? "var(--c-green)" : "var(--c-red)" } as CSSProperties
-                }
-              >
+              <span className="kpi-chip">
                 {rangeKpis.net >= 0 ? (
                   <ArrowUpRight aria-hidden="true" />
                 ) : (
@@ -336,10 +337,7 @@ export default async function AdminDashboardPage(props: {
           </CardHeader>
           <CardContent className="p-3 pt-1">
             <p
-              className={cn(
-                "font-mono text-xl font-bold tracking-tight truncate tabular-nums",
-                rangeKpis.net >= 0 ? "text-success" : "text-destructive",
-              )}
+              className="kpi-value truncate font-mono text-2xl font-bold tracking-tight tabular-nums"
               data-money
             >
               {formatMoney(rangeKpis.net, "BDT")}
@@ -356,18 +354,77 @@ export default async function AdminDashboardPage(props: {
           </CardContent>
         </Card>
 
-        {/* Follow-ups due */}
-        <Card className="shadow-xs border-border bg-card">
+        {/* Pending Collections */}
+        <Card
+          className="kpi-card shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-red)" } as CSSProperties}
+        >
           <CardHeader className="p-3 pb-1">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-              <span>Follow-ups Due</span>
-              <span className="kpi-chip" style={{ "--k": "var(--c-violet)" } as CSSProperties}>
+            <CardTitle className="flex items-center justify-between text-[13px] font-medium text-muted-foreground">
+              <span>Pending Collections</span>
+              <span className="kpi-chip">
+                <Banknote aria-hidden="true" />
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-1">
+            <p
+              className="kpi-value truncate font-mono text-2xl font-bold tracking-tight tabular-nums"
+              data-money
+            >
+              {formatMoney(rangeKpis.pendingCollections, "BDT")}
+            </p>
+            <Link
+              href={"/admin/payments" as Route}
+              className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+            >
+              <span>{rangeKpis.pendingPaymentsCount} awaiting verification</span>
+              <ArrowRight className="size-2.5" aria-hidden="true" />
+            </Link>
+          </CardContent>
+        </Card>
+
+        {/* Leads / conversion in range */}
+        <Card
+          className="kpi-card shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-blue)" } as CSSProperties}
+        >
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="flex items-center justify-between text-[13px] font-medium text-muted-foreground">
+              <span>Leads</span>
+              <span className="kpi-chip">
                 <Users aria-hidden="true" />
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-3 pt-1">
-            <p className="font-mono text-2xl font-bold tracking-tight text-foreground">
+            <p className="kpi-value font-mono text-2xl font-bold tracking-tight">
+              {rangeKpis.leads}
+            </p>
+            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>In selected range</span>
+              <Badge variant="secondary" className="text-[10px] px-1 py-0 font-mono">
+                {rangeKpis.leadConversionRate}% conv
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Follow-ups due */}
+        <Card
+          className="kpi-card shadow-xs border-border bg-card"
+          style={{ "--k": "var(--c-blue)" } as CSSProperties}
+        >
+          <CardHeader className="p-3 pb-1">
+            <CardTitle className="flex items-center justify-between text-[13px] font-medium text-muted-foreground">
+              <span>Follow-ups Due</span>
+              <span className="kpi-chip">
+                <Users aria-hidden="true" />
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-1">
+            <p className="kpi-value font-mono text-2xl font-bold tracking-tight">
               {rangeKpis.followUpsDue}
             </p>
             <Link
@@ -404,7 +461,7 @@ export default async function AdminDashboardPage(props: {
                 key={status}
                 href={"/admin/orders" as Route}
                 style={{ "--k": ORDER_STATUS_ACCENTS[status] } as CSSProperties}
-                className="group row-accent flex items-center justify-between rounded-lg border border-border bg-card p-3 pl-2.5 shadow-xs hover:bg-secondary/20 transition-all min-h-[44px]"
+                className="group row-accent lift flex min-h-[44px] items-center justify-between rounded-lg border border-border bg-card p-3 pl-2.5 shadow-xs"
               >
                 <div className="flex items-center gap-2">
                   <Badge
@@ -424,132 +481,82 @@ export default async function AdminDashboardPage(props: {
         </div>
       </div>
 
-      {/* Queues Section */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Payment Verification Queue */}
-        <Card
-          className="stat-glow shadow-xs border-border bg-card"
+      {/* Queues Section — compact artifact tiles; the whole card is the link */}
+      <div className="grid gap-3 md:grid-cols-3">
+        <Link
+          href={"/admin/payments" as Route}
+          className="queue-card"
           style={{ "--k": "var(--c-amber)" } as CSSProperties}
         >
-          <CardHeader className="p-4 pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <span className="kpi-chip" style={{ "--k": "var(--c-amber)" } as CSSProperties}>
-                  <Banknote aria-hidden="true" />
-                </span>
-                <span>Payment Verification Queue</span>
-              </CardTitle>
-              <Badge
-                variant={kpis.pendingPaymentsCount > 0 ? "warning" : "secondary"}
-                className="font-mono text-xs"
-              >
-                {kpis.pendingPaymentsCount} pending
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Customer bank transfer receipts and transaction IDs awaiting review and verification before order confirmation.
+          <div className="min-w-0">
+            <p className="text-[13px] text-muted-foreground">Payment verification</p>
+            <p className="kpi-value mt-0.5 font-mono text-2xl font-bold tracking-tight tabular-nums">
+              {kpis.pendingPaymentsCount}
             </p>
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-xs text-muted-foreground font-mono">
-                {kpis.pendingPaymentsCount === 0
-                  ? "Queue clear — all verified"
-                  : `${kpis.pendingPaymentsCount} item${kpis.pendingPaymentsCount === 1 ? "" : "s"} in queue`}
-              </span>
-              <Button asChild size="sm" variant="outline" className="min-h-[44px] text-xs">
-                <Link href={"/admin/payments" as Route}>
-                  Open queue
-                  <ArrowRight className="size-3.5 ml-1.5" aria-hidden="true" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {kpis.pendingPaymentsCount === 0
+                ? "Queue clear — all verified"
+                : `${kpis.pendingPaymentsCount} receipt${kpis.pendingPaymentsCount === 1 ? "" : "s"} awaiting review`}
+            </p>
+          </div>
+          <Badge
+            variant={kpis.pendingPaymentsCount > 0 ? "warning" : "secondary"}
+            className="shrink-0 font-mono text-xs"
+          >
+            {kpis.pendingPaymentsCount > 0 ? "Needs action" : "All clear"}
+          </Badge>
+        </Link>
 
-        {/* Expense Approval Queue */}
-        <Card
-          className="stat-glow shadow-xs border-border bg-card"
+        <Link
+          href={"/admin/expenses" as Route}
+          className="queue-card"
           style={{ "--k": "var(--c-violet)" } as CSSProperties}
         >
-          <CardHeader className="p-4 pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <span className="kpi-chip" style={{ "--k": "var(--c-red)" } as CSSProperties}>
-                  <Receipt aria-hidden="true" />
-                </span>
-                <span>Expense Approval Queue</span>
-              </CardTitle>
-              <Badge
-                variant={kpis.pendingExpensesCount > 0 ? "warning" : "secondary"}
-                className="font-mono text-xs"
-              >
-                {kpis.pendingExpensesCount} pending
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Operational expenses and direct order fulfilment costs submitted by staff awaiting manager approval.
+          <div className="min-w-0">
+            <p className="text-[13px] text-muted-foreground">Expense approval</p>
+            <p className="kpi-value mt-0.5 font-mono text-2xl font-bold tracking-tight tabular-nums">
+              {kpis.pendingExpensesCount}
             </p>
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-xs text-muted-foreground font-mono">
-                {kpis.pendingExpensesCount === 0
-                  ? "Queue clear — all approved"
-                  : `${kpis.pendingExpensesCount} item${kpis.pendingExpensesCount === 1 ? "" : "s"} in queue`}
-              </span>
-              <Button asChild size="sm" variant="outline" className="min-h-[44px] text-xs">
-                <Link href={"/admin/expenses" as Route}>
-                  Open queue
-                  <ArrowRight className="size-3.5 ml-1.5" aria-hidden="true" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-        {/* Follow-ups Due Queue */}
-        <Card
-          className="stat-glow shadow-xs border-border bg-card"
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {kpis.pendingExpensesCount === 0
+                ? "Queue clear — all approved"
+                : `${kpis.pendingExpensesCount} claim${kpis.pendingExpensesCount === 1 ? "" : "s"} awaiting approval`}
+            </p>
+          </div>
+          <Badge
+            variant={kpis.pendingExpensesCount > 0 ? "warning" : "secondary"}
+            className="shrink-0 font-mono text-xs"
+          >
+            {kpis.pendingExpensesCount > 0 ? "Needs action" : "All clear"}
+          </Badge>
+        </Link>
+
+        <Link
+          href={"/admin/leads" as Route}
+          className="queue-card"
           style={{ "--k": "var(--c-blue)" } as CSSProperties}
         >
-          <CardHeader className="p-4 pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <span className="kpi-chip" style={{ "--k": "var(--c-blue)" } as CSSProperties}>
-                  <Users aria-hidden="true" />
-                </span>
-                <span>Follow-ups Due</span>
-              </CardTitle>
-              <Badge
-                variant={rangeKpis.followUpsDue > 0 ? "warning" : "secondary"}
-                className="font-mono text-xs"
-              >
-                {rangeKpis.followUpsDue} due
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-1 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Leads whose next follow-up date has passed and are not converted or lost.
+          <div className="min-w-0">
+            <p className="text-[13px] text-muted-foreground">Follow-ups due</p>
+            <p className="kpi-value mt-0.5 font-mono text-2xl font-bold tracking-tight tabular-nums">
+              {rangeKpis.followUpsDue}
             </p>
-            <div className="flex items-center justify-between pt-1">
-              <span className="text-xs text-muted-foreground font-mono">
-                {rangeKpis.followUpsDue === 0
-                  ? "Nothing overdue"
-                  : `${rangeKpis.followUpsDue} lead${rangeKpis.followUpsDue === 1 ? "" : "s"} waiting`}
-              </span>
-              <Button asChild size="sm" variant="outline" className="min-h-10 text-xs">
-                <Link href={"/admin/leads" as Route}>
-                  Open leads
-                  <ArrowRight className="size-3.5 ml-1.5" aria-hidden="true" />
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              {rangeKpis.followUpsDue === 0
+                ? "Nothing overdue"
+                : `${rangeKpis.followUpsDue} lead${rangeKpis.followUpsDue === 1 ? "" : "s"} past the follow-up date`}
+            </p>
+          </div>
+          <Badge
+            variant={rangeKpis.followUpsDue > 0 ? "warning" : "secondary"}
+            className="shrink-0 font-mono text-xs"
+          >
+            {rangeKpis.followUpsDue > 0 ? "Needs action" : "All clear"}
+          </Badge>
+        </Link>
       </div>
 
-      {/* Funnel + Profit by service */}
+      {/* Funnel + Profit by service — artifact .tr bar rows */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="shadow-xs border-border bg-card">
           <CardHeader className="p-4 pb-2">
@@ -560,25 +567,31 @@ export default async function AdminDashboardPage(props: {
               Lead funnel by stage
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-1 space-y-2">
+          <CardContent className="p-4 pt-1 space-y-2.5">
             {funnel.map((point, i) => {
               const max = Math.max(1, ...funnel.map((p) => p.count));
               return (
                 <div
                   key={point.status}
-                  className="flex items-center gap-3"
-                  style={{ "--k": ACCENTS[i % ACCENTS.length] } as CSSProperties}
+                  className="space-y-1.5"
+                  style={
+                    {
+                      "--k": FUNNEL_ACCENTS[point.status] ?? ACCENTS[i % ACCENTS.length],
+                    } as CSSProperties
+                  }
                 >
-                  <span className="w-24 shrink-0 text-xs capitalize text-muted-foreground">
-                    {point.status.replace("_", " ")}
-                  </span>
-                  <div className="h-2 min-h-2 flex-1 overflow-hidden rounded-full bg-secondary">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-xs capitalize text-muted-foreground">
+                      {point.status.replace("_", " ")}
+                    </span>
+                    <span className="font-mono text-xs font-bold">{point.count}</span>
+                  </div>
+                  <div className="h-2 min-h-2 overflow-hidden rounded-full bg-secondary">
                     <div
-                      className="funnel-fill h-full rounded-full"
+                      className="funnel-fill bar-grow h-full rounded-full"
                       style={{ width: `${Math.round((point.count / max) * 100)}%` }}
                     />
                   </div>
-                  <span className="w-8 shrink-0 text-right font-mono text-xs font-bold">{point.count}</span>
                 </div>
               );
             })}
@@ -594,25 +607,46 @@ export default async function AdminDashboardPage(props: {
               Profit by service
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-1 space-y-2">
+          <CardContent className="p-4 pt-1 space-y-3">
             {profitByService.length === 0 ? (
               <p className="text-xs text-muted-foreground">No orders in this range yet.</p>
             ) : (
-              profitByService.map((point, i) => (
-                <div
-                  key={point.type}
-                  className="row-accent flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2"
-                  style={{ "--k": ACCENTS[i % ACCENTS.length] } as CSSProperties}
-                >
-                  <span className="text-xs font-medium capitalize">{point.type}</span>
-                  <span className="text-right font-mono text-xs tabular-nums" data-money>
-                    {formatMoney(point.revenue, "BDT")}
-                    <span className="ml-2 text-muted-foreground">
-                      profit {formatMoney(point.profit, "BDT")}
-                    </span>
-                  </span>
-                </div>
-              ))
+              profitByService.map((point, i) => {
+                const maxProfit = Math.max(
+                  1,
+                  ...profitByService.map((p) => Math.abs(p.profit)),
+                );
+                const width = Math.max(
+                  3,
+                  Math.round((Math.abs(point.profit) / maxProfit) * 100),
+                );
+                return (
+                  <div key={point.type} className="space-y-1.5">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="truncate text-xs font-medium capitalize">
+                        {point.type}
+                        <span className="ml-1.5 text-[10.5px] font-normal text-muted-foreground">
+                          rev {formatMoney(point.revenue, "BDT")}
+                        </span>
+                      </span>
+                      <span className="font-mono text-xs font-bold tabular-nums" data-money>
+                        {formatMoney(point.profit, "BDT")}
+                      </span>
+                    </div>
+                    <div className="h-2 overflow-hidden rounded-full bg-secondary">
+                      <div
+                        className="funnel-fill bar-grow h-full rounded-full"
+                        style={
+                          {
+                            "--k": ACCENTS[i % ACCENTS.length],
+                            width: `${width}%`,
+                          } as CSSProperties
+                        }
+                      />
+                    </div>
+                  </div>
+                );
+              })
             )}
           </CardContent>
         </Card>
@@ -638,18 +672,21 @@ export default async function AdminDashboardPage(props: {
             {recentOrders.length === 0 ? (
               <p className="text-xs text-muted-foreground">No orders yet.</p>
             ) : (
-              <ul className="divide-y divide-border/60">
+              <ul>
                 {recentOrders.map((order) => (
-                  <li key={order.id} className="flex items-center justify-between gap-3 py-2">
-                    <Link href={`/admin/orders/${order.id}` as Route} className="font-mono text-xs font-bold hover:text-primary">
-                      {order.orderNo}
+                  <li key={order.id}>
+                    <Link
+                      href={`/admin/orders/${order.id}` as Route}
+                      className="-mx-2 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-secondary/40"
+                    >
+                      <span className="font-mono text-xs font-bold">{order.orderNo}</span>
+                      <Badge variant={ORDER_STATUS_BADGE_VARIANTS[order.status as OrderStatus]} className="text-[10px] capitalize">
+                        {ORDER_STATUS_LABELS[order.status as OrderStatus] ?? order.status}
+                      </Badge>
+                      <span className="font-mono text-xs tabular-nums" data-money>
+                        {order.total !== null ? formatMoney(order.total, "BDT") : "—"}
+                      </span>
                     </Link>
-                    <Badge variant={ORDER_STATUS_BADGE_VARIANTS[order.status as OrderStatus]} className="text-[10px] capitalize">
-                      {ORDER_STATUS_LABELS[order.status as OrderStatus] ?? order.status}
-                    </Badge>
-                    <span className="font-mono text-xs tabular-nums" data-money>
-                      {order.total !== null ? formatMoney(order.total, "BDT") : "—"}
-                    </span>
                   </li>
                 ))}
               </ul>
@@ -675,16 +712,19 @@ export default async function AdminDashboardPage(props: {
             {recentPayments.length === 0 ? (
               <p className="text-xs text-muted-foreground">No payments yet.</p>
             ) : (
-              <ul className="divide-y divide-border/60">
+              <ul>
                 {recentPayments.map((payment) => (
-                  <li key={payment.id} className="flex items-center justify-between gap-3 py-2">
-                    <Link href={"/admin/payments" as Route} className="font-mono text-xs hover:text-primary">
-                      {payment.orderId.slice(0, 8)}…
+                  <li key={payment.id}>
+                    <Link
+                      href={"/admin/payments" as Route}
+                      className="-mx-2 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-secondary/40"
+                    >
+                      <span className="font-mono text-xs">{payment.orderId.slice(0, 8)}…</span>
+                      <Badge variant="outline" className="text-[10px] capitalize">{payment.status}</Badge>
+                      <span className="font-mono text-xs font-bold tabular-nums" data-money>
+                        {formatMoney(payment.amount, "BDT")}
+                      </span>
                     </Link>
-                    <Badge variant="outline" className="text-[10px] capitalize">{payment.status}</Badge>
-                    <span className="font-mono text-xs font-bold tabular-nums" data-money>
-                      {formatMoney(payment.amount, "BDT")}
-                    </span>
                   </li>
                 ))}
               </ul>
