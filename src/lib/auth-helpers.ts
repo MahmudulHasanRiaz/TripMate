@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { withRetry } from "@/lib/with-retry";
@@ -28,6 +29,13 @@ const SESSION_LOOKUP_TIMEOUT_MS = 15_000;
  * by import; the cache is scoped to the request's server runtime.
  */
 export const getSession = cache(async (): Promise<Session | null> => {
+  // Prerendering must stop here: Better Auth validates the session by
+  // comparing its expiry against the current time (`new Date()`), an unstable
+  // value that can't be computed during a prerender/validation pass. This is
+  // the explicit "wait for a real user request" signal (see
+  // docs/app/api-reference/functions/connection) — the dev overlay used to
+  // flag the `new Date()` inside getSession as a blocking-route error.
+  await connection();
   const requestHeaders = await headers();
   const result = await withTimeout(
     withRetry(() => auth.api.getSession({ headers: requestHeaders })),
