@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { Route } from "next";
 import {
@@ -47,7 +47,6 @@ type LeadsListProps = {
   page: number;
   totalPages: number;
   staffUsers: StaffUser[];
-  makePageParams: (delta: number) => string;
 };
 
 const STATUS_BADGE_VARIANTS: Record<
@@ -68,10 +67,17 @@ export default function LeadsList({
   page,
   totalPages,
   staffUsers,
-  makePageParams,
 }: LeadsListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+
+  const makePageParams = (delta: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("view", "list");
+    params.set("page", String(Math.min(totalPages, Math.max(1, page + delta))));
+    return params.toString();
+  };
 
   const handleStatusChange = (leadId: string, status: LeadStatus) => {
     startTransition(async () => {

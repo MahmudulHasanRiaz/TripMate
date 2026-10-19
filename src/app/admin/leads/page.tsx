@@ -52,15 +52,6 @@ export default async function LeadsPage({
   ]);
 
   const totalPages = Math.max(1, Math.ceil(paginated.total / PER_PAGE));
-  const makePageParams = (delta: number) => {
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (status) params.set("status", status);
-    if (assignedTo) params.set("assignedTo", assignedTo);
-    params.set("view", "list");
-    params.set("page", String(Math.min(totalPages, Math.max(1, page + delta))));
-    return params.toString();
-  };
 
   return (
     <div className="space-y-4">
@@ -80,7 +71,6 @@ export default async function LeadsPage({
           page={page}
           totalPages={totalPages}
           staffUsers={staffUsers}
-          makePageParams={makePageParams}
         />
       ) : (
         <LeadsBoard
