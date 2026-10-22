@@ -32,6 +32,26 @@ const scratchDir = mkdtempSync(join(tmpdir(), "tripmate-compose-"));
 const emptyEnvFile = join(scratchDir, "empty.env");
 writeFileSync(emptyEnvFile, "");
 
+// `docker compose config` interpolates process.env IN ADDITION to the env file.
+// CI exports DATABASE_URL, APP_URL and AUTH_SECRET for its migrate/seed/build
+// steps; leaking them here hides what the compose file actually does (it makes
+// "DATABASE_URL stays empty" and "missing vars fail fast" unobservable). Strip
+// every variable either compose file interpolates, then apply the test's own
+// overrides — the test owns its environment, never the caller's shell.
+const COMPOSE_INTERPOLATED_VARS = new Set(
+  ["docker-compose.yml", "docker-compose.portainer.yml"].flatMap((file) =>
+    [...readFileSync(join(repoRoot, file), "utf8").matchAll(/\$\{([A-Z][A-Z0-9_]*)/g)].map(
+      (match) => match[1],
+    ),
+  ),
+);
+
+function isolatedEnv(overrides: Record<string, string> = {}): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  for (const key of COMPOSE_INTERPOLATED_VARS) delete env[key];
+  return { ...env, ...overrides };
+}
+
 afterAll(() => {
   rmSync(scratchDir, { recursive: true, force: true });
 });
@@ -48,7 +68,7 @@ function composeConfig(file: string, env: Record<string, string> = {}): ComposeR
     const stdout = execFileSync(
       "docker",
       ["compose", "--env-file", emptyEnvFile, "-f", join(repoRoot, file), "config"],
-      { cwd: repoRoot, encoding: "utf8", env: { ...process.env, ...env } },
+      { cwd: repoRoot, encoding: "utf8", env: isolatedEnv(env) },
     );
     return { ok: true, stdout, stderr: "" };
   } catch (error) {
@@ -195,7 +215,7 @@ describe.skipIf(!dockerComposeAvailable())("docker-compose.yml (local dev)", () 
           join(repoRoot, "docker-compose.yml"),
           "config",
         ],
-        { cwd: repoRoot, encoding: "utf8", env: { ...process.env } },
+        { cwd: repoRoot, encoding: "utf8", env: isolatedEnv() },
       );
       active = { ok: true, stdout, stderr: "" };
     } catch (error) {
