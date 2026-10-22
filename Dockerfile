@@ -1,5 +1,5 @@
 # TripMate v2 — production image. Multi-stage build that ships the Next.js
-# standalone server (node:24-alpine runtime, non-root).
+# standalone server (node:24.22.1-alpine runtime, non-root).
 #
 # No .env and no build args are required:
 #   docker build -t tripmate .
@@ -40,7 +40,7 @@
 # without it the runtime AND the .d.ts of the patched package stay pristine
 # and TS2353 rejects the patched-in options (seen on connection.ts). Image
 # must verify the exact same patches the dev checkout verified.
-FROM node:24-alpine AS deps
+FROM node:24.22.1-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY patches ./patches
@@ -51,7 +51,7 @@ RUN npm ci
 # NOT carry postgres / drizzle-orm on disk; the runner merges this full
 # production set next to the traced output so scripts/auto-migrate.mjs (and any
 # future boot script) can resolve its dependencies.
-FROM node:24-alpine AS deps-prod
+FROM node:24.22.1-alpine AS deps-prod
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY patches ./patches
@@ -63,7 +63,7 @@ RUN npm ci --omit=dev
 # NOTHING demo-flavored may enter the build path: 'use cache' scopes snapshot
 # whatever the seeded DB contains, and the built cache ships around those
 # snapshots — demo rows here would shadow the live DB after deploy.
-FROM node:24-alpine AS builder
+FROM node:24.22.1-alpine AS builder
 WORKDIR /app
 # postgresql server+client for the throwaway build cluster. The apk package
 # name differs across Alpine releases (postgresql16 on 3.20-3.21,
@@ -108,7 +108,7 @@ RUN set -eu; \
     "$PGBIN/pg_ctl" -D /tmp/pg -m immediate stop || true
 
 # --- runner: minimal standalone runtime + boot-time schema migration.
-FROM node:24-alpine AS runner
+FROM node:24.22.1-alpine AS runner
 WORKDIR /app
 # HOSTNAME must be pinned: Docker sets it to the container ID, and the
 # standalone server.js binds to process.env.HOSTNAME — binding to the
