@@ -176,8 +176,17 @@ describe.skipIf(!dockerComposeAvailable())("docker-compose.portainer.yml", () =>
   it("fails fast, naming the variable, when AUTH_SECRET or APP_URL is missing", () => {
     const missingBoth = composeConfig("docker-compose.portainer.yml");
     expect(missingBoth.ok).toBe(false);
-    expect(missingBoth.stderr).toMatch(/AUTH_SECRET is required/);
-    expect(missingBoth.stderr).toMatch(/APP_URL is required/);
+    // Compose versions differ here: some report every missing required
+    // variable, others stop at the first (APP_URL is declared first). Require
+    // that the failure names one of them; the cases below prove each variable
+    // is named when it alone is missing.
+    expect(missingBoth.stderr).toMatch(/(APP_URL|AUTH_SECRET) is required/);
+
+    const missingAppUrl = composeConfig("docker-compose.portainer.yml", {
+      AUTH_SECRET: REQUIRED_ENV.AUTH_SECRET,
+    });
+    expect(missingAppUrl.ok).toBe(false);
+    expect(missingAppUrl.stderr).toMatch(/APP_URL is required/);
 
     const missingSecret = composeConfig("docker-compose.portainer.yml", {
       APP_URL: REQUIRED_ENV.APP_URL,
