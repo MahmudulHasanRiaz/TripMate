@@ -38,8 +38,10 @@ export const SITE_SETTING_KEYS = [
   "email",
   "address",
   "logoUrl",
+  "logoDisplay",
   "faviconUrl",
   "searchEngineVisibility",
+  "accreditations",
   "footerDescription",
   "footerColumns",
   "footerSocials",
@@ -51,6 +53,17 @@ export const SITE_SETTING_KEYS = [
   "instagramHandle",
 ] as const satisfies readonly (keyof SiteSettings)[];
 
+/** How the brand lockup renders (Follow-up 09 §3): "icon-name" is the
+ *  classic small square logo + site title beside it; "logo-only" renders
+ *  ONE wide lockup image (icon + name baked in) with no separate title. */
+export type LogoDisplay = "icon-name" | "logo-only";
+
+/** One accreditation badge (Follow-up 09 §5): the organization's REAL
+ *  logo image + the credential label. imageUrl may be "" — the footer then
+ *  renders a designed credential tile (e.g. a license number has no logo).
+ *  Fully settings-driven: an agency shows only credentials it configured. */
+export type Accreditation = { imageUrl: string; label: string; sublabel: string };
+
 export type FooterLink = { label: string; href: string };
 export type FooterColumn = { title: string; links: FooterLink[] };
 export type FooterSocial = { network: string; href: string };
@@ -61,8 +74,10 @@ export type SiteSettings = {
   email: string;
   address: string;
   logoUrl: string;
+  logoDisplay: LogoDisplay;
   faviconUrl: string;
   searchEngineVisibility: boolean;
+  accreditations: Accreditation[];
   footerDescription: string | null;
   footerColumns: FooterColumn[];
   footerSocials: FooterSocial[];
@@ -87,8 +102,10 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   email: "",
   address: "",
   logoUrl: "",
+  logoDisplay: "icon-name",
   faviconUrl: "",
   searchEngineVisibility: true,
+  accreditations: [],
   footerDescription: null,
   footerColumns: [],
   footerSocials: [],
@@ -127,6 +144,29 @@ function mergedString(row: Record<string, unknown>, key: string, fallback: strin
   return typeof value === "string" && value !== "" ? value : fallback;
 }
 
+/** Project a raw logoDisplay cell: only the exact "logo-only" value opts
+ *  into the wide-lockup rendering; anything else (legacy rows predate the
+ *  key) keeps the classic icon + name look. */
+function asLogoDisplay(value: unknown): LogoDisplay {
+  return value === "logo-only" ? "logo-only" : "icon-name";
+}
+
+/** Project the raw accreditations cell: only well-formed items survive
+ *  (string label required; imageUrl/sublabel default to ""). */
+function asAccreditations(value: unknown): Accreditation[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (a): a is Record<string, unknown> =>
+        a !== null && typeof a === "object" && typeof (a as { label?: unknown }).label === "string",
+    )
+    .map((a) => ({
+      imageUrl: typeof a.imageUrl === "string" ? a.imageUrl : "",
+      label: a.label as string,
+      sublabel: typeof a.sublabel === "string" ? a.sublabel : "",
+    }));
+}
+
 /**
  * The settings.site row merged over the defaults — NEVER null, safe to feed
  * straight into the admin form or (public) metadata. Uncached by design: the
@@ -152,11 +192,13 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       email: mergedString(row, "email", DEFAULT_SITE_SETTINGS.email),
       address: mergedString(row, "address", DEFAULT_SITE_SETTINGS.address),
       logoUrl: mergedString(row, "logoUrl", DEFAULT_SITE_SETTINGS.logoUrl),
+      logoDisplay: asLogoDisplay(row.logoDisplay),
       faviconUrl: mergedString(row, "faviconUrl", DEFAULT_SITE_SETTINGS.faviconUrl),
       searchEngineVisibility:
         typeof row.searchEngineVisibility === "boolean"
           ? row.searchEngineVisibility
           : DEFAULT_SITE_SETTINGS.searchEngineVisibility,
+      accreditations: asAccreditations(row.accreditations),
       footerDescription: typeof footer === "string" && footer !== "" ? footer : null,
       footerColumns: columns,
       footerSocials: socials,
@@ -207,8 +249,10 @@ export async function updateSiteSettings(
     email: input.email,
     address: input.address,
     logoUrl: input.logoUrl,
+    logoDisplay: input.logoDisplay ?? current.logoDisplay,
     faviconUrl: input.faviconUrl,
     searchEngineVisibility: input.searchEngineVisibility,
+    accreditations: input.accreditations ?? current.accreditations,
     footerDescription: mergedText(current.footerDescription, input.footerDescription),
     footerColumns: input.footerColumns ?? current.footerColumns,
     footerSocials: input.footerSocials ?? current.footerSocials,
@@ -389,11 +433,13 @@ export async function getPublicSiteSettings(): Promise<SiteSettings> {
     email: mergedString(row, "email", DEFAULT_SITE_SETTINGS.email),
     address: mergedString(row, "address", DEFAULT_SITE_SETTINGS.address),
     logoUrl: mergedString(row, "logoUrl", DEFAULT_SITE_SETTINGS.logoUrl),
+    logoDisplay: asLogoDisplay(row.logoDisplay),
     faviconUrl: mergedString(row, "faviconUrl", DEFAULT_SITE_SETTINGS.faviconUrl),
     searchEngineVisibility:
       typeof row.searchEngineVisibility === "boolean"
         ? row.searchEngineVisibility
         : DEFAULT_SITE_SETTINGS.searchEngineVisibility,
+    accreditations: asAccreditations(row.accreditations),
     footerDescription: typeof footer === "string" && footer !== "" ? footer : null,
     footerColumns: columns,
     footerSocials: socials,

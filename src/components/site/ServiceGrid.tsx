@@ -98,7 +98,7 @@ export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
             {/* Action Footer */}
             <div className="mt-6 flex items-center justify-between border-t border-border/50 pt-4 text-xs font-semibold text-primary">
               <span className="transition-colors group-hover:underline">
-                {item.external ? "Visit Partner" : "Explore Service"}
+                Explore Service
               </span>
               <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 transition-transform group-hover:translate-x-1">
                 {item.external ? (

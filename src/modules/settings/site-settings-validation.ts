@@ -156,6 +156,10 @@ export const siteSettingsInputSchema = z.object({
     .trim()
     .max(300, "Address must be 300 characters or fewer"),
   logoUrl: urlOrEmpty(2048, "Logo URL must be 2048 characters or fewer"),
+  // Brand lockup mode (Follow-up 09 §3) — a SELECT in the admin form, never
+  // free text. Optional: payloads that predate the field preserve the
+  // stored mode (updateSiteSettings falls back to the current value).
+  logoDisplay: z.enum(["icon-name", "logo-only"]).optional(),
   faviconUrl: urlOrEmpty(2048, "Favicon URL must be 2048 characters or fewer"),
   searchEngineVisibility: z.boolean(),
   footerDescription: clearableOptionalText(
@@ -197,6 +201,19 @@ export const siteSettingsInputSchema = z.object({
     .max(8)
     .optional(),
   copyright: clearableOptionalText(200, "Copyright must be 200 characters or fewer"),
+  // Accreditation badges (Follow-up 09 §5) — optional: absent preserves the
+  // stored list. imageUrl may be "" (credential tile without a logo, e.g. a
+  // license number); label is the one required text.
+  accreditations: z
+    .array(
+      z.object({
+        imageUrl: urlOrEmpty(2048, "Badge image URL must be 2048 characters or fewer"),
+        label: z.string().trim().min(1, "Badge label is required").max(60),
+        sublabel: z.string().trim().max(80),
+      }),
+    )
+    .max(8)
+    .optional(),
 });
 export type SiteSettingsInput = z.infer<typeof siteSettingsInputSchema>;
 

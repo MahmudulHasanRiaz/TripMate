@@ -118,7 +118,7 @@ export default function AdminShell({
 }: {
   menu: AdminMenuItem[];
   user: AdminUser;
-  brand: { title: string; logoUrl: string };
+  brand: { title: string; logoUrl: string; logoDisplay?: "icon-name" | "logo-only" };
   children: React.ReactNode;
 }) {
   // Mirror the admin scope onto <body> so Radix portals (dialogs, sheets,
@@ -133,7 +133,7 @@ export default function AdminShell({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <SidebarBrand title={brand.title} logoUrl={brand.logoUrl} />
+          <SidebarBrand title={brand.title} logoUrl={brand.logoUrl} logoDisplay={brand.logoDisplay} />
         </SidebarHeader>
         <SidebarContent>
           <SidebarNav menu={menu} />
@@ -162,7 +162,24 @@ export default function AdminShell({
 
 /** Brand lockup pinned to the top of the rail — settings-driven: the site
  *  title + logo configured in Admin → Settings → Brand, never hardcoded. */
-function SidebarBrand({ title, logoUrl }: { title: string; logoUrl: string }) {
+function SidebarBrand({
+  title,
+  logoUrl,
+  logoDisplay,
+}: {
+  title: string;
+  logoUrl: string;
+  logoDisplay?: "icon-name" | "logo-only";
+}) {
+  // Same lockup contract as the public chrome (Follow-up 09 §3).
+  if (logoDisplay === "logo-only" && logoUrl) {
+    return (
+      <Link href="/admin" className="flex items-center px-2 py-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={logoUrl} alt={title} className="h-8 w-auto max-w-[180px] object-contain" />
+      </Link>
+    );
+  }
   return (
     <Link href="/admin" className="flex items-center gap-2 px-2 py-1">
       {logoUrl ? (

@@ -113,7 +113,7 @@
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-lg: 0 10px 30px -10px rgb(0 0 0 / 0.15);
 
-  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-display: var(--font-poppins), var(--font-inter), system-ui, sans-serif;
   --font-body: var(--font-inter), system-ui, "Noto Sans Bengali", "Hind Siliguri", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 

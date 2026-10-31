@@ -33,6 +33,9 @@ import FooterSettingsCard from "./FooterSettingsCard";
 import SeoIndexingCard from "./SeoIndexingCard";
 import PaymentSettingsCard from "./PaymentSettingsCard";
 import TrustStatsEditor, { type StatRow } from "./TrustStatsEditor";
+import AccreditationsEditor, {
+  type AccreditationRow,
+} from "./AccreditationsEditor";
 import {
   homeSettingsInputSchema,
   siteSettingsInputSchema,
@@ -58,6 +61,13 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,17 +109,40 @@ export default function SettingsTabsView({
       email: initialSite.email || "",
       address: initialSite.address ?? "",
       logoUrl: initialSite.logoUrl ?? "",
+      logoDisplay: initialSite.logoDisplay ?? "icon-name",
       faviconUrl: initialSite.faviconUrl ?? "",
       searchEngineVisibility: initialSite.searchEngineVisibility ?? true,
       footerDescription: initialSite.footerDescription ?? "",
     },
   });
 
+  const [accreditations, setAccreditations] = useState<AccreditationRow[]>(() => {
+    return Array.isArray(initialSite.accreditations)
+      ? initialSite.accreditations.map((a) => ({
+          imageUrl: a.imageUrl || "",
+          label: a.label || "",
+          sublabel: a.sublabel || "",
+        }))
+      : [];
+  });
+
   const onSiteSubmit = siteForm.handleSubmit((values) => {
     setSiteError(null);
+    // Badge rows with an empty label are drafts — drop them; an image with
+    // no label would render as a meaningless logo on the public footer.
+    const cleanAccreditations = accreditations
+      .filter((a) => a.label.trim())
+      .map((a) => ({
+        imageUrl: a.imageUrl.trim(),
+        label: a.label.trim(),
+        sublabel: a.sublabel.trim(),
+      }));
     startSiteTransition(async () => {
       try {
-        const res = await saveSiteSettingsAction(values);
+        const res = await saveSiteSettingsAction({
+          ...values,
+          accreditations: cleanAccreditations,
+        });
         if (res.ok) {
           toast({
             title: "Site settings saved",
@@ -335,7 +368,45 @@ export default function SettingsTabsView({
                           </FormItem>
                         )}
                       />
+
+                      <FormField
+                        control={siteForm.control}
+                        name="logoDisplay"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Logo Display</FormLabel>
+                            <Select
+                              value={field.value ?? "icon-name"}
+                              onValueChange={field.onChange}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="h-10 text-xs">
+                                  <SelectValue placeholder="Choose how the logo renders" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="icon-name">Icon + name</SelectItem>
+                                <SelectItem value="logo-only">Logo image only</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription className="text-[11px]">
+                              Icon + name shows the logo beside the site title. Logo image only
+                              shows one wide logo image by itself — use a logo that already
+                              contains your agency name.
+                            </FormDescription>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
                     </div>
+                  </div>
+
+                  {/* Accreditations (Follow-up 09 §5) */}
+                  <div className="pt-2 border-t border-border/60">
+                    <AccreditationsEditor
+                      rows={accreditations}
+                      onChange={setAccreditations}
+                    />
                   </div>
 
                   {/* Contact Channels */}

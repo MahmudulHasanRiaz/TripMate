@@ -109,6 +109,8 @@ export default async function PublicLayout({
       <SiteFooter
         title={site.title}
         logoUrl={site.logoUrl}
+        logoDisplay={site.logoDisplay}
+        accreditations={site.accreditations}
         phone={site.phone}
         email={site.email}
         address={site.address}
@@ -135,6 +137,7 @@ async function SiteHeaderGate({ site }: { site: SiteSettings }) {
     <SiteHeader
       title={site.title}
       logoUrl={site.logoUrl}
+      logoDisplay={site.logoDisplay}
       phone={site.phone}
       signedIn={Boolean(session?.user)}
       canAccessAdmin={canAccessAdminPanel(session)}
