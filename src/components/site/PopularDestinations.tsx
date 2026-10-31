@@ -41,16 +41,14 @@ export function PopularDestinations({ destinations }: PopularDestinationsProps) 
           </Link>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 flex flex-wrap justify-center gap-5">
           {displayDestinations.map((dest, index) => {
             const isMarquee = index === 0;
             return (
-              <Reveal key={dest.id} delay={index * 80} className="h-full">
+              <Reveal key={dest.id} delay={index * 80} className="h-full w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-0.875rem)]">
               <Link
                 href={`/destinations/${dest.slug}` as Route}
-                className={`group relative overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg ${
-                  isMarquee ? "sm:col-span-2 lg:col-span-1" : ""
-                }`}
+                className="group relative block h-full overflow-hidden rounded-xl border border-border bg-card shadow-xs transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg"
               >
                 <div className="relative aspect-[16/11] w-full overflow-hidden bg-muted">
                   {dest.image ? (

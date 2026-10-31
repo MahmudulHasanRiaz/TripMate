@@ -108,7 +108,7 @@ export function SiteHeader({ title, logoUrl, logoDisplay, phone, signedIn, canAc
             <img
               src={logoUrl}
               alt={title}
-              className="h-9 w-auto max-w-[180px] object-contain sm:max-w-[200px]"
+              className="h-10 w-auto max-w-[240px] object-contain sm:max-w-[260px]"
             />
           ) : (
             <>

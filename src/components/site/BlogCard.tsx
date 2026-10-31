@@ -54,7 +54,7 @@ export function BlogCard({
   return (
     <article
       className={cn(
-        "group flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 ease-out",
+        "group flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xs transition-all duration-300 ease-out",
         "hover:-translate-y-1.5 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5",
       )}
     >

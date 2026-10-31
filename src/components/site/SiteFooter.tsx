@@ -106,7 +106,7 @@ export function SiteFooter({
               <img
                 src={logoUrl}
                 alt={title}
-                className="h-10 w-auto max-w-[220px] object-contain"
+                className="h-11 w-auto max-w-[280px] object-contain"
               />
             ) : (
               <>

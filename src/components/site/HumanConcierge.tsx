@@ -186,7 +186,7 @@ export function HumanConcierge({
                             }`}
                           >
                             <span className="font-bold">{journey.label}</span>
-                            <span className="text-[10px] opacity-75 mt-0.5 line-clamp-1">{journey.desc}</span>
+                            <span className="text-[10px] opacity-75 mt-0.5 line-clamp-2 leading-snug">{journey.desc}</span>
                           </button>
                         );
                       })}

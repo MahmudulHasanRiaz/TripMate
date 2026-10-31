@@ -176,7 +176,7 @@ function SidebarBrand({
     return (
       <Link href="/admin" className="flex items-center px-2 py-1">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoUrl} alt={title} className="h-8 w-auto max-w-[180px] object-contain" />
+        <img src={logoUrl} alt={title} className="h-9 w-auto max-w-[180px] object-contain" />
       </Link>
     );
   }
