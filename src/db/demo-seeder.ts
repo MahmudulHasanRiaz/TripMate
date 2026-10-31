@@ -182,6 +182,13 @@ export async function seedDemoData() {
           phone: "+880 1711-234567",
           email: "support@tripmate.com",
           address: "Concord Bilkis Tower, 6th Floor, Madani Avenue, Gulshan-2, Dhaka-1212",
+          accreditations: [
+            { imageUrl: "/badges/caab.svg", label: "Civil Aviation Licensed", sublabel: "CAAB — Bangladesh" },
+            { imageUrl: "/badges/iata.svg", label: "IATA Authorised Agent", sublabel: "" },
+            { imageUrl: "", label: "Hajj License No. 741", sublabel: "Din Air International" },
+            { imageUrl: "/badges/saudi-hajj-umrah.svg", label: "Official Partner", sublabel: "Saudi Umrah Visa" },
+            { imageUrl: "/badges/atab.png", label: "ATAB Member", sublabel: "Association of Travel Agents of Bangladesh" },
+          ],
           footerDescription: "Bangladesh's premier B2C travel commerce platform. Providing specialized Hajj & Umrah pilgrimages, curated holiday tours, medical travel assistance, and express visa concierge services.",
         },
       },

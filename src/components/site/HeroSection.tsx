@@ -1,59 +1,35 @@
 import Image from "next/image";
-import Link from "next/link";
-import type { Route } from "next";
-import { ArrowRight, Sparkles } from "lucide-react";
-
-import { cn } from "@/lib/utils";
 
 export type HeroSectionProps = {
   headline?: string;
   sub?: string;
-  ctaLabel?: string;
-  ctaHref?: string;
   imageSrc?: string | null;
   imageAlt?: string;
 };
 
 /**
- * Premium Luxury Hero Section.
- * Renders atmospheric background photography, elegant ambient glow,
- * two-tone typography, and primary conversion action.
+ * Hero — ShareTrip-pattern (Follow-up 09 §1): a vivid full-bleed photo with
+ * a gradient that deepens toward the bottom, strikingly little copy (one
+ * headline + one subtext line, white, left-aligned to the same content
+ * column as the booking panel), and the TravelActionPanel card straddling
+ * the hero's bottom edge — its tab row sits on the photo's dark base, the
+ * rest hangs below on the page background. The panel is the call to
+ * action, so the hero itself carries no CTA button and no eyebrow pill.
  *
- * Sits seamlessly above the interactive TravelActionPanel.
+ * With no image configured, the same layout renders over a deep
+ * theme-token gradient — never a broken band. The hero is image-led in
+ * both themes, so the copy is white in light and dark mode alike.
  */
 export function HeroSection({
   headline = "Travel better. We'll handle the rest.",
   sub = "Spiritual pilgrimages, family holidays, and corporate travel — planned with precision, transparency, and 24/7 human care.",
-  ctaLabel = "Explore Packages",
-  ctaHref = "/packages",
   imageSrc,
-  imageAlt = "Luxury travel landscape",
+  imageAlt = "Travel landscape",
 }: HeroSectionProps) {
-  // Two-tone typography formatter: italic accent on second half if split by punctuation
-  const renderHeadline = () => {
-    if (!headline) return null;
-    const splitChar = headline.includes(".") ? "." : headline.includes(",") ? "," : null;
-    if (splitChar) {
-      const parts = headline.split(splitChar);
-      const first = parts[0];
-      const second = parts.slice(1).join(splitChar);
-      if (second.trim()) {
-        return (
-          <>
-            <span className="block text-foreground">{first.trim()}{splitChar === "." ? "." : ","}</span>
-            <span className="block font-serif italic font-normal tracking-normal text-accent dark:text-amber-300">
-              {second.trim()}
-            </span>
-          </>
-        );
-      }
-    }
-    return <span className="text-foreground">{headline}</span>;
-  };
-
   return (
-    <section className="relative isolate overflow-hidden -mt-20 sm:-mt-24 pt-40 sm:pt-48 lg:pt-52 pb-20 sm:pb-28 lg:pb-32 transition-colors">
-      {/* Background: Atmospheric Photograph extending to top */}
+    <section className="relative isolate overflow-hidden -mt-20 sm:-mt-24 pt-36 sm:pt-44 lg:pt-48 pb-28 sm:pb-36 lg:pb-40">
+      {/* Background: vivid photograph, darkened only toward the base so
+          the white copy and the straddling panel's top stay legible. */}
       {imageSrc ? (
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <Image
@@ -63,68 +39,25 @@ export function HeroSection({
             priority
             sizes="100vw"
             referrerPolicy="no-referrer"
-            className="object-cover opacity-35 dark:opacity-45"
+            className="object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/70 to-background dark:from-slate-950/90 dark:via-slate-950/75 dark:to-slate-950" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/80" />
         </div>
       ) : (
-        <div aria-hidden className="absolute inset-0 -z-10 bg-background dark:bg-slate-950">
-          <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background dark:from-slate-950 dark:via-slate-950/95 dark:to-slate-950" />
-          <div className="absolute -right-32 -top-24 h-[28rem] w-[28rem] rounded-full bg-accent/15 blur-[130px]" />
-          <div className="absolute left-1/4 top-1/3 h-80 w-80 rounded-full bg-primary/20 blur-[140px]" />
+        <div aria-hidden className="absolute inset-0 -z-10 bg-primary">
+          <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-black/75" />
         </div>
       )}
 
-      {/* Ambient Radial Glow Orbs */}
-      <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 size-[650px] rounded-full bg-primary/15 blur-[140px] -z-10" />
-      <div className="pointer-events-none absolute top-48 right-1/4 size-[400px] rounded-full bg-accent/15 blur-[140px] -z-10" />
-
-      <div className="relative mx-auto flex w-full max-w-[1340px] flex-col items-center px-4 sm:px-6 lg:px-8 text-center">
-        {/* Floating Trust Eyebrow Pill — guaranteed single line everywhere,
-            including 390px phones. On <sm we drop the (redundant with the
-            sparkle + TrustStrip below) live dot and use the shorter 24/7
-            label + tighter type so the chip never wraps or clips. */}
-        <div className="mb-6 inline-flex max-w-full items-center gap-2 sm:gap-2.5 whitespace-nowrap rounded-full border border-border/80 bg-card/85 dark:bg-slate-900/85 px-3.5 py-1.5 text-[11px] sm:text-xs font-semibold tracking-wide text-foreground shadow-lg backdrop-blur-xl ring-1 ring-black/5 dark:ring-white/10 sm:px-4">
-          <span className="relative hidden size-2 sm:flex">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-          </span>
-          <span className="text-amber-500 dark:text-amber-300 font-bold">
-            <Sparkles className="inline-block size-3.5 mr-1 align-text-bottom" />
-            Bespoke Travel &amp; Pilgrimage Specialist
-          </span>
-          <span className="opacity-30">•</span>
-          <span className="text-muted-foreground hidden sm:inline">24/7 Human Concierge Desk</span>
-          <span className="text-muted-foreground sm:hidden">24/7 Care</span>
-        </div>
-
-        {/* Hero Headline */}
-        <h1 className="max-w-4xl text-balance font-display text-[clamp(2.4rem,5.5vw,4.5rem)] font-extrabold leading-[1.08] tracking-tight drop-shadow-xs">
-          {renderHeadline()}
+      {/* Copy: headline + one subtext line, aligned with the panel card. */}
+      <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6">
+        <h1 className="max-w-3xl text-balance font-display text-[28px] font-bold leading-[1.15] tracking-tight text-white sm:text-[40px] sm:leading-[1.12]">
+          {headline}
         </h1>
-
-        {/* Supporting Copy */}
         {sub ? (
-          <p className="mt-5 max-w-2xl text-balance text-base leading-relaxed text-muted-foreground sm:text-lg">
+          <p className="mt-3 max-w-2xl text-balance text-sm font-medium leading-relaxed text-white/90 sm:mt-4 sm:text-[17px]">
             {sub}
           </p>
-        ) : null}
-
-        {/* Primary CTA */}
-        {ctaLabel && ctaHref ? (
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-            <Link
-              href={ctaHref as Route}
-              className={cn(
-                "inline-flex min-h-12 items-center justify-center gap-2 rounded-xl",
-                "bg-primary px-8 text-sm font-bold text-primary-foreground shadow-lg",
-                "transition-all duration-200 hover:opacity-95 hover:scale-[1.02] active:scale-[0.98]",
-              )}
-            >
-              <span>{ctaLabel}</span>
-              <ArrowRight className="size-4" />
-            </Link>
-          </div>
         ) : null}
       </div>
     </section>

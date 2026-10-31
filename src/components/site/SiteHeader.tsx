@@ -27,6 +27,9 @@ const NAV_ITEMS: PublicNavItem[] = [
 export type SiteHeaderProps = {
   title: string;
   logoUrl: string;
+  /** Brand lockup mode (settings): "logo-only" renders one wide lockup
+   *  image alone; anything else is the classic icon + title. */
+  logoDisplay?: "icon-name" | "logo-only";
   phone?: string;
   overHero?: boolean;
   /** Was a session resolves server-side? Drives Sign-in vs portal links. */
@@ -39,7 +42,10 @@ export type SiteHeaderProps = {
   canAccessAdmin: boolean;
 };
 
-export function SiteHeader({ title, logoUrl, phone, signedIn, canAccessAdmin }: SiteHeaderProps) {
+export function SiteHeader({ title, logoUrl, logoDisplay, phone, signedIn, canAccessAdmin }: SiteHeaderProps) {
+  // Logo-only needs an actual logo image; without one the classic lockup
+  // (default mark + title) is the honest fallback — never an empty slot.
+  const logoOnly = logoDisplay === "logo-only" && Boolean(logoUrl);
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const cleanPhone = phone ? phone.replace(/[^0-9+]/g, "") : "";
@@ -93,21 +99,34 @@ export function SiteHeader({ title, logoUrl, phone, signedIn, canAccessAdmin }: 
             : "py-2.5 sm:py-3 border-border/70 shadow-lg shadow-black/5 dark:shadow-black/20",
         )}
       >
-        {/* Brand Logo & Name */}
+        {/* Brand lockup — settings-driven (Follow-up 09 §3): logo-only
+            shows the wide lockup image alone; icon-name is the classic
+            disc + title. The title stays the img alt either way. */}
         <Link href="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group">
-          <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-105">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="" className="h-6 w-auto" />
-            ) : (
-              <Logo className="size-5" aria-hidden="true" />
-            )}
-          </span>
-          <div className="flex flex-col">
-            <span className="font-display text-base sm:text-lg font-bold tracking-tight text-foreground leading-tight">
-              {title}
-            </span>
-          </div>
+          {logoOnly ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={logoUrl}
+              alt={title}
+              className="h-9 w-auto max-w-[180px] object-contain sm:max-w-[200px]"
+            />
+          ) : (
+            <>
+              <span className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-200 group-hover:scale-105">
+                {logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={logoUrl} alt="" className="h-6 w-auto" />
+                ) : (
+                  <Logo className="size-5" aria-hidden="true" />
+                )}
+              </span>
+              <div className="flex flex-col">
+                <span className="font-display text-base sm:text-lg font-bold tracking-tight text-foreground leading-tight">
+                  {title}
+                </span>
+              </div>
+            </>
+          )}
         </Link>
 
         {/* Center Desktop Navigation Links */}

@@ -14,8 +14,8 @@ export function TrustStrip({ siteName }: { siteName?: string }) {
               <ShieldCheck className="size-5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-foreground">ATAB & CAAB Certified</div>
-              <div className="text-[11px] text-muted-foreground">Official Travel Agency Reg.</div>
+              <div className="text-xs font-bold text-foreground">Transparent Pricing</div>
+              <div className="text-[11px] text-muted-foreground">Published fares, no hidden fees</div>
             </div>
           </div>
 
@@ -25,8 +25,8 @@ export function TrustStrip({ siteName }: { siteName?: string }) {
               <Award className="size-5" />
             </div>
             <div>
-              <div className="text-xs font-bold text-foreground">Ministry Approved</div>
-              <div className="text-[11px] text-muted-foreground">Licensed Hajj & Umrah Operator</div>
+              <div className="text-xs font-bold text-foreground">Expert Trip Planning</div>
+              <div className="text-[11px] text-muted-foreground">Hajj, Umrah & holiday specialists</div>
             </div>
           </div>
 

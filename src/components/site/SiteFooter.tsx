@@ -9,14 +9,17 @@ import {
   Mail,
   MapPin,
   Phone,
-  ShieldCheck,
   Twitter,
   Youtube,
 } from "lucide-react";
 import { WhatsAppIcon } from "./brand-icons";
 
 import Logo from "@/components/icons/Logo";
-import type { SiteFooterColumn, SiteFooterSocial } from "@/lib/site-settings";
+import type {
+  SiteAccreditation,
+  SiteFooterColumn,
+  SiteFooterSocial,
+} from "@/lib/site-settings";
 
 const DEFAULT_LINKS: { label: string; href: Route }[] = [
   { label: "VIP Umrah Packages", href: "/packages" as Route },
@@ -38,6 +41,11 @@ const SOCIAL_ICONS: Record<string, typeof Facebook> = {
 type SiteFooterProps = {
   title: string;
   logoUrl: string;
+  /** Brand lockup mode (settings) — same contract as the header. */
+  logoDisplay?: "icon-name" | "logo-only";
+  /** Accreditation badges (settings) — real organization logos, rendered
+   *  as the footer strip. Empty = no strip (never fake claims). */
+  accreditations?: SiteAccreditation[];
   phone: string;
   email: string;
   address: string;
@@ -50,6 +58,8 @@ type SiteFooterProps = {
 export function SiteFooter({
   title,
   logoUrl,
+  logoDisplay,
+  accreditations,
   phone,
   email,
   address,
@@ -59,6 +69,7 @@ export function SiteFooter({
   copyright,
 }: SiteFooterProps) {
   const cleanPhone = phone ? phone.replace(/[^0-9+]/g, "") : "";
+  const logoOnly = logoDisplay === "logo-only" && Boolean(logoUrl);
 
   const columns =
     footerColumns && footerColumns.length > 0
@@ -90,34 +101,75 @@ export function SiteFooter({
         {/* Brand & Mission */}
         <div className="space-y-4">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="text-primary">
-              {logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoUrl} alt="" className="h-8 w-auto" />
-              ) : (
-                <Logo className="size-7" aria-hidden="true" />
-              )}
-            </span>
-            <span className="font-display text-xl font-bold tracking-tight text-foreground">
-              {title}
-            </span>
+            {logoOnly ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoUrl}
+                alt={title}
+                className="h-10 w-auto max-w-[220px] object-contain"
+              />
+            ) : (
+              <>
+                <span className="text-primary">
+                  {logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={logoUrl} alt="" className="h-8 w-auto" />
+                  ) : (
+                    <Logo className="size-7" aria-hidden="true" />
+                  )}
+                </span>
+                <span className="font-display text-xl font-bold tracking-tight text-foreground">
+                  {title}
+                </span>
+              </>
+            )}
           </Link>
           <p className="max-w-sm text-xs sm:text-sm leading-relaxed text-muted-foreground">
             {footerDescription ||
               "Bangladesh's premier luxury travel & pilgrimage agency. Approved by the Ministry of Hajj & Umrah, Saudi Arabia. Dedicated to seamless spiritual excellence."}
           </p>
 
-          {/* Accreditation Badges */}
-          <div className="pt-2 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary/60 px-2.5 py-1 text-[11px] font-semibold text-foreground">
-              <Award className="size-3 text-primary" />
-              IATA Accredited
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary/60 px-2.5 py-1 text-[11px] font-semibold text-foreground">
-              <ShieldCheck className="size-3 text-emerald-500" />
-              Ministry Approved
-            </span>
-          </div>
+          {/* Accreditation badges — settings-driven REAL organization
+              logos (Follow-up 09 §5). An item without an image (e.g. a
+              license number) renders as a credential tile. Nothing is
+              rendered when the agency configured no accreditations. */}
+          {accreditations && accreditations.length > 0 ? (
+            <div className="pt-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Licensed &amp; Accredited
+              </p>
+              <ul className="mt-2.5 flex flex-wrap gap-x-5 gap-y-3">
+                {accreditations.map((badge, i) => (
+                  <li key={`${badge.label}-${i}`} className="flex items-center gap-2.5">
+                    {badge.imageUrl ? (
+                      <span className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-border/60">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={badge.imageUrl}
+                          alt=""
+                          className="h-8 w-auto max-w-[104px] object-contain"
+                        />
+                      </span>
+                    ) : (
+                      <span className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 px-3 ring-1 ring-primary/20">
+                        <Award className="size-5 text-primary" aria-hidden="true" />
+                      </span>
+                    )}
+                    <span className="flex flex-col">
+                      <span className="text-xs font-bold leading-tight text-foreground">
+                        {badge.label}
+                      </span>
+                      {badge.sublabel ? (
+                        <span className="text-[11px] leading-tight text-muted-foreground">
+                          {badge.sublabel}
+                        </span>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
 
           {/* Social Icons */}
           <ul className="flex items-center gap-1 pt-2">

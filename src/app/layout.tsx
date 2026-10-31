@@ -8,13 +8,20 @@ import { resolveFaviconUrl } from "@/lib/seo";
 import { themeInitScript } from "@/lib/theme";
 import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 
-// Self-hosted variable fonts (latin) — the network to fonts.gstatic.com on the
+// Self-hosted fonts (latin) — the network to fonts.gstatic.com on the
 // owner's machine flaked hard enough to 500 every request (next/font/google's
-// fetch, Follow-up 08 session). Same two families, same CSS variables
-// (--font-fraunces / --font-inter), zero network at build/dev time.
+// fetch, Follow-up 08 session). Zero network at build/dev time.
+// Display face is Poppins (Follow-up 09 §4): the client found the previous
+// serif display face (Fraunces) hard for ordinary readers — a clean geometric
+// sans now carries every heading; Inter remains the body face.
 const display = localFont({
-  src: "./fonts/fraunces-var-latin.woff2",
-  variable: "--font-fraunces",
+  src: [
+    { path: "./fonts/poppins-500-latin.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/poppins-600-latin.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/poppins-700-latin.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/poppins-800-latin.woff2", weight: "800", style: "normal" },
+  ],
+  variable: "--font-poppins",
   display: "swap",
 });
 

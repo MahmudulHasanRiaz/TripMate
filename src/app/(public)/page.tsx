@@ -111,8 +111,6 @@ export default async function Home() {
         <HeroSection
           headline={home.headline}
           sub={home.sub}
-          ctaLabel={home.ctaLabel}
-          ctaHref={home.ctaHref}
           imageSrc={home.imageUrl}
           imageAlt={home.imageAlt}
         />
@@ -128,7 +126,7 @@ export default async function Home() {
         phone={site.phone}
       />
 
-      <div className="mt-8 sm:mt-12">
+      <div className="mt-12 sm:mt-16">
         <TrustStrip siteName={site.title} />
       </div>
 
@@ -380,7 +378,7 @@ function readHomeSetting(raw: Record<string, unknown> | null, siteTitle: string)
 const SERVICE_KIND_BLURB: Record<ServiceKind, string> = {
   package: "Curated packages with transparent, published pricing.",
   inquiry_based: "Tell us your plan — we'll craft a personalised quote.",
-  redirect: "Book direct with our trusted partner.",
+  redirect: "Book direct online.",
 };
 
 function toServiceItem(category: {

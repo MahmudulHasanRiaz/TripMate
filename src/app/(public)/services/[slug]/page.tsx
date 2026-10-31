@@ -119,7 +119,7 @@ function descriptionFor(data: ServicePageData, brand: string): string {
     return `${data.name} by ${who} — ${count === 0 ? "curated packages with transparent pricing" : `${count} published ${count === 1 ? "package" : "packages"} with fixed itineraries and all-in pricing`}.`;
   }
   if (data.kind === "redirect") {
-    return `${data.name} — book direct with ${who}'s trusted partner.`;
+    return `${data.name} — book direct online.`;
   }
   return `${data.name} at ${who} — tell us your plan and receive a personalised quote.`;
 }
@@ -283,15 +283,15 @@ function RedirectSection({
         <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-16">
           <div className="max-w-2xl">
             <SectionHeading
-              kicker="Partner service"
-              title="Booked on our partner's site"
-              lead={`${data.name} is delivered and booked directly by a partner we trust. Prices, schedules and terms are set by them.`}
+              kicker="Online booking"
+              title="Book directly online"
+              lead={`${data.name} is booked directly on the provider's booking site. Prices, schedules and terms are set by the provider.`}
             />
             <div className="mt-8 flex flex-col gap-3 rounded-lg border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm leading-relaxed text-muted-foreground">
                 {data.redirectUrl
                   ? "Clicking through opens their website in a new tab."
-                  : "The partner link isn't set up yet — reach us below and we'll connect you."}
+                  : "The booking link isn't set up yet — reach us below and we'll connect you."}
               </p>
               {data.redirectUrl ? (
                 <a
@@ -300,7 +300,7 @@ function RedirectSection({
                   rel="noopener noreferrer"
                   className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
-                  Visit partner site
+                  Continue to booking
                   <ExternalLink className="size-4" aria-hidden="true" />
                 </a>
               ) : null}
@@ -310,7 +310,7 @@ function RedirectSection({
           {data.redirectUrl ? (
             <aside className="rounded-xl border border-border bg-muted/40 p-6 text-sm leading-relaxed text-muted-foreground">
               Need help choosing? Call or WhatsApp us and we&apos;ll point you at
-              the right partner service.
+              the right service for you.
             </aside>
           ) : (
             <ContactOptions name={data.name} phone={site.phone} email={site.email} brand={site.title?.trim() || "us"} />

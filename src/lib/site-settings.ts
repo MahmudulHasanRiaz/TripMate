@@ -12,12 +12,18 @@ export type SiteFooterLink = { label: string; href: string };
 export type SiteFooterColumn = { title: string; links: SiteFooterLink[] };
 export type SiteFooterSocial = { network: string; href: string };
 
+export type SiteAccreditation = { imageUrl: string; label: string; sublabel: string };
+
 export type SiteSettings = {
   title: string;
   logoUrl: string;
+  /** Brand lockup mode (Follow-up 09 §3) — mirrors modules/settings. */
+  logoDisplay: "icon-name" | "logo-only";
   phone: string;
   email: string;
   address: string;
+  /** Accreditation badges for the footer strip (Follow-up 09 §5). */
+  accreditations: SiteAccreditation[];
   footerDescription: string | null;
   footerColumns: SiteFooterColumn[];
   footerSocials: SiteFooterSocial[];
@@ -34,9 +40,11 @@ export type SiteSettings = {
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   title: "TripMate",
   logoUrl: "",
+  logoDisplay: "icon-name",
   phone: "",
   email: "",
   address: "",
+  accreditations: [],
   footerDescription: null,
   footerColumns: [],
   footerSocials: [],
@@ -75,13 +83,20 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   const socials = Array.isArray(raw.footerSocials)
     ? (raw.footerSocials as SiteFooterSocial[]).filter((s) => s && typeof s.href === "string")
     : [];
+  const accreditations = Array.isArray(raw.accreditations)
+    ? (raw.accreditations as SiteAccreditation[]).filter(
+        (a) => a && typeof a.label === "string",
+      )
+    : [];
 
   return {
     title: site.title || DEFAULT_SITE_SETTINGS.title,
     logoUrl: site.logoUrl || "",
+    logoDisplay: raw.logoDisplay === "logo-only" ? "logo-only" : "icon-name",
     phone: site.phone || "",
     email: site.email || "",
     address: site.address || "",
+    accreditations,
     footerDescription:
       typeof raw.footerDescription === "string" && raw.footerDescription !== ""
         ? raw.footerDescription

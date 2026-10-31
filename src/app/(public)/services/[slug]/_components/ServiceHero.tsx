@@ -17,9 +17,9 @@ const KIND_COPY: Record<ServiceKind, { label: string; promise: string }> = {
       "No fixed menu — tell us your plan and we'll craft a personalised quote, priced on request.",
   },
   redirect: {
-    label: "Partner service",
+    label: "Online service",
     promise:
-      "This service is delivered by a trusted partner — book it directly on their site.",
+      "Book it directly on the service's own booking site — live availability and instant confirmation.",
   },
 };
 

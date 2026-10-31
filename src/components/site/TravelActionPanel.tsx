@@ -74,8 +74,8 @@ export default function TravelActionPanel({
   };
 
   return (
-    <div className="relative z-20 mx-auto -mt-10 sm:-mt-16 w-full max-w-[1280px] px-4 sm:px-6">
-      <div className="rounded-xl border border-border bg-card/95 p-3 shadow-xl backdrop-blur-md dark:bg-card/90">
+    <div className="relative z-20 mx-auto -mt-10 sm:-mt-[72px] w-full max-w-[1280px] px-4 sm:px-6">
+      <div className="rounded-xl border border-border bg-card p-4 shadow-2xl sm:p-6">
         {/* Tab Navigation — horizontal scroll with snap + right-edge fade
             affordance so the clipped "next tab" reads as swipeable on
             narrow phones instead of looking silently cut off. */}
@@ -131,9 +131,6 @@ export default function TravelActionPanel({
           >
             <Plane className="size-4" />
             Flights
-            <span className="ml-1 rounded-sm bg-black/10 dark:bg-white/10 px-1 py-0.5 text-[10px] font-normal uppercase">
-              Partner
-            </span>
           </button>
 
           {/* Hotels - External */}
@@ -148,9 +145,6 @@ export default function TravelActionPanel({
           >
             <Building2 className="size-4" />
             Hotels
-            <span className="ml-1 rounded-sm bg-black/10 dark:bg-white/10 px-1 py-0.5 text-[10px] font-normal uppercase">
-              Partner
-            </span>
           </button>
         </div>
 
@@ -279,7 +273,7 @@ export default function TravelActionPanel({
                   Compare 500+ Airlines or Book with Human Concierge
                 </h4>
                 <p className="text-xs text-muted-foreground max-w-2xl">
-                  For real-time seat availability and instant e-tickets, we route you to our partner flight search engine. For complex group bookings, UMRAH flights, or special corporate fares, contact our flight desk directly.
+                  For real-time seat availability and instant e-tickets, we route you to our flight search engine. For complex group bookings, UMRAH flights, or special corporate fares, contact our flight desk directly.
                 </p>
               </div>
 
@@ -320,7 +314,7 @@ export default function TravelActionPanel({
                   Instant Room Reservations & Makkah/Madinah Clock Tower Suites
                 </h4>
                 <p className="text-xs text-muted-foreground max-w-2xl">
-                  Browse millions of hotels worldwide via our verified accommodation partner, or consult with our travel specialists for exclusive contracted group rates near holy sites and popular city centers.
+                  Browse millions of hotels worldwide via our verified accommodation search, or consult with our travel specialists for exclusive contracted group rates near holy sites and popular city centers.
                 </p>
               </div>
 

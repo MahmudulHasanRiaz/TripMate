@@ -66,12 +66,17 @@ export default async function AdminLayout({
   // before the setup wizard seeds a `site` row. Same cached reader the
   // public header/footer use, so an admin save lands everywhere in one hop.
   // Best-effort: a settings read failure must never lock staff out of admin.
-  let brand = { title: "TripMate", logoUrl: "" };
+  let brand: { title: string; logoUrl: string; logoDisplay: "icon-name" | "logo-only" } = {
+    title: "TripMate",
+    logoUrl: "",
+    logoDisplay: "icon-name",
+  };
   try {
     const site = await getSiteSettings();
     brand = {
       title: site.title?.trim() || "TripMate",
       logoUrl: site.logoUrl || "",
+      logoDisplay: site.logoDisplay,
     };
   } catch {
     // Fallback above stays.
