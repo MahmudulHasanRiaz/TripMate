@@ -43,7 +43,7 @@ export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
   if (!items || items.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="flex flex-wrap justify-center gap-4">
       {items.map((item, idx) => {
         const isFeatured = idx === 0 || item.slug.includes("umrah") || item.slug.includes("hajj");
 
@@ -113,7 +113,7 @@ export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
 
         if (item.external) {
           return (
-            <Reveal key={item.slug} delay={idx * 80} className="block h-full">
+            <Reveal key={item.slug} delay={idx * 80} className="block h-full w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
               <a
                 href={item.href}
                 target="_blank"
@@ -127,7 +127,7 @@ export function ServiceGrid({ items }: { items: ServiceGridItem[] }) {
         }
 
         return (
-          <Reveal key={item.slug} delay={idx * 80} className="block h-full">
+          <Reveal key={item.slug} delay={idx * 80} className="block h-full w-full sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.75rem)]">
             <Link href={item.href as Route} className="block h-full">
               {cardContent}
             </Link>

@@ -216,10 +216,10 @@ export default async function Home() {
               <>
                 <div
                   data-testid="blog-teaser-grid"
-                  className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6"
+                  className="flex flex-wrap justify-center gap-5 lg:gap-6"
                 >
                   {blog.items.slice(0, 3).map((post, postIdx) => (
-                    <Reveal key={post.id} delay={postIdx * 90} className="h-full">
+                    <Reveal key={post.id} delay={postIdx * 90} className="h-full w-full sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-1rem)]">
                     <BlogCard
                       key={post.id}
                       href={`/blog/${post.slug}`}
