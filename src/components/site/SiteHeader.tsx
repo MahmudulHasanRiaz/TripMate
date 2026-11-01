@@ -10,6 +10,7 @@ import { WhatsAppIcon } from "./brand-icons";
 
 import { cn } from "@/lib/utils";
 import Logo from "@/components/icons/Logo";
+import { BrandLogo } from "./BrandLogo";
 import { ThemeToggle } from "./ThemeToggle";
 
 export type PublicNavItem = {
@@ -27,6 +28,8 @@ const NAV_ITEMS: PublicNavItem[] = [
 export type SiteHeaderProps = {
   title: string;
   logoUrl: string;
+  /** Optional light/white lockup for dark mode (Follow-up 11). */
+  logoDarkUrl?: string;
   /** Brand lockup mode (settings): "logo-only" renders one wide lockup
    *  image alone; anything else is the classic icon + title. */
   logoDisplay?: "icon-name" | "logo-only";
@@ -42,7 +45,7 @@ export type SiteHeaderProps = {
   canAccessAdmin: boolean;
 };
 
-export function SiteHeader({ title, logoUrl, logoDisplay, phone, signedIn, canAccessAdmin }: SiteHeaderProps) {
+export function SiteHeader({ title, logoUrl, logoDarkUrl, logoDisplay, phone, signedIn, canAccessAdmin }: SiteHeaderProps) {
   // Logo-only needs an actual logo image; without one the classic lockup
   // (default mark + title) is the honest fallback — never an empty slot.
   const logoOnly = logoDisplay === "logo-only" && Boolean(logoUrl);
@@ -104,11 +107,11 @@ export function SiteHeader({ title, logoUrl, logoDisplay, phone, signedIn, canAc
             disc + title. The title stays the img alt either way. */}
         <Link href="/" className="flex shrink-0 items-center gap-2 sm:gap-2.5 group">
           {logoOnly ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={logoUrl}
-              alt={title}
-              className="h-10 w-auto max-w-[240px] object-contain sm:max-w-[260px]"
+            <BrandLogo
+              logoUrl={logoUrl}
+              logoDarkUrl={logoDarkUrl}
+              title={title}
+              className="h-8 w-auto max-w-[180px] object-contain sm:h-9 sm:max-w-[210px]"
             />
           ) : (
             <>

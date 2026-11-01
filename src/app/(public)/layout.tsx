@@ -109,6 +109,7 @@ export default async function PublicLayout({
       <SiteFooter
         title={site.title}
         logoUrl={site.logoUrl}
+        logoDarkUrl={site.logoDarkUrl}
         logoDisplay={site.logoDisplay}
         accreditations={site.accreditations}
         phone={site.phone}
@@ -137,6 +138,7 @@ async function SiteHeaderGate({ site }: { site: SiteSettings }) {
     <SiteHeader
       title={site.title}
       logoUrl={site.logoUrl}
+      logoDarkUrl={site.logoDarkUrl}
       logoDisplay={site.logoDisplay}
       phone={site.phone}
       signedIn={Boolean(session?.user)}

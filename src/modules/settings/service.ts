@@ -4,7 +4,7 @@ import { db } from "@/db/client";
 import { settings } from "@/modules/settings/schema";
 
 export type SiteSetting = {
-  title: string; logoUrl: string; faviconUrl: string;
+  title: string; logoUrl: string; logoDarkUrl?: string; faviconUrl: string;
   searchEngineVisibility: boolean; phone: string; email: string; address: string;
 };
 export type StorageSetting = { driver: "local" | "r2" };

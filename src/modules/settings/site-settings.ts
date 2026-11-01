@@ -74,6 +74,8 @@ export type SiteSettings = {
   email: string;
   address: string;
   logoUrl: string;
+  /** Optional light/white lockup shown in dark mode (Follow-up 11). */
+  logoDarkUrl: string;
   logoDisplay: LogoDisplay;
   faviconUrl: string;
   searchEngineVisibility: boolean;
@@ -102,6 +104,7 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   email: "",
   address: "",
   logoUrl: "",
+  logoDarkUrl: "",
   logoDisplay: "icon-name",
   faviconUrl: "",
   searchEngineVisibility: true,
@@ -192,6 +195,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
       email: mergedString(row, "email", DEFAULT_SITE_SETTINGS.email),
       address: mergedString(row, "address", DEFAULT_SITE_SETTINGS.address),
       logoUrl: mergedString(row, "logoUrl", DEFAULT_SITE_SETTINGS.logoUrl),
+      logoDarkUrl: mergedString(row, "logoDarkUrl", DEFAULT_SITE_SETTINGS.logoDarkUrl),
       logoDisplay: asLogoDisplay(row.logoDisplay),
       faviconUrl: mergedString(row, "faviconUrl", DEFAULT_SITE_SETTINGS.faviconUrl),
       searchEngineVisibility:
@@ -249,6 +253,7 @@ export async function updateSiteSettings(
     email: input.email,
     address: input.address,
     logoUrl: input.logoUrl,
+    logoDarkUrl: input.logoDarkUrl ?? current.logoDarkUrl,
     logoDisplay: input.logoDisplay ?? current.logoDisplay,
     faviconUrl: input.faviconUrl,
     searchEngineVisibility: input.searchEngineVisibility,
@@ -433,6 +438,7 @@ export async function getPublicSiteSettings(): Promise<SiteSettings> {
     email: mergedString(row, "email", DEFAULT_SITE_SETTINGS.email),
     address: mergedString(row, "address", DEFAULT_SITE_SETTINGS.address),
     logoUrl: mergedString(row, "logoUrl", DEFAULT_SITE_SETTINGS.logoUrl),
+    logoDarkUrl: mergedString(row, "logoDarkUrl", DEFAULT_SITE_SETTINGS.logoDarkUrl),
     logoDisplay: asLogoDisplay(row.logoDisplay),
     faviconUrl: mergedString(row, "faviconUrl", DEFAULT_SITE_SETTINGS.faviconUrl),
     searchEngineVisibility:

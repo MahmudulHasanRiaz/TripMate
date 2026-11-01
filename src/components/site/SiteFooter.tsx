@@ -13,6 +13,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { WhatsAppIcon } from "./brand-icons";
+import { BrandLogo } from "./BrandLogo";
 
 import Logo from "@/components/icons/Logo";
 import type {
@@ -41,6 +42,8 @@ const SOCIAL_ICONS: Record<string, typeof Facebook> = {
 type SiteFooterProps = {
   title: string;
   logoUrl: string;
+  /** Optional light/white lockup for dark mode (Follow-up 11). */
+  logoDarkUrl?: string;
   /** Brand lockup mode (settings) — same contract as the header. */
   logoDisplay?: "icon-name" | "logo-only";
   /** Accreditation badges (settings) — real organization logos, rendered
@@ -58,6 +61,7 @@ type SiteFooterProps = {
 export function SiteFooter({
   title,
   logoUrl,
+  logoDarkUrl,
   logoDisplay,
   accreditations,
   phone,
@@ -102,11 +106,11 @@ export function SiteFooter({
         <div className="space-y-4">
           <Link href="/" className="flex items-center gap-2.5">
             {logoOnly ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logoUrl}
-                alt={title}
-                className="h-11 w-auto max-w-[280px] object-contain"
+              <BrandLogo
+                logoUrl={logoUrl}
+                logoDarkUrl={logoDarkUrl}
+                title={title}
+                className="h-10 w-auto max-w-[230px] object-contain"
               />
             ) : (
               <>
