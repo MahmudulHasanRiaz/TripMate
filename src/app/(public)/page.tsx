@@ -10,6 +10,7 @@ import { getSiteSettings } from "@/lib/site-settings";
 import { getPublicHomeSettings, getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { getSetting } from "@/modules/settings/service";
 import { listCategories, listPublishedListings, listDestinationsWithStats } from "@/modules/catalog/service";
+import { listVisaServices } from "@/modules/catalog/visa-service";
 import { listPublishedPosts } from "@/modules/content/service";
 import { getPublicTestimonials } from "@/modules/content/testimonials-service";
 import type { ServiceKind } from "@/modules/catalog/validation";
@@ -17,7 +18,10 @@ import { TestimonialsSection } from "@/components/landing/sections/TestimonialsS
 import type { TestimonialItem } from "@/modules/landing-pages/section-types";
 
 import { HeroSection } from "@/components/site/HeroSection";
-import TravelActionPanel from "@/components/site/TravelActionPanel";
+import TravelActionPanel, {
+  type PanelPackage,
+  type PanelVisaService,
+} from "@/components/site/TravelActionPanel";
 import { TrustStrip } from "@/components/site/TrustStrip";
 import { PopularDestinations } from "@/components/site/PopularDestinations";
 import { ServiceGrid, type ServiceGridItem } from "@/components/site/ServiceGrid";
@@ -105,6 +109,56 @@ export default async function Home() {
     (c) => c.slug === "hotel-reservations" || c.slug.includes("hotel") || c.name.toLowerCase().includes("hotel")
   );
 
+  // Panel sliders (Follow-up 12): Hajj and Umrah are SEPARATE categories
+  // when the site has them; a combined "hajj-umrah" category is the
+  // fallback. Matchers exclude the combined slug from the separate picks.
+  const hajjCategory =
+    categories.find((c) => c.slug === "hajj") ??
+    categories.find((c) => c.slug.includes("hajj") && !c.slug.includes("umrah"));
+  const umrahCategory =
+    categories.find((c) => c.slug === "umrah") ??
+    categories.find((c) => c.slug.includes("umrah") && !c.slug.includes("hajj"));
+  const pilgrimCategory =
+    !hajjCategory && !umrahCategory
+      ? categories.find((c) => c.slug.includes("hajj") && c.slug.includes("umrah"))
+      : undefined;
+
+  const emptyListings = { items: [], total: 0 };
+  const [hajjListings, umrahListings, pilgrimListings, visaServices] = await Promise.all([
+    hajjCategory
+      ? listPublishedListings({ categorySlug: hajjCategory.slug, perPage: 12 })
+      : Promise.resolve(emptyListings),
+    umrahCategory
+      ? listPublishedListings({ categorySlug: umrahCategory.slug, perPage: 12 })
+      : Promise.resolve(emptyListings),
+    pilgrimCategory
+      ? listPublishedListings({ categorySlug: pilgrimCategory.slug, perPage: 12 })
+      : Promise.resolve(emptyListings),
+    listVisaServices({ activeOnly: true }).catch(() => []),
+  ]);
+
+  const toPanelPackage = (pkg: (typeof featuredPublished.items)[number]): PanelPackage => ({
+    slug: pkg.slug,
+    title: pkg.title,
+    imageSrc: pkg.coverImage?.url ?? "",
+    destinationName: pkg.destination?.name ?? pkg.category.name,
+    durationDays: pkg.durationDays ?? null,
+    rating: pkg.rating ?? null,
+    price: pkg.price ?? null,
+    currency: pkg.currency ?? "BDT",
+  });
+
+  const panelVisaServices: PanelVisaService[] = visaServices.slice(0, 12).map((v) => ({
+    id: v.id,
+    title: v.title,
+    price: v.price,
+    processingTime: v.processingTime,
+    validity: v.validity,
+    destinationName: v.destination.name,
+    destinationImage: v.destination.image,
+    visaTypeName: v.visaType.name,
+  }));
+
   return (
     <>
       {home.showHero ? (
@@ -124,6 +178,13 @@ export default async function Home() {
         hotelRedirectUrl={hotelCategory?.redirectUrl}
         hotelSlug={hotelCategory?.slug ?? "hotels"}
         phone={site.phone}
+        hajjPackages={hajjListings.items.map(toPanelPackage)}
+        hajjSlug={hajjCategory?.slug}
+        umrahPackages={umrahListings.items.map(toPanelPackage)}
+        umrahSlug={umrahCategory?.slug}
+        pilgrimPackages={pilgrimListings.items.map(toPanelPackage)}
+        pilgrimSlug={pilgrimCategory?.slug}
+        visaServices={panelVisaServices}
       />
 
       <div className="mt-12 sm:mt-16">

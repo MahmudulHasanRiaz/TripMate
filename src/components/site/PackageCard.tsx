@@ -151,7 +151,7 @@ export function PackageCard({
           </div>
         </div>
 
-        <div className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-primary to-accent px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-transform duration-200 group-hover:translate-x-0.5">
+        <div className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm transition-all duration-200 group-hover:translate-x-0.5 group-hover:bg-primary/90">
           <span>View Details</span>
           <ArrowRight className="size-3.5" />
         </div>
