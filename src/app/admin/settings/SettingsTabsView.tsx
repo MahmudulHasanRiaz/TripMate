@@ -109,6 +109,7 @@ export default function SettingsTabsView({
       email: initialSite.email || "",
       address: initialSite.address ?? "",
       logoUrl: initialSite.logoUrl ?? "",
+      logoDarkUrl: initialSite.logoDarkUrl ?? "",
       logoDisplay: initialSite.logoDisplay ?? "icon-name",
       faviconUrl: initialSite.faviconUrl ?? "",
       searchEngineVisibility: initialSite.searchEngineVisibility ?? true,
@@ -338,7 +339,35 @@ export default function SettingsTabsView({
                             </FormControl>
                             <FormDescription className="text-[11px]">
                               Internal path starting with / (e.g. /logo.svg) or full https:// URL —
-                              or pick from the media library.
+                              or pick from the media library. Recommended: a transparent PNG or
+                              SVG in a wide lockup (about 4:1–6:1), at least 80 px tall and
+                              tightly cropped — empty margins inside the image make the logo
+                              render tiny. The header shows it about 36 px tall.
+                            </FormDescription>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={siteForm.control}
+                        name="logoDarkUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-medium">Logo — Dark Mode (optional)</FormLabel>
+                            <FormControl>
+                              <MediaPickerField
+                                value={field.value ?? ""}
+                                onChange={field.onChange}
+                                accept="image"
+                                placeholder="/logo-dark.svg or https://..."
+                                className="h-10 text-xs font-mono"
+                              />
+                            </FormControl>
+                            <FormDescription className="text-[11px]">
+                              Light/white version of the logo, shown when dark mode is on.
+                              If left empty, the main logo appears on a small white plate
+                              in dark mode instead.
                             </FormDescription>
                             <FormMessage className="text-xs" />
                           </FormItem>

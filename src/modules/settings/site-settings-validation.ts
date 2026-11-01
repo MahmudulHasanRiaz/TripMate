@@ -156,6 +156,9 @@ export const siteSettingsInputSchema = z.object({
     .trim()
     .max(300, "Address must be 300 characters or fewer"),
   logoUrl: urlOrEmpty(2048, "Logo URL must be 2048 characters or fewer"),
+  // Dark-mode lockup (Follow-up 11) — optional like logoDisplay: payloads
+  // that predate the field preserve the stored value on save.
+  logoDarkUrl: urlOrEmpty(2048, "Dark-mode logo URL must be 2048 characters or fewer").optional(),
   // Brand lockup mode (Follow-up 09 §3) — a SELECT in the admin form, never
   // free text. Optional: payloads that predate the field preserve the
   // stored mode (updateSiteSettings falls back to the current value).

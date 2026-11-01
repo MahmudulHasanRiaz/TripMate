@@ -17,6 +17,8 @@ export type SiteAccreditation = { imageUrl: string; label: string; sublabel: str
 export type SiteSettings = {
   title: string;
   logoUrl: string;
+  /** Optional light/white lockup shown in dark mode (Follow-up 11). */
+  logoDarkUrl: string;
   /** Brand lockup mode (Follow-up 09 §3) — mirrors modules/settings. */
   logoDisplay: "icon-name" | "logo-only";
   phone: string;
@@ -40,6 +42,7 @@ export type SiteSettings = {
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   title: "TripMate",
   logoUrl: "",
+  logoDarkUrl: "",
   logoDisplay: "icon-name",
   phone: "",
   email: "",
@@ -92,6 +95,7 @@ export async function getSiteSettings(): Promise<SiteSettings> {
   return {
     title: site.title || DEFAULT_SITE_SETTINGS.title,
     logoUrl: site.logoUrl || "",
+    logoDarkUrl: site.logoDarkUrl || "",
     logoDisplay: raw.logoDisplay === "logo-only" ? "logo-only" : "icon-name",
     phone: site.phone || "",
     email: site.email || "",

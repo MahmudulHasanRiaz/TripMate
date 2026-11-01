@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 
 import { Toaster } from "@/components/ui/toaster";
+import { BrandLogo } from "@/components/site/BrandLogo";
 import { ThemeToggle } from "@/components/site/ThemeToggle";
 
 import { signOutAction } from "@/lib/auth-actions";
@@ -118,7 +119,7 @@ export default function AdminShell({
 }: {
   menu: AdminMenuItem[];
   user: AdminUser;
-  brand: { title: string; logoUrl: string; logoDisplay?: "icon-name" | "logo-only" };
+  brand: { title: string; logoUrl: string; logoDarkUrl?: string; logoDisplay?: "icon-name" | "logo-only" };
   children: React.ReactNode;
 }) {
   // Mirror the admin scope onto <body> so Radix portals (dialogs, sheets,
@@ -133,7 +134,7 @@ export default function AdminShell({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <SidebarBrand title={brand.title} logoUrl={brand.logoUrl} logoDisplay={brand.logoDisplay} />
+          <SidebarBrand title={brand.title} logoUrl={brand.logoUrl} logoDarkUrl={brand.logoDarkUrl} logoDisplay={brand.logoDisplay} />
         </SidebarHeader>
         <SidebarContent>
           <SidebarNav menu={menu} />
@@ -165,18 +166,24 @@ export default function AdminShell({
 function SidebarBrand({
   title,
   logoUrl,
+  logoDarkUrl,
   logoDisplay,
 }: {
   title: string;
   logoUrl: string;
+  logoDarkUrl?: string;
   logoDisplay?: "icon-name" | "logo-only";
 }) {
   // Same lockup contract as the public chrome (Follow-up 09 §3).
   if (logoDisplay === "logo-only" && logoUrl) {
     return (
       <Link href="/admin" className="flex items-center px-2 py-1">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={logoUrl} alt={title} className="h-9 w-auto max-w-[180px] object-contain" />
+        <BrandLogo
+          logoUrl={logoUrl}
+          logoDarkUrl={logoDarkUrl}
+          title={title}
+          className="h-8 w-auto max-w-[170px] object-contain"
+        />
       </Link>
     );
   }
