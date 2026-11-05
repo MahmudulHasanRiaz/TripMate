@@ -8,6 +8,7 @@ import { getPublicThemeSettings } from "@/modules/settings/theme-service";
 import { canAccessAdminPanel, getSession } from "@/lib/auth-helpers";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
+import { BrandLogo } from "@/components/site/BrandLogo";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ChatWidget } from "@/components/site/ChatWidget";
 import { JsonLd } from "@/components/site/JsonLd";
@@ -73,6 +74,15 @@ export default async function PublicLayout({
 
   return (
     <>
+      {/* Brand lockup preload (Follow-up 16): the header logo must paint
+          WITH the first paint — start both variants downloading from the
+          document head instead of when the header markup streams in. */}
+      {site.logoUrl ? (
+        <link rel="preload" as="image" href={site.logoUrl} fetchPriority="high" />
+      ) : null}
+      {site.logoDarkUrl ? (
+        <link rel="preload" as="image" href={site.logoDarkUrl} fetchPriority="high" />
+      ) : null}
       <JsonLd data={orgJsonLd} />
       <style id="tripmate-dynamic-theme">{themeCss}</style>
       <SkipLink />
@@ -82,7 +92,7 @@ export default async function PublicLayout({
           prerendering too. The Suspense boundary keeps the shell prerendered
           and lets the header stream in after; the skeleton mirrors the
           floating-island header so nothing jumps. */}
-      <Suspense fallback={<SiteHeaderFallback />}>
+      <Suspense fallback={<SiteHeaderFallback site={site} />}>
         <SiteHeaderGate site={site} />
       </Suspense>
       {/* tabIndex=-1 makes main a valid skip-link target; outline-none keeps
@@ -149,10 +159,14 @@ async function SiteHeaderGate({ site }: { site: SiteSettings }) {
 
 /**
  * Pre-rendered stand-in for the streaming SiteHeader (same fixed-island
- * footprint: %-width + inner paddings + 36px brand chip). aria-hidden — the
- * interactive header replaces it within the same flush.
+ * footprint: %-width + inner paddings + 36px brand chip). The brand side
+ * renders the REAL lockup (Follow-up 16) — a grey pulse box where the logo
+ * belongs made every streamed load open with a blank brand slot; the real
+ * image starts loading with the fallback itself and the interactive header
+ * swaps in seamlessly. Nav/action placeholders stay decorative pulses.
  */
-function SiteHeaderFallback() {
+function SiteHeaderFallback({ site }: { site: SiteSettings }) {
+  const logoOnly = site.logoDisplay === "logo-only" && Boolean(site.logoUrl);
   return (
     <div
       aria-hidden="true"
@@ -160,8 +174,20 @@ function SiteHeaderFallback() {
     >
       <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background/90 py-2.5 pl-3 pr-3 shadow-lg shadow-black/5 sm:py-3 sm:pl-5 sm:pr-3 dark:bg-card/85">
         <div className="flex shrink-0 items-center gap-2.5">
-          <div className="size-9 animate-pulse rounded-xl bg-muted" />
-          <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+          {logoOnly ? (
+            <BrandLogo
+              logoUrl={site.logoUrl}
+              logoDarkUrl={site.logoDarkUrl}
+              title={site.title}
+              priority
+              className="h-8 w-auto max-w-[180px] object-contain sm:h-9 sm:max-w-[210px]"
+            />
+          ) : (
+            <>
+              <div className="size-9 animate-pulse rounded-xl bg-muted" />
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+            </>
+          )}
         </div>
         <div className="hidden lg:flex items-center gap-1">
           <div className="h-5 w-14 animate-pulse rounded-xl bg-muted" />
