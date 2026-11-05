@@ -262,7 +262,7 @@ export function SiteFooter({
                 href={`https://wa.me/${cleanPhone.replace("+", "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-10 px-4 shadow-sm transition-all"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs h-10 px-4 shadow-sm transition-all"
               >
                 <WhatsAppIcon className="size-4" />
                 <span>24/7 WhatsApp Hotline</span>

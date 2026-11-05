@@ -244,7 +244,7 @@ export function AccreditationsShowcase({
                 {badge.credentialText ? (
                   <span className="flex w-7 shrink-0 items-center justify-center overflow-hidden border-r border-border/60 bg-primary/[0.04]">
                     <span
-                      className="rotate-180 whitespace-nowrap font-bold uppercase tracking-[0.12em] text-primary/80 [writing-mode:vertical-rl]"
+                      className="rotate-180 whitespace-nowrap font-bold uppercase tracking-[0.12em] text-primary [writing-mode:vertical-rl]"
                       style={{
                         fontSize: stripFontSize(badge.credentialText),
                       }}
@@ -334,11 +334,18 @@ export function AccreditationsShowcase({
                 onClick={() => goTo(i)}
                 aria-label={`Go to credential ${i + 1}: ${badge.label}`}
                 aria-current={i === active ? "true" : undefined}
-                className={cn(
-                  "h-2 rounded-full transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
-                  i === active ? "w-6 bg-primary" : "w-2 bg-foreground/25",
-                )}
-              />
+                className="flex h-6 min-w-6 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+              >
+                {/* FU-30: the visible pill stays 8px, but the BUTTON is a
+                    24px hit target — the bare h-2 button failed the
+                    target-size audit (agentic/a11y). */}
+                <span
+                  className={cn(
+                    "h-2 rounded-full transition-all duration-200",
+                    i === active ? "w-6 bg-primary" : "w-2 bg-foreground/25",
+                  )}
+                />
+              </button>
             ))}
           </div>
           <span
