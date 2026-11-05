@@ -41,6 +41,17 @@ import { cn } from "@/lib/utils";
 const AUTOPLAY_MS = 1500;
 const RESUME_MS = 4000;
 
+/**
+ * Vertical licence-strip type size: 12px for short strings, shrinking
+ * toward a 9px floor as the string grows, so any realistic licence
+ * number fits the card's height (~215px of vertical run) instead of
+ * clipping mid-string.
+ */
+function stripFontSize(text: string): number {
+  const len = Math.max(1, text.length);
+  return Math.max(9, Math.min(12, Math.floor(215 / (len * 0.78))));
+}
+
 export function AccreditationsShowcase({
   badges,
 }: {
@@ -223,17 +234,26 @@ export function AccreditationsShowcase({
                 duplicate && "sm:hidden",
               )}
             >
-              <div className="group relative flex h-full flex-col items-center rounded-2xl border border-border bg-card p-4 text-center transition duration-200 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 sm:p-5">
-                {/* Licence strip (FU-24): the credential text runs
-                    vertically down the card's left edge, like a spine —
-                    only when configured, never a placeholder. */}
+              <div className="group relative flex h-full overflow-hidden rounded-2xl border border-border bg-card transition duration-200 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5">
+                {/* Licence strip (FU-24; layout column + shrink-to-fit
+                    FU-25): the credential text runs vertically down the
+                    card's left edge as a REAL layout column, so titles
+                    and sublabels can never slide underneath it, and its
+                    type size shrinks with string length so a long licence
+                    number fits the card height instead of clipping. */}
                 {badge.credentialText ? (
-                  <span className="absolute inset-y-0 left-0 flex w-7 items-center justify-center overflow-hidden rounded-l-2xl border-r border-border/60 bg-primary/[0.04]">
-                    <span className="rotate-180 whitespace-nowrap text-xs font-bold uppercase tracking-[0.14em] text-primary/80 [writing-mode:vertical-rl]">
+                  <span className="flex w-7 shrink-0 items-center justify-center overflow-hidden border-r border-border/60 bg-primary/[0.04]">
+                    <span
+                      className="rotate-180 whitespace-nowrap font-bold uppercase tracking-[0.12em] text-primary/80 [writing-mode:vertical-rl]"
+                      style={{
+                        fontSize: stripFontSize(badge.credentialText),
+                      }}
+                    >
                       {badge.credentialText}
                     </span>
                   </span>
                 ) : null}
+                <div className="flex flex-1 flex-col items-center p-4 text-center sm:p-5">
                 <span className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white ring-1 ring-border/70 transition-transform duration-300 group-hover:scale-[1.04] sm:size-[88px]">
                   {badge.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -260,6 +280,7 @@ export function AccreditationsShowcase({
                       {badge.sublabel}
                     </span>
                   ) : null}
+                </div>
                 </div>
                 {/* Corner actions (FU-24): credential viewing is an eye
                     icon and details an arrow icon — no text rows in the
