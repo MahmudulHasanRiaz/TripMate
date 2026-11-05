@@ -17,6 +17,8 @@ export type SiteAccreditation = {
   label: string;
   sublabel: string;
   linkUrl: string;
+  credentialText: string;
+  credentialImageUrl: string;
 };
 
 export type SiteSettings = {
@@ -104,6 +106,9 @@ export async function getSiteSettings(): Promise<SiteSettings> {
           label: a.label,
           sublabel: typeof a.sublabel === "string" ? a.sublabel : "",
           linkUrl: typeof a.linkUrl === "string" ? a.linkUrl : "",
+          credentialText: typeof a.credentialText === "string" ? a.credentialText : "",
+          credentialImageUrl:
+            typeof a.credentialImageUrl === "string" ? a.credentialImageUrl : "",
         }))
     : [];
 

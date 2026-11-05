@@ -11,6 +11,8 @@ export type AccreditationRow = {
   label: string;
   sublabel: string;
   linkUrl: string;
+  credentialText: string;
+  credentialImageUrl: string;
 };
 
 interface AccreditationsEditorProps {
@@ -39,7 +41,10 @@ export default function AccreditationsEditor({
   onDescriptionChange,
 }: AccreditationsEditorProps) {
   const handleAdd = () => {
-    onChange([...rows, { imageUrl: "", label: "", sublabel: "", linkUrl: "" }]);
+    onChange([
+      ...rows,
+      { imageUrl: "", label: "", sublabel: "", linkUrl: "", credentialText: "", credentialImageUrl: "" },
+    ]);
   };
 
   const handleRemove = (index: number) => {
@@ -211,6 +216,33 @@ export default function AccreditationsEditor({
                   className="h-10 text-xs"
                   maxLength={2048}
                 />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium">
+                    Credential text (optional)
+                  </Label>
+                  <Input
+                    value={row.credentialText}
+                    onChange={(e) => handleUpdate(i, "credentialText", e.target.value)}
+                    placeholder="Licence No. 741"
+                    className="h-10 text-xs"
+                    maxLength={80}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium">
+                    Credential image (optional)
+                  </Label>
+                  <MediaPickerField
+                    value={row.credentialImageUrl}
+                    onChange={(v) => handleUpdate(i, "credentialImageUrl", v)}
+                    accept="image"
+                    placeholder="Certificate photo — visitors open it from the card"
+                    className="h-10 text-xs font-mono"
+                  />
+                </div>
               </div>
             </div>
           ))}

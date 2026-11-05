@@ -214,6 +214,11 @@ export const siteSettingsInputSchema = z.object({
         label: z.string().trim().min(1, "Badge label is required").max(60),
         sublabel: z.string().trim().max(80),
         linkUrl: urlOrEmpty(2048, "Badge link URL must be 2048 characters or fewer"),
+        credentialText: z.string().trim().max(80),
+        credentialImageUrl: urlOrEmpty(
+          2048,
+          "Credential image URL must be 2048 characters or fewer",
+        ),
       }),
     )
     .max(8)
