@@ -123,9 +123,17 @@ export default function SettingsTabsView({
           imageUrl: a.imageUrl || "",
           label: a.label || "",
           sublabel: a.sublabel || "",
+          linkUrl: a.linkUrl || "",
         }))
       : [];
   });
+
+  const [accreditationHeading, setAccreditationHeading] = useState(
+    initialSite.accreditationHeading ?? "",
+  );
+  const [accreditationDescription, setAccreditationDescription] = useState(
+    initialSite.accreditationDescription ?? "",
+  );
 
   const onSiteSubmit = siteForm.handleSubmit((values) => {
     setSiteError(null);
@@ -137,12 +145,15 @@ export default function SettingsTabsView({
         imageUrl: a.imageUrl.trim(),
         label: a.label.trim(),
         sublabel: a.sublabel.trim(),
+        linkUrl: a.linkUrl.trim(),
       }));
     startSiteTransition(async () => {
       try {
         const res = await saveSiteSettingsAction({
           ...values,
           accreditations: cleanAccreditations,
+          accreditationHeading: accreditationHeading.trim(),
+          accreditationDescription: accreditationDescription.trim(),
         });
         if (res.ok) {
           toast({
@@ -435,6 +446,10 @@ export default function SettingsTabsView({
                     <AccreditationsEditor
                       rows={accreditations}
                       onChange={setAccreditations}
+                      heading={accreditationHeading}
+                      description={accreditationDescription}
+                      onHeadingChange={setAccreditationHeading}
+                      onDescriptionChange={setAccreditationDescription}
                     />
                   </div>
 

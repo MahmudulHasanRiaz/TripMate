@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import {
-  Award,
+  ArrowUpRight,
   Facebook,
   Globe,
   Instagram,
@@ -9,6 +9,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  ShieldCheck,
   Twitter,
   Youtube,
 } from "lucide-react";
@@ -49,6 +50,9 @@ type SiteFooterProps = {
   /** Accreditation badges (settings) — real organization logos, rendered
    *  as the footer strip. Empty = no strip (never fake claims). */
   accreditations?: SiteAccreditation[];
+  /** Credentials-section heading/description (settings, Follow-up 17). */
+  accreditationHeading?: string;
+  accreditationDescription?: string;
   phone: string;
   email: string;
   address: string;
@@ -64,6 +68,8 @@ export function SiteFooter({
   logoDarkUrl,
   logoDisplay,
   accreditations,
+  accreditationHeading,
+  accreditationDescription,
   phone,
   email,
   address,
@@ -100,51 +106,80 @@ export function SiteFooter({
 
   return (
     <footer className="border-t border-border bg-card/60 backdrop-blur-md">
-      {/* Accreditation band — settings-driven credentials (Follow-up 09 §5,
-          band layout Follow-up 15). Each item renders the way its kind
-          reads best: a REAL organization logo on a white plate when one is
-          configured, otherwise a designed credential tile (a licence
-          number is information, not a logo). 100% settings content —
-          nothing is hardcoded, and nothing renders when the agency
+      {/* Credentials section — settings-driven trust block (Follow-up 09 §5;
+          band Follow-up 15; premium section Follow-up 17). Each credential
+          renders the way its kind reads best: a REAL organization logo on a
+          uniform 88px plate when one is configured, otherwise the same
+          plate carrying a consistent shield mark (a licence is information,
+          not a logo — never dressed up as one). An optional agency-supplied
+          details/verification link renders as a plain "View details" link;
+          the section NEVER auto-claims a "verified" status. Heading and
+          description are settings text; nothing renders when the agency
           configured no accreditations. */}
       {accreditations && accreditations.length > 0 ? (
-        <div className="border-b border-border/70">
-          <div className="mx-auto w-full max-w-[1400px] px-4 pb-10 pt-10 lg:px-8">
-            <p className="text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+        <div className="border-b border-border/70 bg-muted/40">
+          <div className="mx-auto w-full max-w-[1400px] px-4 py-10 sm:py-12 lg:px-8">
+            <p className="text-center text-[13px] font-semibold uppercase tracking-[0.14em] text-primary">
               Licensed &amp; Accredited
             </p>
-            <ul className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
-              {accreditations.map((badge, i) => (
-                <li
-                  key={`${badge.label}-${i}`}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors duration-150 hover:border-primary/40"
-                >
-                  {badge.imageUrl ? (
-                    <span className="flex h-12 w-[72px] shrink-0 items-center justify-center rounded-lg bg-white px-2 py-1.5 ring-1 ring-border/60">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={badge.imageUrl}
-                        alt=""
-                        className="max-h-9 w-auto max-w-full object-contain"
-                      />
-                    </span>
-                  ) : (
-                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/20">
-                      <Award className="size-6 text-primary" aria-hidden="true" />
-                    </span>
-                  )}
-                  <span className="flex min-w-0 flex-col">
-                    <span className="text-[13px] font-bold leading-snug text-foreground">
-                      {badge.label}
-                    </span>
-                    {badge.sublabel ? (
-                      <span className="text-xs leading-snug text-muted-foreground">
-                        {badge.sublabel}
+            <h2 className="mt-3 text-center font-display text-[28px] font-bold leading-tight tracking-tight text-foreground">
+              {accreditationHeading || "Trusted & Accredited"}
+            </h2>
+            {accreditationDescription ? (
+              <p className="mx-auto mt-2.5 max-w-2xl text-center text-[15px] leading-relaxed text-muted-foreground">
+                {accreditationDescription}
+              </p>
+            ) : null}
+            <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
+              {accreditations.map((badge, i) => {
+                // Balance a final partial row on desktop: when the count
+                // leaves 2 cards over (5, 8, …), the last two span wider so
+                // the row stays symmetric instead of stranding one card.
+                const balanced =
+                  accreditations.length % 3 === 2 && i >= accreditations.length - 2;
+                const external = /^https?:\/\//i.test(badge.linkUrl);
+                return (
+                  <li
+                    key={`${badge.label}-${i}`}
+                    className={balanced ? "lg:col-span-3" : "lg:col-span-2"}
+                  >
+                    <div className="flex h-full flex-col items-center rounded-2xl border border-border bg-card p-5 text-center transition duration-200 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5">
+                      <span className="flex size-[88px] shrink-0 items-center justify-center rounded-2xl bg-white ring-1 ring-border/70">
+                        {badge.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={badge.imageUrl}
+                            alt=""
+                            className="max-h-14 w-auto max-w-[76px] object-contain"
+                          />
+                        ) : (
+                          <ShieldCheck className="size-9 text-primary" aria-hidden="true" />
+                        )}
                       </span>
-                    ) : null}
-                  </span>
-                </li>
-              ))}
+                      <span className="mt-4 text-[17px] font-bold leading-snug text-foreground">
+                        {badge.label}
+                      </span>
+                      {badge.sublabel ? (
+                        <span className="mt-1 text-sm leading-snug text-muted-foreground">
+                          {badge.sublabel}
+                        </span>
+                      ) : null}
+                      {badge.linkUrl ? (
+                        <a
+                          href={badge.linkUrl}
+                          {...(external
+                            ? { target: "_blank", rel: "noopener noreferrer" }
+                            : {})}
+                          className="mt-3 inline-flex items-center gap-1 rounded-sm text-[13px] font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                        >
+                          View details
+                          <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                        </a>
+                      ) : null}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
