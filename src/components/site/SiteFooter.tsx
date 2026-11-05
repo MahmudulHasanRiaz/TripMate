@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
 import {
-  ArrowUpRight,
   Facebook,
   Globe,
   Instagram,
@@ -9,7 +8,6 @@ import {
   Mail,
   MapPin,
   Phone,
-  ShieldCheck,
   Twitter,
   Youtube,
 } from "lucide-react";
@@ -17,7 +15,7 @@ import { WhatsAppIcon } from "./brand-icons";
 import { BrandLogo } from "./BrandLogo";
 
 import Logo from "@/components/icons/Logo";
-import { CredentialViewer } from "./CredentialViewer";
+import { AccreditationsShowcase } from "./AccreditationsShowcase";
 import type {
   SiteAccreditation,
   SiteFooterColumn,
@@ -108,9 +106,11 @@ export function SiteFooter({
   return (
     <footer className="border-t border-border bg-card/60 backdrop-blur-md">
       {/* Credentials section — settings-driven trust block (Follow-up 09 §5;
-          band Follow-up 15; premium section Follow-up 17). Each credential
-          renders the way its kind reads best: a REAL organization logo on a
-          uniform 88px plate when one is configured, otherwise the same
+          band Follow-up 15; premium section Follow-up 17; mobile swipe
+          carousel + compact cards Follow-up 20, rendered by
+          AccreditationsShowcase). Each credential renders the way its kind
+          reads best: a REAL organization logo on a uniform plate (64px
+          mobile / 88px up) when one is configured, otherwise the same
           plate carrying a consistent shield mark (a licence is information,
           not a logo — never dressed up as one). An optional agency-supplied
           details/verification link renders as a plain "View details" link;
@@ -119,7 +119,7 @@ export function SiteFooter({
           configured no accreditations. */}
       {accreditations && accreditations.length > 0 ? (
         <div className="border-b border-border/70 bg-muted/40">
-          <div className="mx-auto w-full max-w-[1400px] px-4 py-10 sm:py-12 lg:px-8">
+          <div className="mx-auto w-full max-w-[1400px] px-4 py-8 sm:py-12 lg:px-8">
             <p className="text-center text-[13px] font-semibold uppercase tracking-[0.14em] text-primary">
               Licensed &amp; Accredited
             </p>
@@ -131,72 +131,7 @@ export function SiteFooter({
                 {accreditationDescription}
               </p>
             ) : null}
-            <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-              {accreditations.map((badge, i) => {
-                // Balance a final partial row on desktop: when the count
-                // leaves 2 cards over (5, 8, …), the last two span wider so
-                // the row stays symmetric instead of stranding one card.
-                const balanced =
-                  accreditations.length % 3 === 2 && i >= accreditations.length - 2;
-                const external = /^https?:\/\//i.test(badge.linkUrl);
-                return (
-                  <li
-                    key={`${badge.label}-${i}`}
-                    className={balanced ? "lg:col-span-3" : "lg:col-span-2"}
-                  >
-                    <div className="flex h-full flex-col items-center rounded-2xl border border-border bg-card p-5 text-center transition duration-200 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5">
-                      <span className="flex size-[88px] shrink-0 items-center justify-center rounded-2xl bg-white ring-1 ring-border/70">
-                        {badge.imageUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={badge.imageUrl}
-                            alt=""
-                            className="max-h-14 w-auto max-w-[76px] object-contain"
-                          />
-                        ) : (
-                          <ShieldCheck className="size-9 text-primary" aria-hidden="true" />
-                        )}
-                      </span>
-                      <span className="mt-4 text-[17px] font-bold leading-snug text-foreground">
-                        {badge.label}
-                      </span>
-                      {badge.sublabel ? (
-                        <span className="mt-1 text-sm leading-snug text-muted-foreground">
-                          {badge.sublabel}
-                        </span>
-                      ) : null}
-                      {badge.credentialText ? (
-                        <span className="mt-2 text-[13px] font-semibold leading-snug text-foreground/80">
-                          {badge.credentialText}
-                        </span>
-                      ) : null}
-                      {badge.credentialImageUrl || badge.linkUrl ? (
-                        <span className="flex flex-wrap items-center justify-center gap-x-4">
-                          {badge.credentialImageUrl ? (
-                            <CredentialViewer
-                              imageUrl={badge.credentialImageUrl}
-                              label={badge.label}
-                            />
-                          ) : null}
-                          {badge.linkUrl ? (
-                            <a
-                              href={badge.linkUrl}
-                              {...(external
-                                ? { target: "_blank", rel: "noopener noreferrer" }
-                                : {})}
-                              className="mt-3 inline-flex items-center gap-1 rounded-sm text-[13px] font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                            >
-                              View details
-                              <ArrowUpRight className="size-3.5" aria-hidden="true" />
-                            </a>
-                          ) : null}
-                        </span>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+            <AccreditationsShowcase badges={accreditations} />
           </div>
         </div>
       ) : null}
