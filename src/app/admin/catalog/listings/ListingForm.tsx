@@ -40,6 +40,7 @@ import { saveListing } from "./actions";
 import MediaPickerField, {
   MediaPickerButton,
 } from "@/components/admin/MediaPickerField";
+import VideosEditor from "@/components/admin/VideosEditor";
 import SeoConfigDrawer from "@/components/admin/SeoConfigDrawer";
 
 import { Button } from "@/components/ui/button";
@@ -81,7 +82,7 @@ export type ListingFormInitial = {
   summary: string;
   description: string;
   coverImage: string;
-  videoUrl: string;
+  videos: { url: string; title: string }[];
   durationDays: string;
   rating: string;
   price: string;
@@ -108,7 +109,7 @@ type ListingFormValues = {
   summary: string;
   description: string;
   coverImage: string;
-  videoUrl: string;
+  videos: { url: string; title: string }[];
   gallery: { url: string; alt: string }[];
   itinerary: { day: string; title: string; details: string }[];
   inclusions: { value: string }[];
@@ -133,7 +134,9 @@ const formSchema = z.object({
   summary: z.string().max(300, "Summary must be 300 characters or fewer"),
   description: z.string(),
   coverImage: z.string().max(2048),
-  videoUrl: z.string().max(2048),
+  videos: z
+    .array(z.object({ url: z.string().max(2048), title: z.string().max(200) }))
+    .max(12, "Videos are limited to 12"),
   gallery: z.array(z.object({ url: z.string().max(2048), alt: z.string().max(200) })),
   itinerary: z.array(
     z.object({
@@ -171,6 +174,9 @@ function toListingPayload(values: ListingFormValues, id?: string): Record<string
   const gallery = values.gallery
     .map((g) => ({ url: g.url.trim(), alt: g.alt.trim() }))
     .filter((g) => g.url.length > 0);
+  const videos = values.videos
+    .map((v) => ({ url: v.url.trim(), title: v.title.trim() }))
+    .filter((v) => v.url.length > 0);
   const itinerary = values.itinerary
     .map((row) => ({
       day: row.day.trim(),
@@ -195,7 +201,7 @@ function toListingPayload(values: ListingFormValues, id?: string): Record<string
     summary: values.summary.trim() || null,
     description: values.description || null,
     coverImage: values.coverImage.trim() || null,
-    videoUrl: values.videoUrl.trim() || null,
+    videos,
     gallery,
     itinerary,
     inclusions: strings(values.inclusions),
@@ -706,13 +712,16 @@ export default function ListingForm({
           </div>
           <FormField
             control={form.control}
-            name="videoUrl"
+            name="videos"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Video URL</FormLabel>
                 <FormControl>
-                  <Input placeholder="https://www.youtube.com/watch?v=…" {...field} />
+                  <VideosEditor value={field.value} onChange={field.onChange} />
                 </FormControl>
+                <FormDescription>
+                  Shown in the Watch section of the public page; the first video
+                  leads.
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}

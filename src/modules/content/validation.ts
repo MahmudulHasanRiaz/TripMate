@@ -103,6 +103,15 @@ const featuredImageSchema = z.preprocess(
   contentImageSchema.nullable().optional(),
 );
 
+/** One video entry in a post's `videos` jsonb array (FU-35) — same shape and
+ *  cap as the catalog module's listingVideoSchema. */
+export const MAX_ENTITY_VIDEOS = 12;
+export const contentVideoSchema = z.object({
+  url: urlTextSchema,
+  title: z.string().trim().max(200).default(""),
+});
+export type ContentVideo = z.infer<typeof contentVideoSchema>;
+
 export const gallerySchema = z.array(contentImageSchema).max(60);
 
 /** Blank text input or an empty row array → NULL (no gallery). The post form
@@ -112,6 +121,14 @@ export const gallerySchema = z.array(contentImageSchema).max(60);
 const galleryFieldSchema = z.preprocess(
   (v) => (v === "" || (Array.isArray(v) && v.length === 0) ? null : v),
   gallerySchema.nullable().optional(),
+);
+
+/** Same blank→null contract as the gallery field: an untouched videos editor
+ *  submits `[]`, which must CLEAR the column rather than persist an empty
+ *  array (an empty array would also shadow the legacy video_url fallback). */
+const videosFieldSchema = z.preprocess(
+  (v) => (v === "" || (Array.isArray(v) && v.length === 0) ? null : v),
+  z.array(contentVideoSchema).max(MAX_ENTITY_VIDEOS).nullable().optional(),
 );
 
 export const seoSchema = z
@@ -166,7 +183,7 @@ export const postInput = z.object({
   content: markdownTextSchema.nullable().optional(), // markdown body
   featuredImage: featuredImageSchema,
   gallery: galleryFieldSchema,
-  videoUrl: z.string().trim().max(2048).nullable().optional(),
+  videos: videosFieldSchema,
   categoryId: nullableOptionalUuid("post category id"),
   authorId: nullableOptionalUuid("author user id"),
   status: contentStatusSchema.optional(), // omit → DB default 'draft'

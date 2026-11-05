@@ -14,11 +14,13 @@ import {
 import { db } from "@/db/client";
 import { escapeLike, isUniqueViolation, paginate } from "@/lib/db-utils";
 import { insertWithSlugRecovery, type SlugContext } from "@/lib/slug";
+import { normalizeVideos } from "@/lib/videos";
 import { pages, postCategories, posts } from "@/modules/content/schema";
 import { users } from "@/modules/users/schema";
 import type {
   ContentImage,
   ContentStatus,
+  ContentVideo,
   PageInput,
   PageSection,
   PostCategoryInput,
@@ -54,7 +56,9 @@ export type PostWithRefs = {
   content: string | null;
   featuredImage: ContentImage | null;
   gallery: ContentImage[];
-  videoUrl: string | null;
+  /** FU-35: normalised video list — the mapper already applied the legacy
+   *  video_url fallback, so consumers never read the old column. */
+  videos: ContentVideo[];
   authorId: string | null;
   categoryId: string | null;
   category: PostCategoryRef | null;
@@ -125,6 +129,7 @@ const postCols = {
     content: posts.content,
     featuredImage: posts.featuredImage,
     gallery: posts.gallery,
+    videos: posts.videos,
     videoUrl: posts.videoUrl,
     authorId: posts.authorId,
     categoryId: posts.categoryId,
@@ -154,6 +159,7 @@ type PostRow = {
     content: string | null;
     featuredImage: unknown;
     gallery: unknown;
+    videos: unknown;
     videoUrl: string | null;
     authorId: string | null;
     categoryId: string | null;
@@ -216,19 +222,43 @@ export async function listPublishedPosts(
   return { items: rows.map(toPost), total: countRow.total };
 }
 
-export type PublicPostRef = { slug: string; publishedAt: Date | null; updatedAt: Date };
+export type PublicPostRef = {
+  slug: string;
+  publishedAt: Date | null;
+  updatedAt: Date;
+  /** FU-35: display fields for the sitemap's video extensions (video titles
+   *  fall back to the post title; descriptions to the excerpt). */
+  title: string;
+  excerpt: string | null;
+  /** FU-35: media projections for the sitemap's image/video extensions. */
+  featuredImage: ContentImage | null;
+  gallery: ContentImage[];
+  videos: ContentVideo[];
+};
 export type PublicPageRef = { slug: string; updatedAt: Date };
 
 /** slug + publish/update dates for every published post — the sitemap's
  *  /blog/[slug] URL set. Mirrors listPublishedPosts' predicate (published, not
- *  deleted, publish-stamped) without pagination or the joined card columns, so
- *  the sitemap only drags the few columns the XML needs across. publishedAt is
- *  typed nullable (codebase convention) even though the predicate guarantees a
- *  stamp; consumers fall back to updatedAt when reading it.
+ *  deleted, publish-stamped) without pagination or the joined card columns.
+ *  publishedAt is typed nullable (codebase convention) even though the
+ *  predicate guarantees a stamp; consumers fall back to updatedAt when
+ *  reading it. Since FU-35 it also projects the media columns the sitemap's
+ *  image/video extensions render (featured image, gallery, videos —
+ *  normalised, with the legacy video fallback applied).
  */
 export async function listPublishedPostRefs(): Promise<PublicPostRef[]> {
-  return db
-    .select({ slug: posts.slug, publishedAt: posts.publishedAt, updatedAt: posts.updatedAt })
+  const rows = await db
+    .select({
+      slug: posts.slug,
+      publishedAt: posts.publishedAt,
+      updatedAt: posts.updatedAt,
+      title: posts.title,
+      excerpt: posts.excerpt,
+      featuredImage: posts.featuredImage,
+      gallery: posts.gallery,
+      videos: posts.videos,
+      videoUrl: posts.videoUrl,
+    })
     .from(posts)
     .where(
       and(
@@ -238,6 +268,16 @@ export async function listPublishedPostRefs(): Promise<PublicPostRef[]> {
       ),
     )
     .orderBy(asc(posts.slug));
+  return rows.map((r) => ({
+    slug: r.slug,
+    publishedAt: r.publishedAt,
+    updatedAt: r.updatedAt,
+    title: r.title,
+    excerpt: r.excerpt,
+    featuredImage: toImage(r.featuredImage),
+    gallery: toImages(r.gallery),
+    videos: normalizeVideos(r.videos, r.videoUrl),
+  }));
 }
 
 /** slug + updatedAt for every published, non-deleted page — the sitemap's
@@ -378,7 +418,13 @@ function toPostWrite(input: PostInput): PostWrite {
   if (input.content !== undefined) w.content = input.content || null;
   if (input.featuredImage !== undefined) w.featuredImage = input.featuredImage || null;
   if (input.gallery !== undefined) w.gallery = input.gallery || null;
-  if (input.videoUrl !== undefined) w.videoUrl = input.videoUrl || null;
+  if (input.videos !== undefined) {
+    // FU-35: mirror of the catalog write — an explicit videos value owns the
+    // media state, and the legacy video_url is cleared in the same write so
+    // the read-compat fallback can never resurrect a removed video.
+    w.videos = input.videos && input.videos.length > 0 ? input.videos : null;
+    w.videoUrl = null;
+  }
   if (input.categoryId !== undefined) w.categoryId = input.categoryId;
   if (input.authorId !== undefined) w.authorId = input.authorId;
   if (input.status !== undefined) w.status = input.status;
@@ -730,7 +776,7 @@ function toPost(row: PostRow): PostWithRefs {
     content: p.content,
     featuredImage: toImage(p.featuredImage),
     gallery: toImages(p.gallery),
-    videoUrl: p.videoUrl,
+    videos: normalizeVideos(p.videos, p.videoUrl),
     authorId: p.authorId,
     categoryId: p.categoryId,
     category: row.category

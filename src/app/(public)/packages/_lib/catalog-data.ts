@@ -62,8 +62,10 @@ export type PackageDetailData = {
   description: string | null;
   cover: { url: string; alt: string } | null;
   gallery: { url: string; alt: string }[];
-  /** Promotional video (YouTube or direct mp4), placed after the gallery (§4). */
-  videoUrl: string | null;
+  /** Promotional videos (YouTube/Vimeo or direct files), placed after the gallery (§4). */
+  videos: { url: string; title: string }[];
+  /** ISO last-update stamp — feeds the VideoObjects' uploadDate. */
+  updatedAt: string;
   durationDays: number | null;
   rating: number | null;
   price: number | null;
@@ -237,7 +239,8 @@ export async function getPackageDetailData(slug: string): Promise<PackageDetailD
       url: image.url,
       alt: image.alt ?? listing.title,
     })),
-    videoUrl: listing.videoUrl,
+    videos: listing.videos,
+    updatedAt: listing.updatedAt.toISOString(),
     durationDays: listing.durationDays,
     rating: listing.rating,
     price: listing.price,

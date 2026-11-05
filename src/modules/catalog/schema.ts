@@ -41,6 +41,8 @@ export const destinations = pgTable("destinations", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   image: text("image"),
+  gallery: jsonb("gallery"),
+  videos: jsonb("videos"),
   description: text("description"),
   sortOrder: integer("sort_order").notNull().default(0),
   isFeatured: boolean("is_featured").notNull().default(false),
@@ -62,6 +64,9 @@ export const listings = pgTable("listings", {
   description: text("description"),
   coverImage: jsonb("cover_image"),
   gallery: jsonb("gallery"),
+  // FU-35: `videos` ([{url, title}]) is the video model; `video_url` stays
+  // for one release as the read-compat fallback (see src/lib/videos.ts).
+  videos: jsonb("videos"),
   videoUrl: text("video_url"),
   durationDays: integer("duration_days"),
   rating: numeric("rating", { precision: 3, scale: 2 }),

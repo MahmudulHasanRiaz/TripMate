@@ -29,6 +29,9 @@ export const posts = pgTable("posts", {
   content: text("content"),
   featuredImage: jsonb("featured_image"),
   gallery: jsonb("gallery"),
+  // FU-35: `videos` ([{url, title}]) is the video model; `video_url` stays
+  // for one release as the read-compat fallback (see src/lib/videos.ts).
+  videos: jsonb("videos"),
   videoUrl: text("video_url"),
   authorId: uuid("author_id"),
   categoryId: uuid("category_id").references(() => postCategories.id),

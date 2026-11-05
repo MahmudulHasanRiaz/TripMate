@@ -27,7 +27,7 @@ export function HeroSection({
   imageAlt = "Travel landscape",
 }: HeroSectionProps) {
   return (
-    <section className="relative isolate overflow-hidden -mt-header-clearance sm:-mt-header-clearance-lg pt-36 sm:pt-44 lg:pt-48 pb-28 sm:pb-36 lg:pb-40">
+    <section className="relative isolate overflow-hidden -mt-20 sm:-mt-24 pt-36 sm:pt-44 lg:pt-48 pb-28 sm:pb-36 lg:pb-40">
       {/* Background: vivid photograph, darkened only toward the base so
           the white copy and the straddling panel's top stay legible. */}
       {imageSrc ? (

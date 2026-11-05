@@ -7,8 +7,10 @@ import { ArrowLeft, CalendarDays, PenLine } from "lucide-react";
 
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
 import { Gallery } from "@/components/site/Gallery";
+import { VideoGallery } from "@/components/site/VideoGallery";
 import { JsonLd } from "@/components/site/JsonLd";
-import { detailMetadata, youtubeEmbedUrl } from "@/lib/seo-meta";
+import { detailMetadata } from "@/lib/seo-meta";
+import { buildVideoObject } from "@/lib/videos";
 import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 
 import { getBlogPostData } from "../_lib/blog-data";
@@ -97,6 +99,14 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
           name: author,
         },
       },
+      // One VideoObject per video (FU-35), mirroring the packages page.
+      ...post.videos.map((video) =>
+        buildVideoObject(video, {
+          entityTitle: post.title,
+          uploadDate: post.updatedAt,
+          fallbackThumbnailUrl: post.image?.url ?? null,
+        }),
+      ),
     ],
   };
 
@@ -163,23 +173,12 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
         </div>
       ) : null}
 
-      {post.videoUrl ? (
-        <div className="mx-auto mt-10 max-w-4xl overflow-hidden rounded-xl border border-border bg-card">
-          {youtubeEmbedUrl(post.videoUrl) ? (
-            <iframe
-              src={youtubeEmbedUrl(post.videoUrl) as string}
-              title={`${post.title} — video`}
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="aspect-video w-full"
-            />
-          ) : (
-            <video src={post.videoUrl} controls preload="metadata" className="aspect-video w-full bg-black">
-              Your browser cannot play this video.
-            </video>
-          )}
-        </div>
+      {post.videos.length > 0 ? (
+        <VideoGallery
+          className="mx-auto mt-10 max-w-4xl"
+          videos={post.videos}
+          title={post.title}
+        />
       ) : null}
     </article>
   </>

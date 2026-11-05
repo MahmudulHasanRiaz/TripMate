@@ -4,8 +4,8 @@ import { Check, ChevronDown, X } from "lucide-react";
 
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
 import { Gallery } from "@/components/site/Gallery";
+import { VideoGallery } from "@/components/site/VideoGallery";
 import { listingPhotos } from "@/lib/listing-photos";
-import { youtubeEmbedUrl } from "@/lib/seo-meta";
 
 import type { PackageDetailData } from "../../_lib/catalog-data";
 
@@ -19,7 +19,7 @@ import type { PackageDetailData } from "../../_lib/catalog-data";
  * rehype-sanitize pipeline — never raw HTML.
  */
 export function PackageContent({ data }: { data: PackageDetailData }) {
-  const { summary, description, gallery, videoUrl, itinerary, inclusions, exclusions } = data;
+  const { summary, description, gallery, videos, itinerary, inclusions, exclusions } = data;
   const hasLongform = Boolean(summary || description);
   // One photo set for the whole page, from the shared definition in
   // lib/listing-photos (FU-28/FU-32): the hero pill, this section's
@@ -65,7 +65,12 @@ export function PackageContent({ data }: { data: PackageDetailData }) {
         </section>
       ) : null}
 
-      {videoUrl ? <PackageVideo url={videoUrl} title={data.title} /> : null}
+      {videos.length > 0 ? (
+        <section aria-labelledby="package-video-heading">
+          <SectionHeading id="package-video-heading">Watch</SectionHeading>
+          <VideoGallery className="mt-6" videos={videos} title={data.title} />
+        </section>
+      ) : null}
 
       {itinerary.length > 0 ? (
         <section aria-labelledby="package-itinerary-heading" data-testid="package-itinerary">
@@ -120,31 +125,6 @@ export function PackageContent({ data }: { data: PackageDetailData }) {
         </section>
       ) : null}
     </div>
-  );
-}
-
-function PackageVideo({ url, title }: { url: string; title: string }) {
-  const embed = youtubeEmbedUrl(url);
-  return (
-    <section aria-labelledby="package-video-heading">
-      <SectionHeading>Watch</SectionHeading>
-      <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card">
-        {embed ? (
-          <iframe
-            src={embed}
-            title={`${title} — video`}
-            loading="lazy"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="aspect-video w-full"
-          />
-        ) : (
-          <video src={url} controls preload="metadata" className="aspect-video w-full bg-black">
-            Your browser cannot play this video.
-          </video>
-        )}
-      </div>
-    </section>
   );
 }
 

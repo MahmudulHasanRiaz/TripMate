@@ -30,7 +30,7 @@ function toFormInitial(listing: ListingWithRefs): ListingFormInitial {
     summary: listing.summary ?? "",
     description: listing.description ?? "",
     coverImage: listing.coverImage?.url ?? "",
-    videoUrl: listing.videoUrl ?? "",
+    videos: listing.videos.map((v) => ({ url: v.url, title: v.title })),
     durationDays: listing.durationDays === null ? "" : String(listing.durationDays),
     rating: listing.rating === null ? "" : String(listing.rating),
     price: listing.price === null ? "" : String(listing.price),

@@ -343,6 +343,15 @@ export async function seedDemoData() {
           name: "Makkah & Madinah",
           slug: "makkah-madinah",
           image: storedUrls.destMakkah || null,
+          gallery: [
+            { url: storedUrls.destMakkah || "", alt: "Masjid al-Haram in Makkah" },
+            { url: storedUrls.pkgHajjCover || "", alt: "Pilgrims at the Grand Mosque in Makkah" },
+            { url: storedUrls.pkgUmrahCover || "", alt: "The Prophet's Mosque in Madinah illuminated at sunset" },
+          ],
+          videos: [
+            { url: "https://www.youtube.com/watch?v=pE0QHFimYpk", title: "POV Tawaf Around the Kaaba — Immersive 4K Walk in Masjid al-Haram" },
+            { url: "https://www.youtube.com/watch?v=VOWd2Ep3IVg", title: "Medina — Morning and Night Walk Around the Prophet's Mosque" },
+          ],
           description: "The holiest sanctuaries of Islam. Experience spiritual tranquility with luxury accommodations located steps from Masjid al-Haram and Masjid an-Nabawi.",
           sortOrder: 1,
           isFeatured: true,
@@ -356,6 +365,15 @@ export async function seedDemoData() {
           name: "Dubai, UAE",
           slug: "dubai",
           image: storedUrls.destDubai || null,
+          gallery: [
+            { url: storedUrls.destDubai || "", alt: "Downtown Dubai skyline and Burj Khalifa" },
+            { url: storedUrls.pkgDubaiCover || "", alt: "Sunset over golden dunes in Dubai desert safari" },
+            { url: storedUrls.hero || "", alt: "Luxury travel journey with scenic vistas" },
+          ],
+          videos: [
+            { url: "https://www.youtube.com/watch?v=P0cK9j2jiWg", title: "Dubai Travel Guide — Top 10 Best Places to Visit in Dubai" },
+            { url: "https://www.youtube.com/watch?v=OxIWEHlzbUE", title: "Inside Burj Khalifa — World's Tallest Building Tour" },
+          ],
           description: "The pinnacle of modern opulence, cutting-edge architecture, desert adventures, and world-class shopping experiences.",
           sortOrder: 2,
           isFeatured: true,
@@ -369,6 +387,15 @@ export async function seedDemoData() {
           name: "Malaysia & Singapore",
           slug: "malaysia-singapore",
           image: storedUrls.destMalaysia || null,
+          gallery: [
+            { url: storedUrls.destMalaysia || "", alt: "Kuala Lumpur Petronas Towers and city skyline" },
+            { url: storedUrls.pkgMalaysiaCover || "", alt: "Universal Studios Singapore and Sentosa Island" },
+            { url: storedUrls.guideMalaysia || "", alt: "Scenic Asian tea plantation" },
+          ],
+          videos: [
+            { url: "https://www.youtube.com/watch?v=ScIGjctcz7o", title: "Kuala Lumpur Travel Guide — All Sights and the Petronas Towers" },
+            { url: "https://www.youtube.com/watch?v=P_q3BdrFsLI", title: "Singapore Vacation Travel Guide — Expedia" },
+          ],
           description: "Dual-nation family favorites featuring world-famous theme parks, vibrant street food, lush rainforests, and modern metropolitan wonders.",
           sortOrder: 3,
           isFeatured: true,
@@ -382,6 +409,14 @@ export async function seedDemoData() {
           name: "Maldives Islands",
           slug: "maldives",
           image: storedUrls.destMaldives || null,
+          gallery: [
+            { url: storedUrls.destMaldives || "", alt: "Crystal clear ocean overwater villas in Maldives" },
+            { url: storedUrls.pkgMaldivesCover || "", alt: "Turquoise lagoon and water bungalow in Maldives" },
+          ],
+          videos: [
+            { url: "https://www.youtube.com/watch?v=e656t4O3Ok8", title: "This is My Maldives — Visit Maldives" },
+            { url: "https://www.youtube.com/watch?v=MPZ2LSL4JB4", title: "Addu Tourism — Official Brand Film" },
+          ],
           description: "Pure tropical paradise of turquoise atolls, private overwater bungalows, and world-renowned underwater marine reserves.",
           sortOrder: 4,
           isFeatured: true,
@@ -395,6 +430,14 @@ export async function seedDemoData() {
           name: "Cox's Bazar & Sylhet",
           slug: "coxs-bazar-sylhet",
           image: storedUrls.destCoxsBazar || null,
+          gallery: [
+            { url: storedUrls.destCoxsBazar || "", alt: "Golden sunset over the coastline of Cox's Bazar" },
+            { url: storedUrls.hero || "", alt: "Luxury travel journey with scenic vistas" },
+          ],
+          videos: [
+            { url: "https://www.youtube.com/watch?v=AsxUoMkj4H8", title: "Beautiful Cox's Bazar — Travel Vlog" },
+            { url: "https://www.youtube.com/watch?v=sA8VQFpTBNY", title: "Sunset in Cox's Bazar" },
+          ],
           description: "Bangladesh's natural wonders: the unbroken 120km golden sea beach of Cox's Bazar and the rolling emerald tea gardens of Sylhet.",
           sortOrder: 5,
           isFeatured: true,
@@ -408,6 +451,14 @@ export async function seedDemoData() {
           name: "Turkey & Europe",
           slug: "turkey-europe",
           image: storedUrls.destTurkey || null,
+          gallery: [
+            { url: storedUrls.destTurkey || "", alt: "Historic Istanbul architecture across the Bosphorus" },
+            { url: storedUrls.hero || "", alt: "Luxury travel journey with scenic vistas" },
+          ],
+          videos: [
+            { url: "https://www.youtube.com/watch?v=kuu19fk_aIk", title: "Istanbul Guide — Everything You Need to Know Before Your First Visit" },
+            { url: "https://www.youtube.com/watch?v=Yw7CmTYRnwo", title: "Istanbul in 4 Days — The Only Travel Guide You Need" },
+          ],
           description: "Breathtaking crossroads of European and Asian civilization, hot air balloon flights in Cappadocia, and Ottoman grand palaces.",
           sortOrder: 6,
           isFeatured: false,
@@ -680,8 +731,12 @@ export async function seedDemoData() {
         gallery: [
           { url: storedUrls.pkgHajjCover || "", alt: "Kaaba Grand Mosque" },
           { url: storedUrls.destMakkah || "", alt: "Clock Tower luxury hotel room view" },
+          { url: storedUrls.pkgUmrahCover || "", alt: "The Prophet's Mosque in Madinah illuminated at sunset" },
         ],
-        videoUrl: null,
+        videos: [
+          { url: "https://www.youtube.com/watch?v=liPFurz5Rn0", title: "Hajj Documentary — Sacred Journeys, the World's Largest Pilgrimage" },
+          { url: "https://www.youtube.com/watch?v=pXlqTThCtZ4", title: "Every Stage of Hajj Explained in 22 Minutes" },
+        ],
         durationDays: 21,
         rating: "4.95",
         price: "850000",
@@ -733,6 +788,11 @@ export async function seedDemoData() {
         gallery: [
           { url: storedUrls.pkgUmrahCover || "", alt: "Madinah Prophet's Mosque at dusk" },
           { url: storedUrls.destMakkah || "", alt: "Grand Mosque Makkah" },
+          { url: storedUrls.pkgHajjCover || "", alt: "Pilgrims at the Grand Mosque in Makkah" },
+        ],
+        videos: [
+          { url: "https://www.youtube.com/watch?v=VOWd2Ep3IVg", title: "Medina — Morning and Night Walk Around the Prophet's Mosque" },
+          { url: "https://www.youtube.com/watch?v=pE0QHFimYpk", title: "POV Tawaf Around the Kaaba — Immersive 4K Walk in Masjid al-Haram" },
         ],
         durationDays: 14,
         rating: "4.90",
@@ -774,6 +834,11 @@ export async function seedDemoData() {
         gallery: [
           { url: storedUrls.pkgMalaysiaCover || "", alt: "Universal Studios Sentosa" },
           { url: storedUrls.destMalaysia || "", alt: "Kuala Lumpur Petronas Towers" },
+          { url: storedUrls.guideMalaysia || "", alt: "Scenic Asian tea plantation" },
+        ],
+        videos: [
+          { url: "https://www.youtube.com/watch?v=P_q3BdrFsLI", title: "Singapore Vacation Travel Guide — Expedia" },
+          { url: "https://www.youtube.com/watch?v=x2zdeAiIMuU", title: "LEGOLAND Malaysia Resort — Where Imaginations Build" },
         ],
         durationDays: 7,
         rating: "4.85",
@@ -820,6 +885,11 @@ export async function seedDemoData() {
         gallery: [
           { url: storedUrls.pkgDubaiCover || "", alt: "Dubai Desert Safari" },
           { url: storedUrls.destDubai || "", alt: "Burj Khalifa Downtown" },
+          { url: storedUrls.hero || "", alt: "Luxury travel journey with scenic vistas" },
+        ],
+        videos: [
+          { url: "https://www.youtube.com/watch?v=P0cK9j2jiWg", title: "Dubai Travel Guide — Top 10 Best Places to Visit in Dubai" },
+          { url: "https://www.youtube.com/watch?v=OxIWEHlzbUE", title: "Inside Burj Khalifa — World's Tallest Building Tour" },
         ],
         durationDays: 5,
         rating: "4.88",
@@ -855,6 +925,14 @@ export async function seedDemoData() {
           url: storedUrls.pkgMaldivesCover || "",
           alt: "Maldives overwater villa resort",
         },
+        gallery: [
+          { url: storedUrls.pkgMaldivesCover || "", alt: "Turquoise lagoon and water bungalow in Maldives" },
+          { url: storedUrls.destMaldives || "", alt: "Crystal clear ocean overwater villas in Maldives" },
+        ],
+        videos: [
+          { url: "https://www.youtube.com/watch?v=e656t4O3Ok8", title: "This is My Maldives — Visit Maldives" },
+          { url: "https://www.youtube.com/watch?v=MPZ2LSL4JB4", title: "Addu Tourism — Official Brand Film" },
+        ],
         durationDays: 4,
         rating: "4.92",
         price: "165000",
@@ -883,6 +961,13 @@ export async function seedDemoData() {
           url: storedUrls.destMalaysia || "",
           alt: "Prince Court Medical Centre Kuala Lumpur",
         },
+        gallery: [
+          { url: storedUrls.pkgMalaysiaCover || "", alt: "Universal Studios Singapore and Sentosa Island" },
+          { url: storedUrls.guideMalaysia || "", alt: "Scenic Asian tea plantation" },
+        ],
+        videos: [
+          { url: "https://www.youtube.com/watch?v=ScIGjctcz7o", title: "Kuala Lumpur Travel Guide — All Sights and the Petronas Towers" },
+        ],
         durationDays: 5,
         rating: "4.80",
         price: "120000",
@@ -1078,6 +1163,15 @@ export async function seedDemoData() {
           url: storedUrls.guideUmrah || "",
           alt: "Umrah prayer beads and Islamic holy sanctuary",
         },
+        gallery: [
+          { url: storedUrls.guideUmrah || "", alt: "Prayer beads and Islamic guide" },
+          { url: storedUrls.destMakkah || "", alt: "Masjid al-Haram in Makkah" },
+          { url: storedUrls.pkgUmrahCover || "", alt: "The Prophet's Mosque in Madinah illuminated at sunset" },
+        ],
+        videos: [
+          { url: "https://www.youtube.com/watch?v=pE0QHFimYpk", title: "POV Tawaf Around the Kaaba — Immersive 4K Walk in Masjid al-Haram" },
+          { url: "https://www.youtube.com/watch?v=vKl5X0qUNxI", title: "A Soulful Day in Masjid e Nabawi" },
+        ],
         status: "published",
         publishedAt: new Date(),
         seo: {
@@ -1095,6 +1189,15 @@ export async function seedDemoData() {
           url: storedUrls.guideMalaysia || "",
           alt: "Scenic tea plantations in Cameron Highlands, Malaysia",
         },
+        gallery: [
+          { url: storedUrls.guideMalaysia || "", alt: "Scenic tea plantations in Cameron Highlands, Malaysia" },
+          { url: storedUrls.destMalaysia || "", alt: "Kuala Lumpur Petronas Towers and city skyline" },
+          { url: storedUrls.pkgMalaysiaCover || "", alt: "Universal Studios Singapore and Sentosa Island" },
+        ],
+        videos: [
+          { url: "https://www.youtube.com/watch?v=sdbJmcyBMXE", title: "Sunway Lagoon Water Park and Aquaria KLCC — Malaysia Travel Vlog" },
+          { url: "https://www.youtube.com/watch?v=CEsBqspsQrY", title: "Kuala Lumpur — Perfect 3-Day Itinerary" },
+        ],
         status: "published",
         publishedAt: new Date(),
         seo: {

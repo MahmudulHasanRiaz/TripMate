@@ -59,6 +59,18 @@ export const listingImageSchema = z.object({
 });
 export type ListingImage = z.infer<typeof listingImageSchema>;
 
+/** One video entry in a `videos` jsonb array (FU-35): a YouTube/Vimeo page
+ *  URL or a direct video-file URL, plus an optional display title. The cap is
+ *  shared with lib/videos MAX_VIDEOS so validation and the read normaliser
+ *  can never disagree about how many videos an entity may carry. */
+export const MAX_ENTITY_VIDEOS = 12;
+export const listingVideoSchema = z.object({
+  url: urlTextSchema,
+  title: z.string().trim().max(200).default(""),
+});
+export type ListingVideo = z.infer<typeof listingVideoSchema>;
+export const listingVideosSchema = z.array(listingVideoSchema).max(MAX_ENTITY_VIDEOS);
+
 const itineraryDaySchema = z.preprocess(
   (v) => (typeof v === "number" && Number.isInteger(v) ? String(v) : v),
   z.string().trim().min(1, "Itinerary day is required"),
@@ -153,7 +165,7 @@ export const listingInput = z.object({
   // media picker pass.
   coverImage: coverImageSchema,
   gallery: z.array(listingImageSchema).max(60).nullable().optional(),
-  videoUrl: z.string().trim().max(2048).nullable().optional(),
+  videos: listingVideosSchema.nullable().optional(),
   durationDays: durationDaysSchema,
   rating: ratingSchema,
   price: priceSchema,
@@ -216,6 +228,8 @@ export const destinationInput = z.object({
   name: z.string().trim().min(1, "Name is required").max(120),
   slug: slugSchema,
   image: z.string().trim().max(2048).nullable().optional(),
+  gallery: z.array(listingImageSchema).max(60).nullable().optional(),
+  videos: listingVideosSchema.nullable().optional(),
   description: z.string().trim().max(10000).nullable().optional(),
   sortOrder: z.coerce.number().int().min(0).default(0),
   isFeatured: z.boolean().default(false),

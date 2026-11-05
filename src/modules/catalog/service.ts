@@ -16,6 +16,7 @@ import {
 import { db } from "@/db/client";
 import { escapeLike, isUniqueViolation, paginate } from "@/lib/db-utils";
 import { insertWithSlugRecovery, type SlugContext } from "@/lib/slug";
+import { normalizeVideos } from "@/lib/videos";
 import { destinations, listings, serviceCategories } from "@/modules/catalog/schema";
 import type {
   CategoryInput,
@@ -23,6 +24,7 @@ import type {
   ListingImage,
   ListingInput,
   ListingStatus,
+  ListingVideo,
   ItineraryItem,
   ServiceKind,
   Seo,
@@ -55,11 +57,16 @@ export type Destination = {
   name: string;
   slug: string;
   image: string | null;
+  /** FU-35: photo gallery + video list, projected via the same defensive
+   *  jsonb mappers as listings (never raw cells). */
+  gallery: ListingImage[];
+  videos: ListingVideo[];
   description?: string | null;
   sortOrder?: number;
   isFeatured?: boolean;
   isActive: boolean;
   seo?: Record<string, unknown> | null;
+  updatedAt: Date;
 };
 
 export type DestinationWithStats = Destination & {
@@ -85,7 +92,9 @@ export type ListingWithRefs = {
   description: string | null;
   coverImage: ListingImage | null;
   gallery: ListingImage[];
-  videoUrl: string | null;
+  /** FU-35: normalised video list — the mapper already applied the legacy
+   *  video_url fallback, so consumers never read the old column. */
+  videos: ListingVideo[];
   durationDays: number | null;
   rating: number | null;
   price: number | null;
@@ -161,6 +170,7 @@ const listingCols = {
     description: listings.description,
     coverImage: listings.coverImage,
     gallery: listings.gallery,
+    videos: listings.videos,
     videoUrl: listings.videoUrl,
     durationDays: listings.durationDays,
     rating: listings.rating,
@@ -203,6 +213,7 @@ type ListingRow = {
     description: string | null;
     coverImage: unknown;
     gallery: unknown;
+    videos: unknown;
     videoUrl: string | null;
     durationDays: number | null;
     rating: string | null;
@@ -290,20 +301,91 @@ export async function listPublishedListings(
   return { items: rows.map(toListing), total: countRow.total };
 }
 
-export type PublicListingRef = { slug: string; updatedAt: Date };
+export type PublicListingRef = {
+  slug: string;
+  updatedAt: Date;
+  /** FU-35: display fields for the sitemap's video extensions (video titles
+   *  fall back to the listing title; descriptions to the summary). */
+  title: string;
+  summary: string | null;
+  /** FU-35: media projections for the sitemap's image/video extensions. */
+  coverImage: ListingImage | null;
+  gallery: ListingImage[];
+  videos: ListingVideo[];
+};
 
 /** slug + updatedAt for every published, non-deleted listing — the sitemap's
  *  /packages/[slug] URL set. Same predicate as listPublishedListings (published
  *  rows are by construction attached to active categories), unpaginated because
- *  a sitemap needs the whole set, and it projects only the two columns the XML
- *  needs rather than dragging full JSONB bodies across.
+ *  a sitemap needs the whole set. Since FU-35 it also projects the media
+ *  columns the sitemap's image/video extensions render (cover, gallery,
+ *  videos — normalised, with the legacy video fallback applied).
  */
 export async function listPublishedListingRefs(): Promise<PublicListingRef[]> {
-  return db
-    .select({ slug: listings.slug, updatedAt: listings.updatedAt })
+  const rows = await db
+    .select({
+      slug: listings.slug,
+      updatedAt: listings.updatedAt,
+      title: listings.title,
+      summary: listings.summary,
+      coverImage: listings.coverImage,
+      gallery: listings.gallery,
+      videos: listings.videos,
+      videoUrl: listings.videoUrl,
+    })
     .from(listings)
     .where(and(eq(listings.status, "published"), isNull(listings.deletedAt)))
     .orderBy(asc(listings.slug));
+  return rows.map((r) => ({
+    slug: r.slug,
+    updatedAt: r.updatedAt,
+    title: r.title,
+    summary: r.summary,
+    coverImage: toImage(r.coverImage),
+    gallery: toImages(r.gallery),
+    videos: normalizeVideos(r.videos, r.videoUrl),
+  }));
+}
+
+export type PublicDestinationRef = {
+  slug: string;
+  updatedAt: Date;
+  /** FU-35: display fields for the sitemap's video extensions (video titles
+   *  fall back to the destination name; descriptions to its description). */
+  name: string;
+  description: string | null;
+  image: string | null;
+  gallery: ListingImage[];
+  videos: ListingVideo[];
+};
+
+/** slug + media for every ACTIVE destination — the sitemap's
+ *  /destinations/[slug] URL set (FU-35: destinations join the sitemap with
+ *  their image/video extensions; the detail page's own predicate is
+ *  getDestinationBySlug with activeOnly). */
+export async function listActiveDestinationRefs(): Promise<PublicDestinationRef[]> {
+  const rows = await db
+    .select({
+      slug: destinations.slug,
+      updatedAt: destinations.updatedAt,
+      name: destinations.name,
+      description: destinations.description,
+      image: destinations.image,
+      gallery: destinations.gallery,
+      videos: destinations.videos,
+    })
+    .from(destinations)
+    .where(eq(destinations.isActive, true))
+    .orderBy(asc(destinations.slug));
+  return rows.map((r) => ({
+    slug: r.slug,
+    updatedAt: r.updatedAt,
+    name: r.name,
+    description: r.description,
+    image: r.image,
+    gallery: toImages(r.gallery),
+    videos: normalizeVideos(r.videos),
+  }));
 }
 
 export async function getListingBySlug(slug: string): Promise<ListingWithRefs | null> {
@@ -426,27 +508,64 @@ export async function getCategoryBySlug(
   };
 }
 
+/** The destination column set every read projects (FU-35 adds gallery,
+ *  videos and updatedAt). One shared shape so the three read paths below can
+ *  never drift apart. */
+const destinationCols = {
+  id: destinations.id,
+  name: destinations.name,
+  slug: destinations.slug,
+  image: destinations.image,
+  gallery: destinations.gallery,
+  videos: destinations.videos,
+  description: destinations.description,
+  sortOrder: destinations.sortOrder,
+  isFeatured: destinations.isFeatured,
+  isActive: destinations.isActive,
+  seo: destinations.seo,
+  updatedAt: destinations.updatedAt,
+} as const;
+
+type DestinationColsRow = {
+  id: string;
+  name: string;
+  slug: string;
+  image: string | null;
+  gallery: unknown;
+  videos: unknown;
+  description: string | null;
+  sortOrder: number;
+  isFeatured: boolean;
+  isActive: boolean;
+  seo: unknown;
+  updatedAt: Date;
+};
+
+function projectDestination(r: DestinationColsRow): Destination {
+  return {
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    image: r.image,
+    gallery: toImages(r.gallery),
+    videos: normalizeVideos(r.videos),
+    description: r.description,
+    sortOrder: r.sortOrder,
+    isFeatured: r.isFeatured,
+    isActive: r.isActive,
+    seo: (r.seo ?? null) as Record<string, unknown> | null,
+    updatedAt: r.updatedAt,
+  };
+}
+
 export async function listDestinations(activeOnly = true): Promise<Destination[]> {
   const rows = await db
-    .select({
-      id: destinations.id,
-      name: destinations.name,
-      slug: destinations.slug,
-      image: destinations.image,
-      description: destinations.description,
-      sortOrder: destinations.sortOrder,
-      isFeatured: destinations.isFeatured,
-      isActive: destinations.isActive,
-      seo: destinations.seo,
-    })
+    .select(destinationCols)
     .from(destinations)
     .where(activeOnly ? eq(destinations.isActive, true) : undefined)
     .orderBy(asc(destinations.sortOrder), asc(destinations.name));
 
-  return rows.map((r) => ({
-    ...r,
-    seo: (r.seo ?? null) as Record<string, unknown> | null,
-  }));
+  return rows.map(projectDestination);
 }
 
 export async function listDestinationsWithStats(
@@ -495,50 +614,24 @@ export async function getDestinationBySlug(
   if (activeOnly) conditions.push(eq(destinations.isActive, true));
 
   const [row] = await db
-    .select({
-      id: destinations.id,
-      name: destinations.name,
-      slug: destinations.slug,
-      image: destinations.image,
-      description: destinations.description,
-      sortOrder: destinations.sortOrder,
-      isFeatured: destinations.isFeatured,
-      isActive: destinations.isActive,
-      seo: destinations.seo,
-    })
+    .select(destinationCols)
     .from(destinations)
     .where(and(...conditions))
     .limit(1);
 
   if (!row) return null;
-  return {
-    ...row,
-    seo: (row.seo ?? null) as Record<string, unknown> | null,
-  };
+  return projectDestination(row);
 }
 
 export async function getDestinationById(id: string): Promise<Destination | null> {
   const [row] = await db
-    .select({
-      id: destinations.id,
-      name: destinations.name,
-      slug: destinations.slug,
-      image: destinations.image,
-      description: destinations.description,
-      sortOrder: destinations.sortOrder,
-      isFeatured: destinations.isFeatured,
-      isActive: destinations.isActive,
-      seo: destinations.seo,
-    })
+    .select(destinationCols)
     .from(destinations)
     .where(eq(destinations.id, id))
     .limit(1);
 
   if (!row) return null;
-  return {
-    ...row,
-    seo: (row.seo ?? null) as Record<string, unknown> | null,
-  };
+  return projectDestination(row);
 }
 
 // ---- listing writes -----------------------------------------------------------
@@ -561,7 +654,14 @@ function toListingWrite(input: ListingInput): ListingWrite {
     w.coverImage = input.coverImage ? { url: input.coverImage } : null;
   }
   if (input.gallery !== undefined) w.gallery = input.gallery;
-  if (input.videoUrl !== undefined) w.videoUrl = input.videoUrl || null;
+  if (input.videos !== undefined) {
+    // FU-35: an explicit empty list clears the column (NULL, never [] — an
+    // empty array would shadow nothing here but reads cleaner as "unset"),
+    // and the legacy video_url is cleared in the same write so the
+    // read-compat fallback can never resurrect a removed video.
+    w.videos = input.videos && input.videos.length > 0 ? input.videos : null;
+    w.videoUrl = null;
+  }
   if (input.durationDays !== undefined) w.durationDays = input.durationDays;
   if (input.rating !== undefined) {
     w.rating = input.rating === null ? null : input.rating.toFixed(2);
@@ -841,11 +941,14 @@ function toDestination(row: DestinationsRow): Destination {
     name: row.name,
     slug: row.slug,
     image: row.image,
+    gallery: toImages(row.gallery),
+    videos: normalizeVideos(row.videos),
     description: row.description,
     sortOrder: row.sortOrder,
     isFeatured: row.isFeatured,
     isActive: row.isActive,
     seo: (row.seo ?? null) as Record<string, unknown> | null,
+    updatedAt: row.updatedAt,
   };
 }
 
@@ -854,6 +957,10 @@ function toDestinationWrite(input: DestinationInput): DestinationWrite {
     name: input.name,
     slug: input.slug,
     image: input.image || null,
+    // FU-35: full-replace form — an absent/empty media list clears the
+    // column (NULL) rather than persisting an empty array.
+    gallery: input.gallery && input.gallery.length > 0 ? input.gallery : null,
+    videos: input.videos && input.videos.length > 0 ? input.videos : null,
     description: input.description || null,
     sortOrder: input.sortOrder ?? 0,
     isFeatured: input.isFeatured ?? false,
@@ -1000,7 +1107,7 @@ function toListing(row: ListingRow): ListingWithRefs {
     description: l.description,
     coverImage: toImage(l.coverImage),
     gallery: toImages(l.gallery),
-    videoUrl: l.videoUrl,
+    videos: normalizeVideos(l.videos, l.videoUrl),
     durationDays: l.durationDays,
     rating: l.rating === null ? null : Number(l.rating),
     price: l.price === null ? null : Number(l.price),
