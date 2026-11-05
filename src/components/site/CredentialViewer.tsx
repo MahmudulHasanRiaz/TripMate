@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { FileBadge, X } from "lucide-react";
+import { Eye, FileBadge, X } from "lucide-react";
+
+import { cn } from "@/lib/utils";
 
 /**
  * "View credential" trigger + lightbox (Follow-up 18; portal fix in
@@ -20,9 +22,14 @@ import { FileBadge, X } from "lucide-react";
 export function CredentialViewer({
   imageUrl,
   label,
+  iconOnly = false,
+  triggerClassName,
 }: {
   imageUrl: string;
   label: string;
+  /** Corner eye-icon trigger instead of the text link (FU-24). */
+  iconOnly?: boolean;
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -46,15 +53,31 @@ export function CredentialViewer({
 
   return (
     <>
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setOpen(true)}
-        className="mt-3 inline-flex items-center gap-1 rounded-sm text-[13px] font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-      >
-        <FileBadge className="size-3.5" aria-hidden="true" />
-        View credential
-      </button>
+      {iconOnly ? (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label={`View credential — ${label}`}
+          title="View credential"
+          className={cn(
+            "inline-flex size-9 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur transition-all duration-200 hover:scale-105 hover:border-primary/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+            triggerClassName,
+          )}
+        >
+          <Eye className="size-4" aria-hidden="true" />
+        </button>
+      ) : (
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-3 inline-flex items-center gap-1 rounded-sm text-[13px] font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+        >
+          <FileBadge className="size-3.5" aria-hidden="true" />
+          View credential
+        </button>
+      )}
       {open
         ? createPortal(
             <div

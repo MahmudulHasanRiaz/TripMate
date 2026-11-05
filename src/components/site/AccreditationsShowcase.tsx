@@ -21,19 +21,18 @@ import { cn } from "@/lib/utils";
  * visitor prefers reduced motion. Pagination dots + a "1 / 5" counter
  * + prev/next buttons sit below.
  *
- * Mobile cards hug their own content height and center vertically in
- * the track (Follow-up 22): stretching every card to the tallest one
- * left a hollow void inside cards that carry no credential, which read
- * as a design gap next to a fuller neighbour. Grid breakpoints keep
- * the equal-height zoned rhythm instead.
+ * Every card is the SAME size (Follow-up 24, owner design): the body
+ * carries only the plate + title/sublabel (with a reserved-height text
+ * block), so content volume can no longer stretch one card past
+ * another. Credentials moved OUT of the body — the licence text runs
+ * vertically down the card's left edge like a spine, and the
+ * certificate opens from an eye icon in the top-right corner (details
+ * link, when set, is the neighbouring arrow icon). FU-22's
+ * natural-height experiment was reverted: unequal cards looked worse
+ * than the void it removed.
  *
  * Tablet (sm): the 2-column grid. Desktop (lg): the 3-column grid with
  * the balanced final row (count % 3 == 2 → last two cards span wider).
- *
- * Card structure is zoned so content volume can't unbalance the row:
- * the plate is fixed at the top, the title/sublabel block reserves its
- * 2-line height, and the credential block (text + actions) is pinned
- * to the bottom on the grid breakpoints.
  *
  * Optional credential text/image/link render only when configured —
  * blank stays invisible (standing rule).
@@ -203,7 +202,7 @@ export function AccreditationsShowcase({
         ref={trackRef}
         onScroll={handleScroll}
         aria-label="Accreditations and licences"
-        className="relative mt-8 flex snap-x snap-mandatory items-center gap-3 overflow-x-auto px-[9%] pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:snap-none sm:grid-cols-2 sm:items-stretch sm:gap-4 sm:overflow-visible sm:p-0 lg:grid-cols-6"
+        className="relative mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto px-[9%] pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:snap-none sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:p-0 lg:grid-cols-6"
       >
         {looped.map((badge, i) => {
           const duplicate = i >= count;
@@ -224,7 +223,17 @@ export function AccreditationsShowcase({
                 duplicate && "sm:hidden",
               )}
             >
-              <div className="group flex h-full flex-col items-center rounded-2xl border border-border bg-card p-4 text-center transition duration-200 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 sm:p-5">
+              <div className="group relative flex h-full flex-col items-center rounded-2xl border border-border bg-card p-4 text-center transition duration-200 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 sm:p-5">
+                {/* Licence strip (FU-24): the credential text runs
+                    vertically down the card's left edge, like a spine —
+                    only when configured, never a placeholder. */}
+                {badge.credentialText ? (
+                  <span className="absolute inset-y-0 left-0 flex w-7 items-center justify-center overflow-hidden rounded-l-2xl border-r border-border/60 bg-primary/[0.04]">
+                    <span className="rotate-180 whitespace-nowrap text-xs font-bold uppercase tracking-[0.14em] text-primary/80 [writing-mode:vertical-rl]">
+                      {badge.credentialText}
+                    </span>
+                  </span>
+                ) : null}
                 <span className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white ring-1 ring-border/70 transition-transform duration-300 group-hover:scale-[1.04] sm:size-[88px]">
                   {badge.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -252,40 +261,33 @@ export function AccreditationsShowcase({
                     </span>
                   ) : null}
                 </div>
-                {/* Credential zone pinned to the card's bottom edge, so
-                    cards with and without credentials share one rhythm. */}
-                <div className="mt-auto flex flex-col items-center pt-2">
-                  {badge.credentialText ? (
-                    <span className="text-xs font-semibold leading-snug text-foreground/80 sm:text-[13px]">
-                      {badge.credentialText}
-                    </span>
-                  ) : null}
-                  {badge.credentialImageUrl || badge.linkUrl ? (
-                    <span className="flex flex-wrap items-center justify-center gap-x-4">
-                      {badge.credentialImageUrl ? (
-                        <CredentialViewer
-                          imageUrl={badge.credentialImageUrl}
-                          label={badge.label}
-                        />
-                      ) : null}
-                      {badge.linkUrl ? (
-                        <a
-                          href={badge.linkUrl}
-                          {...(external
-                            ? { target: "_blank", rel: "noopener noreferrer" }
-                            : {})}
-                          className="mt-3 inline-flex items-center gap-1 rounded-sm text-[13px] font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                        >
-                          View details
-                          <ArrowUpRight
-                            className="size-3.5"
-                            aria-hidden="true"
-                          />
-                        </a>
-                      ) : null}
-                    </span>
-                  ) : null}
-                </div>
+                {/* Corner actions (FU-24): credential viewing is an eye
+                    icon and details an arrow icon — no text rows in the
+                    body, so every card keeps one uniform size. */}
+                {badge.credentialImageUrl ? (
+                  <CredentialViewer
+                    imageUrl={badge.credentialImageUrl}
+                    label={badge.label}
+                    iconOnly
+                    triggerClassName="absolute right-3 top-3"
+                  />
+                ) : null}
+                {badge.linkUrl ? (
+                  <a
+                    href={badge.linkUrl}
+                    {...(external
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
+                    aria-label={`View details — ${badge.label}`}
+                    title="View details"
+                    className={cn(
+                      "absolute top-3 inline-flex size-9 items-center justify-center rounded-full border border-border bg-card/90 text-muted-foreground shadow-sm backdrop-blur transition-all duration-200 hover:scale-105 hover:border-primary/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
+                      badge.credentialImageUrl ? "right-[3.25rem]" : "right-3",
+                    )}
+                  >
+                    <ArrowUpRight className="size-4" aria-hidden="true" />
+                  </a>
+                ) : null}
               </div>
             </li>
           );
