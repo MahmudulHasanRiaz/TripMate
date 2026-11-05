@@ -13,13 +13,19 @@ import { cn } from "@/lib/utils";
  *
  * Mobile (<sm): a horizontal swipe carousel with AUTOPLAY — one card
  * (~82%) sits CENTERED with both neighbours peeking, advancing every
- * 3s and looping seamlessly (the badge set is duplicated once; landing
- * on a duplicate silently resets to its identical twin, so the motion
- * never visibly rewinds or stops at the end). Autoplay pauses while
- * the visitor touches/swipes, hovers, focuses inside, the section is
- * off-screen, the tab is hidden, a dialog is open, or the visitor
- * prefers reduced motion. Pagination dots + a "1 / 5" counter +
- * prev/next buttons sit below.
+ * 1.5s and looping seamlessly (the badge set is duplicated once;
+ * landing on a duplicate silently resets to its identical twin, so the
+ * motion never visibly rewinds or stops at the end). Autoplay pauses
+ * while the visitor touches/swipes, hovers, focuses inside, the
+ * section is off-screen, the tab is hidden, a dialog is open, or the
+ * visitor prefers reduced motion. Pagination dots + a "1 / 5" counter
+ * + prev/next buttons sit below.
+ *
+ * Mobile cards hug their own content height and center vertically in
+ * the track (Follow-up 22): stretching every card to the tallest one
+ * left a hollow void inside cards that carry no credential, which read
+ * as a design gap next to a fuller neighbour. Grid breakpoints keep
+ * the equal-height zoned rhythm instead.
  *
  * Tablet (sm): the 2-column grid. Desktop (lg): the 3-column grid with
  * the balanced final row (count % 3 == 2 → last two cards span wider).
@@ -27,14 +33,13 @@ import { cn } from "@/lib/utils";
  * Card structure is zoned so content volume can't unbalance the row:
  * the plate is fixed at the top, the title/sublabel block reserves its
  * 2-line height, and the credential block (text + actions) is pinned
- * to the bottom — a card without credentials carries the same rhythm
- * with quiet space instead of a ragged, half-empty look.
+ * to the bottom on the grid breakpoints.
  *
  * Optional credential text/image/link render only when configured —
  * blank stays invisible (standing rule).
  */
 
-const AUTOPLAY_MS = 3000;
+const AUTOPLAY_MS = 1500;
 const RESUME_MS = 4000;
 
 export function AccreditationsShowcase({
@@ -198,7 +203,7 @@ export function AccreditationsShowcase({
         ref={trackRef}
         onScroll={handleScroll}
         aria-label="Accreditations and licences"
-        className="relative mt-8 flex snap-x snap-mandatory gap-3 overflow-x-auto px-[9%] pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:snap-none sm:grid-cols-2 sm:gap-4 sm:overflow-visible sm:p-0 lg:grid-cols-6"
+        className="relative mt-8 flex snap-x snap-mandatory items-center gap-3 overflow-x-auto px-[9%] pb-2 pt-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:grid sm:snap-none sm:grid-cols-2 sm:items-stretch sm:gap-4 sm:overflow-visible sm:p-0 lg:grid-cols-6"
       >
         {looped.map((badge, i) => {
           const duplicate = i >= count;
