@@ -10,6 +10,7 @@ import MediaUploader from "./MediaUploader";
 import MediaSearch from "./MediaSearch";
 import MediaCard from "./MediaCard";
 import EmptyTrashButton from "./EmptyTrashButton";
+import TrashRowActions from "./TrashRowActions";
 import type { MediaItem } from "./types";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ function toItem(f: MediaFile): MediaItem {
     mime: f.mime,
     size: f.size,
     alt: f.alt,
+    createdAt: f.createdAt.toISOString(),
   };
 }
 
@@ -221,6 +223,7 @@ export default async function MediaPage({
                 <span className="shrink-0 text-xs font-mono tabular-nums text-muted-foreground">
                   {formatBytes(f.size)}
                 </span>
+                <TrashRowActions id={f.id} name={f.name} />
               </li>
             ))}
           </ul>

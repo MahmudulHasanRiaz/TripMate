@@ -756,8 +756,9 @@ export default function SettingsTabsView({
                       Hero Imagery
                     </h3>
 
-                    {/* Media note: hero imagery stays a URL text input (the
-                        site-identity logo/favicon above use the MediaPicker). */}
+                    {/* Media note (FU-13): EVERY media field carries the
+                        Media Library picker — hero imagery included. Manual
+                        URL typing stays as a fallback, never the only way. */}
                     <div className="grid gap-4 sm:grid-cols-2">
                       <FormField
                         control={homeForm.control}
@@ -766,15 +767,17 @@ export default function SettingsTabsView({
                           <FormItem>
                             <FormLabel className="text-xs font-medium">Hero Image URL / Path</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="https://images.example/hero.jpg or /images/hero.jpg"
-                                className="h-10 text-xs font-mono"
+                              <MediaPickerField
                                 value={field.value ?? ""}
                                 onChange={field.onChange}
+                                accept="image"
+                                placeholder="https://images.example/hero.jpg or /images/hero.jpg"
+                                className="h-10 text-xs font-mono"
                               />
                             </FormControl>
                             <FormDescription className="text-[11px]">
-                              Full https:// URL or internal path. Leave blank to clear and use theme default.
+                              Pick from the media library, or paste a full https:// URL or
+                              internal path. Leave blank to clear and use theme default.
                             </FormDescription>
                             <FormMessage className="text-xs" />
                           </FormItem>

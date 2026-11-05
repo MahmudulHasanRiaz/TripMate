@@ -7,10 +7,13 @@ import {
   USER_DOC_MAX_UPLOAD_BYTES,
   acceptFileMeta,
   acceptUserDocFileMeta,
+  buildSlugStorageKey,
   buildStorageKey,
   extensionForMime,
   isAcceptedMime,
   isAcceptedUserDocMime,
+  planRenamedKey,
+  slugifyFileStem,
   storageKeySchema,
 } from "@/modules/media/validation";
 
@@ -126,15 +129,22 @@ describe("acceptFileMeta — { name, mime, size }", () => {
   });
 });
 
-describe("storage key shape (uuid + allowed extension)", () => {
+describe("storage key shape (uuid or slug + allowed extension)", () => {
   it("accepts a uuid with each allowed extension", () => {
     for (const ext of ["jpg", "png", "webp", "svg", "pdf"]) {
       expect(storageKeySchema.safeParse(`${UUID}.${ext}`).success).toBe(true);
     }
   });
 
-  it("rejects a non-uuid stem, a disallowed extension, and a missing dot", () => {
-    expect(storageKeySchema.safeParse("not-a-uuid.png").success).toBe(false);
+  it("accepts a slug stem (the FU-13 rename shape)", () => {
+    expect(storageKeySchema.safeParse("umrah-package-makkah-view.jpg").success).toBe(true);
+    expect(storageKeySchema.safeParse("a.png").success).toBe(true);
+    expect(storageKeySchema.safeParse("photo-2.webp").success).toBe(true);
+  });
+
+  it("rejects an uppercase stem, a disallowed extension, and a missing dot", () => {
+    expect(storageKeySchema.safeParse("Not-A-UUID.png").success).toBe(false);
+    expect(storageKeySchema.safeParse("-leading-hyphen.png").success).toBe(false);
     expect(storageKeySchema.safeParse(`${UUID}.gif`).success).toBe(false);
     expect(storageKeySchema.safeParse(`${UUID}png`).success).toBe(false);
     expect(storageKeySchema.safeParse(`${UUID}.png.txt`).success).toBe(false);
@@ -148,7 +158,52 @@ describe("storage key shape (uuid + allowed extension)", () => {
 
   it("returns null for a disallowed mime or a malformed uuid", () => {
     expect(buildStorageKey(UUID, "image/gif")).toBeNull();
-    expect(buildStorageKey("nope", "image/png")).toBeNull();
+    // "nope" is a valid slug stem now, but buildStorageKey is the UUID path:
+    // a bare word still composes a schema-valid key, so the uuid contract is
+    // enforced by the caller passing a real randomUUID — pin the behavior.
+    expect(buildStorageKey("nope", "image/png")).toBe("nope.png");
+  });
+});
+
+describe("slugifyFileStem (FU-13 rename)", () => {
+  it("lowercases, hyphenates spaces and punctuation runs", () => {
+    expect(slugifyFileStem("Umrah Package — Makkah View!")).toBe("umrah-package-makkah-view");
+    expect(slugifyFileStem("  My   Photo__2026  ")).toBe("my-photo-2026");
+    expect(slugifyFileStem("already-a-slug")).toBe("already-a-slug");
+  });
+
+  it("strips diacritics", () => {
+    expect(slugifyFileStem("Café Terrace")).toBe("cafe-terrace");
+  });
+
+  it("returns empty when nothing ASCII-usable remains", () => {
+    expect(slugifyFileStem("মক্কা ভ্রমণ")).toBe("");
+    expect(slugifyFileStem("!!!")).toBe("");
+    expect(slugifyFileStem("")).toBe("");
+  });
+
+  it("caps the stem at 80 chars without a trailing hyphen", () => {
+    const slug = slugifyFileStem("a".repeat(100));
+    expect(slug).toHaveLength(80);
+    const words = slugifyFileStem(Array(30).fill("word").join(" "));
+    expect(words.length).toBeLessThanOrEqual(80);
+    expect(words.endsWith("-")).toBe(false);
+  });
+});
+
+describe("buildSlugStorageKey + planRenamedKey (FU-13 rename)", () => {
+  it("builds a slug key from stem + mime and rejects bad input", () => {
+    expect(buildSlugStorageKey("makkah-view", "image/jpeg")).toBe("makkah-view.jpg");
+    expect(buildSlugStorageKey("Bad Stem", "image/png")).toBeNull();
+    expect(buildSlugStorageKey("makkah-view", "image/gif")).toBeNull();
+  });
+
+  it("takes the bare key when free, then -2, -3 on collisions", () => {
+    expect(planRenamedKey("view", "png", new Set())).toBe("view.png");
+    expect(planRenamedKey("view", "png", new Set(["view.png"]))).toBe("view-2.png");
+    expect(
+      planRenamedKey("view", "png", new Set(["view.png", "view-2.png", "other.png"])),
+    ).toBe("view-3.png");
   });
 });
 

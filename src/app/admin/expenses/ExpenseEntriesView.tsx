@@ -27,6 +27,7 @@ import {
 } from "@/modules/expenses/actions";
 import { formatMoney } from "@/components/site/currency";
 import { Button } from "@/components/ui/button";
+import { MediaPickerButton } from "@/components/admin/MediaPickerField";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -657,13 +658,20 @@ export default function ExpenseEntriesView({
 
             <div className="space-y-1.5">
               <Label htmlFor="expense-receipt-url" className="text-[13px] font-medium text-foreground">Receipt Document URL (optional)</Label>
-              <Input
-                id="expense-receipt-url"
-                placeholder="https://..."
-                value={formReceiptUrl}
-                onChange={(e) => setFormReceiptUrl(e.target.value)}
-                className="h-10 text-sm rounded-lg border-border"
-              />
+              <div className="flex items-center gap-1">
+                <Input
+                  id="expense-receipt-url"
+                  placeholder="https://..."
+                  value={formReceiptUrl}
+                  onChange={(e) => setFormReceiptUrl(e.target.value)}
+                  className="h-10 flex-1 text-sm rounded-lg border-border"
+                />
+                <MediaPickerButton
+                  label="Browse media library for receipt document"
+                  accept="any"
+                  onPick={(url) => setFormReceiptUrl(url)}
+                />
+              </div>
             </div>
 
             <DialogFooter className="pt-2">

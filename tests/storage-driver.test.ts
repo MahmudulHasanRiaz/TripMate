@@ -28,4 +28,17 @@ describe("local storage driver", () => {
     const driver = getStorageDriver("local");
     await expect(driver.put("../evil.txt", Buffer.from("x"), "text/plain")).rejects.toThrow();
   });
+
+  it("gets back the exact bytes it put (the FU-13 rename copy path)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "stor-"));
+    process.env.STORAGE_LOCAL_DIR = dir;
+    const driver = getStorageDriver("local");
+    const bytes = Buffer.from([0, 1, 2, 250, 251, 252]);
+    await driver.put("photo.png", bytes, "image/png");
+    const back = await driver.get("photo.png");
+    expect(back.equals(bytes)).toBe(true);
+    await expect(driver.get("missing.png")).rejects.toThrow();
+    rmSync(dir, { recursive: true, force: true });
+    delete process.env.STORAGE_LOCAL_DIR;
+  });
 });

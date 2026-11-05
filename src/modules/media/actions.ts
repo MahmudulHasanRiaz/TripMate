@@ -45,9 +45,13 @@ import { uploadUserDocument, UserDocError } from "@/modules/media/user-docs";
 import {
   emptyTrash,
   getFileById,
+  MediaError,
   insertMediaFile,
   listFiles,
   listTrashedFiles,
+  permanentlyDeleteMediaFile,
+  renameMediaFile,
+  restoreMediaFile,
   softDeleteMediaFile,
   updateMediaFileAlt,
   type EmptyTrashResult,
@@ -247,6 +251,81 @@ export const trashFile = mediaAction<{ id: string }, MediaActionResult>(
       return { ok: false, code: "NOT_FOUND", error: "File not found or already deleted." };
     }
     return { ok: true };
+  },
+);
+
+export type RenameResult = { id: string; url: string; name: string };
+
+/**
+ * Rename a library file to an SEO-friendly slug name (FU-13). The service
+ * slugifies the typed stem, copies the stored object to the slug key, updates
+ * the row AND every stored reference to the old URL in one transaction, then
+ * removes the old object. Storage failures relay as { code: "STORAGE" } like
+ * the upload path; a slug with no usable ASCII relays the service's
+ * VALIDATION MediaError. Returns the new row identity so the UI can show the
+ * resulting URL.
+ */
+export const renameFile = mediaAction<
+  { id: string; name: string },
+  MediaActionResult<RenameResult>
+>({}, async ({ id, name }) => {
+  const parsedId = parseMediaId(id);
+  if (!parsedId) return { ok: false, code: "VALIDATION", error: "Invalid id" };
+  const stem = typeof name === "string" ? name.trim() : "";
+  if (!stem || stem.length > 200) {
+    return { ok: false, code: "VALIDATION", error: "Enter a file name." };
+  }
+  try {
+    const saved = await renameMediaFile(parsedId, stem);
+    return { ok: true, data: { id: saved.id, url: saved.url, name: saved.name } };
+  } catch (e) {
+    if (e instanceof MediaError) throw e; // mediaAction relays its typed code
+    return {
+      ok: false,
+      code: "STORAGE",
+      error: e instanceof Error ? e.message : "Could not rename the file.",
+    };
+  }
+});
+
+/** Restore a trashed file back into the library (FU-13). The stored object
+ *  was kept on trash, so this only clears the soft-delete stamp. */
+export const restoreFile = mediaAction<{ id: string }, MediaActionResult>(
+  {},
+  async ({ id }) => {
+    const parsedId = parseMediaId(id);
+    if (!parsedId) return { ok: false, code: "VALIDATION", error: "Invalid id" };
+    const ok = await restoreMediaFile(parsedId);
+    if (!ok) {
+      return { ok: false, code: "NOT_FOUND", error: "File not found in the trash." };
+    }
+    return { ok: true };
+  },
+);
+
+/**
+ * Permanently delete ONE trashed file (FU-13): the stored object is removed
+ * through its own driver, then the row. A driver failure keeps the row in
+ * the trash for a retry and relays as { code: "STORAGE" }.
+ */
+export const deleteFilePermanently = mediaAction<{ id: string }, MediaActionResult>(
+  {},
+  async ({ id }) => {
+    const parsedId = parseMediaId(id);
+    if (!parsedId) return { ok: false, code: "VALIDATION", error: "Invalid id" };
+    try {
+      const ok = await permanentlyDeleteMediaFile(parsedId);
+      if (!ok) {
+        return { ok: false, code: "NOT_FOUND", error: "File not found in the trash." };
+      }
+      return { ok: true };
+    } catch (e) {
+      return {
+        ok: false,
+        code: "STORAGE",
+        error: e instanceof Error ? e.message : "Could not delete the file.",
+      };
+    }
   },
 );
 

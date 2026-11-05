@@ -27,6 +27,7 @@ import {
   upsertGatewayAction,
 } from "@/modules/payments/actions";
 import { Button } from "@/components/ui/button";
+import { MediaPickerButton } from "@/components/admin/MediaPickerField";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -491,12 +492,19 @@ export default function GatewayConfigView({ gateways: initialGateways }: Gateway
 
               <div className="space-y-1.5 sm:col-span-2">
                 <Label className="text-[13px] font-medium text-foreground">Logo URL (optional)</Label>
-                <Input
-                  placeholder="https://example.com/logo.png"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  className="h-10 text-sm rounded-lg border-border"
-                />
+                <div className="flex items-center gap-1">
+                  <Input
+                    placeholder="https://example.com/logo.png"
+                    value={logoUrl}
+                    onChange={(e) => setLogoUrl(e.target.value)}
+                    className="h-10 flex-1 text-sm rounded-lg border-border"
+                  />
+                  <MediaPickerButton
+                    label="Browse media library for gateway logo"
+                    accept="image"
+                    onPick={(url) => setLogoUrl(url)}
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5 sm:col-span-2">

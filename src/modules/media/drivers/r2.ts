@@ -1,6 +1,7 @@
 import "server-only";
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadBucketCommand,
   PutObjectCommand,
   S3Client,
@@ -61,6 +62,13 @@ export class R2Driver implements StorageDriver {
       }),
     );
     return { url: `${publicUrl}/${key}` };
+  }
+
+  async get(key: string) {
+    const { client, bucket } = this.config();
+    const res = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+    if (!res.Body) throw new Error(`Storage object "${key}" has no body.`);
+    return Buffer.from(await res.Body.transformToByteArray());
   }
 
   async delete(key: string) {

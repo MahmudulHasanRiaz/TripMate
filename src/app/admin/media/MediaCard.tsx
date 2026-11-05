@@ -7,6 +7,8 @@ import { FileText, Loader2, Pencil, Trash2 } from "lucide-react";
 import { formatBytes } from "@/modules/media/validation";
 import { trashFile, updateFileAlt } from "@/modules/media/actions";
 import type { MediaItem } from "./types";
+import CopyUrlButton from "./CopyUrlButton";
+import MediaDetailDialog from "./MediaDetailDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -83,6 +85,7 @@ function Preview({ file }: { file: MediaItem }) {
  */
 export default function MediaCard({ file }: { file: MediaItem }) {
   const router = useRouter();
+  const [detailOpen, setDetailOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(file.alt ?? "");
   const [busy, setBusy] = useState(false);
@@ -142,19 +145,35 @@ export default function MediaCard({ file }: { file: MediaItem }) {
 
   return (
     <Card className="group flex flex-col rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-      <div className="relative aspect-[4/3] w-full overflow-hidden border-b border-border bg-muted">
+      <div
+        className="relative aspect-[4/3] w-full cursor-pointer overflow-hidden border-b border-border bg-muted"
+        role="button"
+        tabIndex={0}
+        aria-label={`Open details for ${file.name}`}
+        onClick={() => setDetailOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setDetailOpen(true);
+          }
+        }}
+      >
         <Preview file={file} />
         <span className="absolute top-2 left-2 rounded-md bg-background/90 px-2 py-0.5 text-xs font-semibold tracking-wide text-foreground shadow-xs">
           {typeLabel(file.mime)}
         </span>
         <div className="absolute right-2 bottom-2 flex gap-1.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+          <CopyUrlButton url={file.url} name={file.name} />
           <Button
             type="button"
             variant="secondary"
             size="icon"
             className="h-8 w-8 rounded-lg shadow-xs"
             aria-label={`Edit alt for ${file.name}`}
-            onClick={beginEdit}
+            onClick={(e) => {
+              e.stopPropagation();
+              beginEdit();
+            }}
           >
             <Pencil className="h-4 w-4" aria-hidden="true" />
           </Button>
@@ -166,6 +185,7 @@ export default function MediaCard({ file }: { file: MediaItem }) {
                 size="icon"
                 className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive shadow-xs"
                 aria-label={`Trash ${file.name}`}
+                onClick={(e) => e.stopPropagation()}
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" />
               </Button>
@@ -203,9 +223,14 @@ export default function MediaCard({ file }: { file: MediaItem }) {
       </div>
 
       <CardContent className="flex flex-1 flex-col gap-2 p-3.5">
-        <p className="truncate text-sm font-semibold text-foreground" title={file.name}>
+        <button
+          type="button"
+          className="truncate text-left text-sm font-semibold text-foreground hover:underline"
+          title={file.name}
+          onClick={() => setDetailOpen(true)}
+        >
           {file.name}
-        </p>
+        </button>
         <p className="text-xs text-muted-foreground font-mono tabular-nums">
           {typeLabel(file.mime)} · {formatBytes(file.size)}
         </p>
@@ -258,6 +283,8 @@ export default function MediaCard({ file }: { file: MediaItem }) {
           </div>
         )}
       </CardContent>
+
+      <MediaDetailDialog file={file} open={detailOpen} onOpenChange={setDetailOpen} />
     </Card>
   );
 }
