@@ -94,14 +94,12 @@ export function SiteFooter({
           },
         ];
 
-  const socials =
-    footerSocials && footerSocials.length > 0
-      ? footerSocials
-      : [
-          { network: "facebook", href: "https://facebook.com" },
-          { network: "instagram", href: "https://instagram.com" },
-          { network: "youtube", href: "https://youtube.com" },
-        ];
+  // FU-28: configured socials ONLY. The old fallback linked the icons to
+  // the platforms' homepages (facebook.com / instagram.com / youtube.com)
+  // whenever an admin had not configured real profiles — dead-end links
+  // dressed as the business's own pages. Unconfigured = no icons
+  // (blank-is-invisible), never a generic substitute.
+  const socials = footerSocials ?? [];
 
   return (
     <footer className="border-t border-border bg-card/60 backdrop-blur-md">

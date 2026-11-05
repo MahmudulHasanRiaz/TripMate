@@ -25,6 +25,7 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usableRedirectUrl } from "@/lib/redirect-url";
 import { formatMoney } from "./currency";
 
 type ActionTab = "packages" | "umrah" | "visa" | "flights" | "hotels";
@@ -96,6 +97,11 @@ export default function TravelActionPanel({
   pilgrimSlug,
   visaServices,
 }: TravelActionPanelProps) {
+  // FU-28 placeholder firewall: seed/placeholder redirect hosts
+  // (.example etc.) count as NOT configured — the tabs then offer the
+  // internal service pages instead of a dead external domain.
+  const flightUrl = usableRedirectUrl(flightRedirectUrl);
+  const hotelUrl = usableRedirectUrl(hotelRedirectUrl);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActionTab>("packages");
 
@@ -469,9 +475,9 @@ export default function TravelActionPanel({
                     Offline Airline Desk
                   </a>
                 </Button>
-                {flightRedirectUrl?.trim() ? (
+                {flightUrl ? (
                   <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
-                    <a href={flightRedirectUrl.trim()} target="_blank" rel="noopener noreferrer">
+                    <a href={flightUrl} target="_blank" rel="noopener noreferrer">
                       <span>Search Global Flights</span>
                       <ExternalLink className="size-3.5" />
                     </a>
@@ -510,9 +516,9 @@ export default function TravelActionPanel({
                     Concierge Hotel Desk
                   </a>
                 </Button>
-                {hotelRedirectUrl?.trim() ? (
+                {hotelUrl ? (
                   <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
-                    <a href={hotelRedirectUrl.trim()} target="_blank" rel="noopener noreferrer">
+                    <a href={hotelUrl} target="_blank" rel="noopener noreferrer">
                       <span>Search Worldwide Hotels</span>
                       <ExternalLink className="size-3.5" />
                     </a>

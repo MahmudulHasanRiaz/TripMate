@@ -64,6 +64,7 @@ export async function generateMetadata(
   return detailMetadata({
     path: `/destinations/${destination.slug}`,
     title,
+    brand,
     description,
     image: destination.image ? { url: destination.image, alt: destination.name } : null,
   });
