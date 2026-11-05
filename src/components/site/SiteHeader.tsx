@@ -361,13 +361,50 @@ function DesktopNavGroup({
   onToggle: () => void;
 }) {
   const triggerRef = useRef<HTMLButtonElement>(null);
+  /**
+   * FU-34 — hover/click race guard. A pointer click on the trigger is
+   * ALWAYS preceded by mouseenter, which has already hover-opened the
+   * group; if that click then hit the parent's blind toggle, it would
+   * shut the panel in the same gesture and the menu would never open
+   * on the first click (proven by live QA — touch taps hit the same
+   * path via synthesised mouseenter). So: when the current open came
+   * from hover during this pointer visit, the first click is CONSUMED
+   * (panel stays open) and only spends this flag; the next click,
+   * pointer still over the group, toggles shut as expected. Keyboard
+   * clicks involve no hover, so the flag is unset and Enter/Space
+   * toggles exactly as before. Do NOT simplify this back to wiring the
+   * trigger's onClick straight to onToggle.
+   */
+  const openedByHoverRef = useRef(false);
+  // Keep the flag truthful across closes that bypass the pointer
+  // (Escape, outside pointer-down, blur, route change): once closed,
+  // no stale "hover opened this" may survive into the next gesture.
+  useEffect(() => {
+    if (!open) openedByHoverRef.current = false;
+  }, [open]);
   const panelId = `nav-panel-${entry.label.toLowerCase()}`;
+
+  const handleMouseEnter = () => {
+    openedByHoverRef.current = true;
+    onOpen();
+  };
+  const handleMouseLeave = () => {
+    openedByHoverRef.current = false;
+    onClose();
+  };
+  const handleTriggerClick = () => {
+    if (openedByHoverRef.current) {
+      openedByHoverRef.current = false;
+      return;
+    }
+    onToggle();
+  };
   return (
     <div
       data-nav-group
       className="relative"
-      onMouseEnter={onOpen}
-      onMouseLeave={onClose}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) onClose();
       }}
@@ -384,7 +421,7 @@ function DesktopNavGroup({
         aria-haspopup="true"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={onToggle}
+        onClick={handleTriggerClick}
         className={cn(
           "inline-flex cursor-pointer items-center gap-1 rounded-xl px-3.5 py-1.5 text-xs font-semibold text-foreground/85 transition-all duration-150 hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
           open && "bg-primary/10 text-primary",
