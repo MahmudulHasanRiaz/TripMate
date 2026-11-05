@@ -122,9 +122,17 @@ export async function searchPackageCards(f: PackageFilters): Promise<PackageList
   cacheTag(CACHE_TAGS.listings);
   cacheLife("minutes");
 
+  // `cat` may carry a comma-separated slug list (Follow-up 14 — the Hajj &
+  // Umrah panel's "View all" links both categories at once); a list widens
+  // to `categorySlugs`, a single slug keeps the original exact-match path.
+  const catSlugs = f.cat
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const toQuery = () => ({
     search: f.q || undefined,
-    categorySlug: f.cat || undefined,
+    categorySlug: catSlugs.length === 1 ? catSlugs[0] : undefined,
+    categorySlugs: catSlugs.length > 1 ? catSlugs : undefined,
     destinationSlug: f.dest || undefined,
     maxPrice: f.max,
     page: f.page,

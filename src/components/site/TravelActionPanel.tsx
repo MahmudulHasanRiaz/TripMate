@@ -15,6 +15,7 @@ import {
   ExternalLink,
   FileCheck2,
   Headphones,
+  LayoutGrid,
   MapPin,
   Moon,
   Palmtree,
@@ -38,6 +39,11 @@ export type PanelPackage = {
   rating?: number | null;
   price?: number | null;
   currency?: string;
+  /** Serial-order keys (Follow-up 14) mirroring the SQL ordering of
+   * listPublishedListings, so the merged Hajj + Umrah "All" view keeps the
+   * exact order the packages index would show. */
+  featured?: boolean;
+  createdAt?: string;
 };
 
 /** Slim serializable visa-service shape for the panel slider (Follow-up 12). */
@@ -112,18 +118,39 @@ export default function TravelActionPanel({
   const promoSlug =
     umrahSlug ?? pilgrimSlug ?? hajjSlug ?? umrahCategory?.slug ?? "hajj-umrah";
 
-  // Hajj & Umrah sub-tab (Follow-up 12): Hajj first when it has packages,
-  // otherwise Umrah — a chip is only offered for a non-empty list.
+  // Hajj & Umrah sub-tab (Follow-up 12; "All" default added in Follow-up 14
+  // at the owner's request): the tab opens on "All" — Hajj and Umrah
+  // packages together in the site's serial order — and the Hajj / Umrah
+  // chips narrow to a single kind. A chip is only offered for a non-empty
+  // list; with only one kind published the merged list is that kind.
   const hajjList = hajjPackages ?? [];
   const umrahList = umrahPackages ?? [];
   const pilgrimList = pilgrimPackages ?? [];
   const visaList = visaServices ?? [];
-  const [pilgrimTab, setPilgrimTab] = useState<"hajj" | "umrah">(
-    hajjList.length > 0 ? "hajj" : "umrah",
-  );
-  const activePilgrimList = pilgrimTab === "hajj" ? hajjList : umrahList;
+  const allPilgrimList = [...hajjList, ...umrahList].sort((a, b) => {
+    if (!!a.featured !== !!b.featured) return a.featured ? -1 : 1;
+    const byDate = (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
+    return byDate !== 0 ? byDate : a.slug.localeCompare(b.slug);
+  });
+  const [pilgrimTab, setPilgrimTab] = useState<"all" | "hajj" | "umrah">("all");
+  const activePilgrimList =
+    pilgrimTab === "hajj"
+      ? hajjList
+      : pilgrimTab === "umrah"
+        ? umrahList
+        : allPilgrimList;
   const activePilgrimSlug =
-    pilgrimTab === "hajj" ? (hajjSlug ?? "hajj") : (umrahSlug ?? "umrah");
+    pilgrimTab === "hajj"
+      ? (hajjSlug ?? "hajj")
+      : pilgrimTab === "umrah"
+        ? (umrahSlug ?? "umrah")
+        : [hajjSlug, umrahSlug].filter(Boolean).join(",");
+  const activePilgrimLabel =
+    pilgrimTab === "hajj"
+      ? "Hajj"
+      : pilgrimTab === "umrah"
+        ? "Umrah"
+        : "Hajj & Umrah";
 
   const handleSearchPackages = (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,7 +330,8 @@ export default function TravelActionPanel({
           )}
 
           {/* TAB 2: Hajj & Umrah — real packages as slider cards under
-              separate Hajj / Umrah sub-chips (Follow-up 12). Resolution
+              All / Hajj / Umrah sub-chips, "All" selected by default
+              (Follow-ups 12 + 14). Resolution
               order: separate category lists → combined-category slider →
               the original promo block, so the tab is never blank. */}
           {activeTab === "umrah" && (
@@ -311,8 +339,13 @@ export default function TravelActionPanel({
               <div className="space-y-3">
                 {hajjList.length > 0 && umrahList.length > 0 && (
                   <div className="flex items-center gap-2" role="tablist" aria-label="Hajj or Umrah packages">
-                    {(["hajj", "umrah"] as const).map((key) => {
-                      const count = key === "hajj" ? hajjList.length : umrahList.length;
+                    {(["all", "hajj", "umrah"] as const).map((key) => {
+                      const count =
+                        key === "all"
+                          ? hajjList.length + umrahList.length
+                          : key === "hajj"
+                            ? hajjList.length
+                            : umrahList.length;
                       const isActive = pilgrimTab === key;
                       return (
                         <button
@@ -327,8 +360,14 @@ export default function TravelActionPanel({
                               : "border border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground"
                           }`}
                         >
-                          <Moon className="size-3.5" />
-                          <span>{key === "hajj" ? "Hajj" : "Umrah"}</span>
+                          {key === "all" ? (
+                            <LayoutGrid className="size-3.5" />
+                          ) : (
+                            <Moon className="size-3.5" />
+                          )}
+                          <span>
+                            {key === "all" ? "All" : key === "hajj" ? "Hajj" : "Umrah"}
+                          </span>
                           <span
                             className={`rounded-full px-1.5 py-px text-[10px] font-bold tabular-nums ${
                               isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
@@ -343,7 +382,7 @@ export default function TravelActionPanel({
                 )}
                 <CardSlider
                   viewAllHref={`/packages?cat=${encodeURIComponent(activePilgrimSlug)}`}
-                  viewAllLabel={`View all ${pilgrimTab === "hajj" ? "Hajj" : "Umrah"} packages`}
+                  viewAllLabel={`View all ${activePilgrimLabel} packages`}
                 >
                   {activePilgrimList.map((pkg) => (
                     <PanelPackageCard key={pkg.slug} pkg={pkg} />

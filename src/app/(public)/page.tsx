@@ -146,6 +146,10 @@ export default async function Home() {
     rating: pkg.rating ?? null,
     price: pkg.price ?? null,
     currency: pkg.currency ?? "BDT",
+    // Serial-order keys for the panel's merged Hajj + Umrah "All" view
+    // (Follow-up 14) — same ordering listPublishedListings applies in SQL.
+    featured: pkg.isFeatured,
+    createdAt: pkg.createdAt.toISOString(),
   });
 
   const panelVisaServices: PanelVisaService[] = visaServices.slice(0, 12).map((v) => ({
