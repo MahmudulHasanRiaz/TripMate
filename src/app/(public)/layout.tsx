@@ -8,6 +8,8 @@ import { getPublicThemeSettings } from "@/modules/settings/theme-service";
 import { canAccessAdminPanel, getSession } from "@/lib/auth-helpers";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
+import { getHeaderNavData } from "@/components/site/nav-data";
+import { buildNavModel, EMPTY_NAV_INPUT } from "@/components/site/nav-model";
 import { BrandLogo } from "@/components/site/BrandLogo";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { ChatWidget } from "@/components/site/ChatWidget";
@@ -148,7 +150,14 @@ export default async function PublicLayout({
  * flags are passed to the client header as plain booleans.
  */
 async function SiteHeaderGate({ site }: { site: SiteSettings }) {
-  const session = await getSession();
+  const [session, navData] = await Promise.all([
+    getSession(),
+    // FU-33: the menu tree is built from the tenant's live catalog
+    // (cached, listings-tagged). The header must never take the shell
+    // down with it — a failed catalog read degrades to the flat
+    // structural fallback links, not an error boundary.
+    getHeaderNavData().catch(() => null),
+  ]);
   return (
     <SiteHeader
       title={site.title}
@@ -158,6 +167,7 @@ async function SiteHeaderGate({ site }: { site: SiteSettings }) {
       phone={site.phone}
       signedIn={Boolean(session?.user)}
       canAccessAdmin={canAccessAdminPanel(session)}
+      nav={buildNavModel(navData ?? EMPTY_NAV_INPUT)}
     />
   );
 }
