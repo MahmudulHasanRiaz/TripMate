@@ -278,6 +278,20 @@ export function SiteFooter({
       <div className="border-t border-border">
         <div className="mx-auto flex w-full max-w-[1400px] flex-col items-center justify-between gap-3 px-4 py-6 text-[11px] text-muted-foreground sm:flex-row lg:px-8">
           <p>{copyright || `© 2026 ${title}. All rights reserved.`}</p>
+          {/* Developer credit — deliberately HARDCODED (owner order,
+              FU-26): unlike the copyright line above it is NOT a setting
+              and cannot be edited or removed from the admin. */}
+          <p className="inline-flex items-center gap-1.5">
+            Built with
+            <a
+              href="https://commercians.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-bold tracking-wide text-foreground/80 transition-colors hover:text-primary"
+            >
+              COMMERCIANS
+            </a>
+          </p>
           <div className="flex items-center gap-4">
             <Link href={"/terms-of-service" as Route} className="hover:text-foreground transition-colors">
               Terms &amp; Policies
