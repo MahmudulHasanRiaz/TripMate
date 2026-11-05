@@ -1,5 +1,24 @@
+import { headers } from "next/headers";
+
 import { origin } from "@/lib/seo";
 import { getPublicSiteSettings } from "@/modules/settings/site-settings";
+
+/**
+ * Public base URL for the links below. `origin()` is the env APP_URL,
+ * which lags reality when a deployment's APP_URL is unset/stale (the
+ * production stack currently serves APP_URL as localhost — visible in
+ * robots.txt's Sitemap line), so prefer the proxy-forwarded request
+ * host, which always names the site the agent actually reached.
+ */
+async function publicBase(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  if (host) {
+    const proto = h.get("x-forwarded-proto") ?? "https";
+    return `${proto}://${host}`;
+  }
+  return origin();
+}
 
 /**
  * /llms.txt — the llmstxt.org discovery file for AI agents and answer
@@ -13,7 +32,7 @@ import { getPublicSiteSettings } from "@/modules/settings/site-settings";
  */
 export async function GET(): Promise<Response> {
   const site = await getPublicSiteSettings();
-  const base = origin();
+  const base = await publicBase();
   const name = site.title?.trim() || "Travel agency";
 
   const lines: string[] = [
