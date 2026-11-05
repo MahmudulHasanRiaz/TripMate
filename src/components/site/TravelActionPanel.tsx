@@ -179,10 +179,12 @@ export default function TravelActionPanel({
   const visaCountryForm = (
     <form onSubmit={handleSearchVisa} className="grid grid-cols-1 gap-3 sm:grid-cols-3 items-end">
       <div className="sm:col-span-2 space-y-1.5">
-        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        <label htmlFor="panel-visa-country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Select Country for Visa Processing
         </label>
         <select
+          id="panel-visa-country"
+          aria-label="Select country for visa processing"
           value={selectedVisaDest}
           onChange={(e) => setSelectedVisaDest(e.target.value)}
           className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -287,10 +289,12 @@ export default function TravelActionPanel({
           {activeTab === "packages" && (
             <form onSubmit={handleSearchPackages} className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-4 items-end">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <label htmlFor="panel-destination" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Where to?
                 </label>
                 <select
+                  id="panel-destination"
+                  aria-label="Where to?"
                   value={selectedDestination}
                   onChange={(e) => setSelectedDestination(e.target.value)}
                   className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -305,10 +309,12 @@ export default function TravelActionPanel({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <label htmlFor="panel-duration" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Trip Duration
                 </label>
                 <select
+                  id="panel-duration"
+                  aria-label="Trip duration"
                   value={selectedDuration}
                   onChange={(e) => setSelectedDuration(e.target.value)}
                   className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
