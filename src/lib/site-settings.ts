@@ -12,7 +12,12 @@ export type SiteFooterLink = { label: string; href: string };
 export type SiteFooterColumn = { title: string; links: SiteFooterLink[] };
 export type SiteFooterSocial = { network: string; href: string };
 
-export type SiteAccreditation = { imageUrl: string; label: string; sublabel: string };
+export type SiteAccreditation = {
+  imageUrl: string;
+  label: string;
+  sublabel: string;
+  linkUrl: string;
+};
 
 export type SiteSettings = {
   title: string;
@@ -26,6 +31,9 @@ export type SiteSettings = {
   address: string;
   /** Accreditation badges for the footer strip (Follow-up 09 §5). */
   accreditations: SiteAccreditation[];
+  /** Credentials-section heading/description (Follow-up 17). */
+  accreditationHeading: string;
+  accreditationDescription: string;
   footerDescription: string | null;
   footerColumns: SiteFooterColumn[];
   footerSocials: SiteFooterSocial[];
@@ -48,6 +56,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   email: "",
   address: "",
   accreditations: [],
+  accreditationHeading: "",
+  accreditationDescription: "",
   footerDescription: null,
   footerColumns: [],
   footerSocials: [],
@@ -87,9 +97,14 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     ? (raw.footerSocials as SiteFooterSocial[]).filter((s) => s && typeof s.href === "string")
     : [];
   const accreditations = Array.isArray(raw.accreditations)
-    ? (raw.accreditations as SiteAccreditation[]).filter(
-        (a) => a && typeof a.label === "string",
-      )
+    ? (raw.accreditations as SiteAccreditation[])
+        .filter((a) => a && typeof a.label === "string")
+        .map((a) => ({
+          imageUrl: typeof a.imageUrl === "string" ? a.imageUrl : "",
+          label: a.label,
+          sublabel: typeof a.sublabel === "string" ? a.sublabel : "",
+          linkUrl: typeof a.linkUrl === "string" ? a.linkUrl : "",
+        }))
     : [];
 
   return {
@@ -101,6 +116,10 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     email: site.email || "",
     address: site.address || "",
     accreditations,
+    accreditationHeading:
+      typeof raw.accreditationHeading === "string" ? raw.accreditationHeading : "",
+    accreditationDescription:
+      typeof raw.accreditationDescription === "string" ? raw.accreditationDescription : "",
     footerDescription:
       typeof raw.footerDescription === "string" && raw.footerDescription !== ""
         ? raw.footerDescription

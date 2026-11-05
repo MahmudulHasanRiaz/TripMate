@@ -10,11 +10,17 @@ export type AccreditationRow = {
   imageUrl: string;
   label: string;
   sublabel: string;
+  linkUrl: string;
 };
 
 interface AccreditationsEditorProps {
   rows: AccreditationRow[];
   onChange: (rows: AccreditationRow[]) => void;
+  /** Credentials-section heading/description (Follow-up 17). */
+  heading: string;
+  description: string;
+  onHeadingChange: (value: string) => void;
+  onDescriptionChange: (value: string) => void;
 }
 
 /**
@@ -24,9 +30,16 @@ interface AccreditationsEditorProps {
  * designed credential tile instead — for credentials that have no logo,
  * like a Hajj license number. Rows render in order on the public footer.
  */
-export default function AccreditationsEditor({ rows, onChange }: AccreditationsEditorProps) {
+export default function AccreditationsEditor({
+  rows,
+  onChange,
+  heading,
+  description,
+  onHeadingChange,
+  onDescriptionChange,
+}: AccreditationsEditorProps) {
   const handleAdd = () => {
-    onChange([...rows, { imageUrl: "", label: "", sublabel: "" }]);
+    onChange([...rows, { imageUrl: "", label: "", sublabel: "", linkUrl: "" }]);
   };
 
   const handleRemove = (index: number) => {
@@ -77,6 +90,29 @@ export default function AccreditationsEditor({ rows, onChange }: AccreditationsE
         >
           <Plus className="size-3.5 mr-1" /> Add badge
         </Button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label className="text-[11px] font-medium">Section heading (optional)</Label>
+          <Input
+            value={heading}
+            onChange={(e) => onHeadingChange(e.target.value)}
+            placeholder="Trusted & Accredited"
+            className="h-10 text-xs"
+            maxLength={80}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-[11px] font-medium">Section description (optional)</Label>
+          <Input
+            value={description}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+            placeholder="Recognized by leading aviation and travel industry organizations."
+            className="h-10 text-xs"
+            maxLength={240}
+          />
+        </div>
       </div>
 
       {rows.length === 0 ? (
@@ -162,6 +198,19 @@ export default function AccreditationsEditor({ rows, onChange }: AccreditationsE
                     maxLength={80}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-medium">
+                  Details / verification link (optional)
+                </Label>
+                <Input
+                  value={row.linkUrl}
+                  onChange={(e) => handleUpdate(i, "linkUrl", e.target.value)}
+                  placeholder="https://authority.example/verify/… — shown as a “View details” link"
+                  className="h-10 text-xs"
+                  maxLength={2048}
+                />
               </div>
             </div>
           ))}

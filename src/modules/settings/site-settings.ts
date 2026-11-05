@@ -61,8 +61,16 @@ export type LogoDisplay = "icon-name" | "logo-only";
 /** One accreditation badge (Follow-up 09 §5): the organization's REAL
  *  logo image + the credential label. imageUrl may be "" — the footer then
  *  renders a designed credential tile (e.g. a license number has no logo).
- *  Fully settings-driven: an agency shows only credentials it configured. */
-export type Accreditation = { imageUrl: string; label: string; sublabel: string };
+ *  linkUrl (Follow-up 17) is an OPTIONAL details/verification link the
+ *  agency itself supplies — rendered as a plain "View details" link, never
+ *  as an auto-generated "verified" claim. Fully settings-driven: an agency
+ *  shows only credentials it configured. */
+export type Accreditation = {
+  imageUrl: string;
+  label: string;
+  sublabel: string;
+  linkUrl: string;
+};
 
 export type FooterLink = { label: string; href: string };
 export type FooterColumn = { title: string; links: FooterLink[] };
@@ -80,6 +88,10 @@ export type SiteSettings = {
   faviconUrl: string;
   searchEngineVisibility: boolean;
   accreditations: Accreditation[];
+  /** Credentials-section heading/description (Follow-up 17) — admin text,
+   *  "" falls back to the section's default heading / no description. */
+  accreditationHeading: string;
+  accreditationDescription: string;
   footerDescription: string | null;
   footerColumns: FooterColumn[];
   footerSocials: FooterSocial[];
@@ -109,6 +121,8 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   faviconUrl: "",
   searchEngineVisibility: true,
   accreditations: [],
+  accreditationHeading: "",
+  accreditationDescription: "",
   footerDescription: null,
   footerColumns: [],
   footerSocials: [],
@@ -167,6 +181,7 @@ function asAccreditations(value: unknown): Accreditation[] {
       imageUrl: typeof a.imageUrl === "string" ? a.imageUrl : "",
       label: a.label as string,
       sublabel: typeof a.sublabel === "string" ? a.sublabel : "",
+      linkUrl: typeof a.linkUrl === "string" ? a.linkUrl : "",
     }));
 }
 
@@ -203,6 +218,8 @@ export async function getSiteSettings(): Promise<SiteSettings> {
           ? row.searchEngineVisibility
           : DEFAULT_SITE_SETTINGS.searchEngineVisibility,
       accreditations: asAccreditations(row.accreditations),
+      accreditationHeading: mergedString(row, "accreditationHeading", ""),
+      accreditationDescription: mergedString(row, "accreditationDescription", ""),
       footerDescription: typeof footer === "string" && footer !== "" ? footer : null,
       footerColumns: columns,
       footerSocials: socials,
@@ -258,6 +275,9 @@ export async function updateSiteSettings(
     faviconUrl: input.faviconUrl,
     searchEngineVisibility: input.searchEngineVisibility,
     accreditations: input.accreditations ?? current.accreditations,
+    accreditationHeading: input.accreditationHeading ?? current.accreditationHeading,
+    accreditationDescription:
+      input.accreditationDescription ?? current.accreditationDescription,
     footerDescription: mergedText(current.footerDescription, input.footerDescription),
     footerColumns: input.footerColumns ?? current.footerColumns,
     footerSocials: input.footerSocials ?? current.footerSocials,
@@ -446,6 +466,8 @@ export async function getPublicSiteSettings(): Promise<SiteSettings> {
         ? row.searchEngineVisibility
         : DEFAULT_SITE_SETTINGS.searchEngineVisibility,
     accreditations: asAccreditations(row.accreditations),
+    accreditationHeading: mergedString(row, "accreditationHeading", ""),
+    accreditationDescription: mergedString(row, "accreditationDescription", ""),
     footerDescription: typeof footer === "string" && footer !== "" ? footer : null,
     footerColumns: columns,
     footerSocials: socials,

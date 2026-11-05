@@ -122,6 +122,8 @@ export default async function PublicLayout({
         logoDarkUrl={site.logoDarkUrl}
         logoDisplay={site.logoDisplay}
         accreditations={site.accreditations}
+        accreditationHeading={site.accreditationHeading}
+        accreditationDescription={site.accreditationDescription}
         phone={site.phone}
         email={site.email}
         address={site.address}
