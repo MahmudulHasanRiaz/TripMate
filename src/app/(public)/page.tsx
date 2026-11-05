@@ -206,7 +206,7 @@ export default async function Home() {
               />
               <Link
                 href={PACKAGES_HREF}
-                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border border-border bg-transparent px-5 text-sm font-semibold text-foreground transition-colors duration-150 hover:border-foreground/40 sm:mb-1"
+                className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border border-border bg-transparent px-5 text-sm font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-foreground/40 hover:shadow-md active:scale-[0.98] sm:mb-1"
               >
                 View all packages
               </Link>

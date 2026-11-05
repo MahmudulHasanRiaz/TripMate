@@ -32,7 +32,7 @@ export function PackageHero({ data }: { data: PackageDetailData }) {
             fill
             priority
             sizes="100vw"
-            className="object-cover"
+            className="anim-kenburns object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/25" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-transparent" />

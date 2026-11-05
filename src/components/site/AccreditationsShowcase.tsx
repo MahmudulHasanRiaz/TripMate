@@ -224,8 +224,8 @@ export function AccreditationsShowcase({
                 duplicate && "sm:hidden",
               )}
             >
-              <div className="flex h-full flex-col items-center rounded-2xl border border-border bg-card p-4 text-center transition duration-200 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 sm:p-5">
-                <span className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white ring-1 ring-border/70 sm:size-[88px]">
+              <div className="group flex h-full flex-col items-center rounded-2xl border border-border bg-card p-4 text-center transition duration-200 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 sm:p-5">
+                <span className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white ring-1 ring-border/70 transition-transform duration-300 group-hover:scale-[1.04] sm:size-[88px]">
                   {badge.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

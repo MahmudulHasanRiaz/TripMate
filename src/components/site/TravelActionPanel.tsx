@@ -198,7 +198,10 @@ export default function TravelActionPanel({
   );
 
   return (
-    <div className="relative z-20 mx-auto -mt-10 sm:-mt-[72px] w-full max-w-[1280px] px-4 sm:px-6">
+    <div
+      className="anim-rise relative z-20 mx-auto -mt-10 w-full max-w-[1280px] px-4 sm:-mt-[72px] sm:px-6"
+      style={{ animationDelay: "240ms" }}
+    >
       <div className="rounded-xl border border-border bg-card p-4 shadow-2xl sm:p-6">
         {/* Tab Navigation — horizontal scroll with snap + right-edge fade
             affordance so the clipped "next tab" reads as swipeable on

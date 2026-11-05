@@ -1,3 +1,4 @@
+import { CountUp } from "@/components/site/CountUp";
 import { Reveal } from "@/components/site/Reveal";
 
 export type Stat = {
@@ -21,7 +22,7 @@ export function StatsBand({ stats }: { stats: Stat[] }) {
             <li key={stat.label}>
               <Reveal delay={statIdx * 80}>
                 <p className="font-display text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-                  {stat.value}
+                  <CountUp value={stat.value} />
                 </p>
                 <p className="mt-2 text-sm text-muted-foreground">{stat.label}</p>
               </Reveal>
