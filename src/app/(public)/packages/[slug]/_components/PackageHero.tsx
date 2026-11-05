@@ -31,6 +31,7 @@ export function PackageHero({ data }: { data: PackageDetailData }) {
             alt={cover.alt}
             fill
             priority
+            fetchPriority="high"
             sizes="100vw"
             className="anim-kenburns object-cover"
           />
