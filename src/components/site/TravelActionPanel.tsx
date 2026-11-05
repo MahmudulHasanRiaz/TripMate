@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usableRedirectUrl } from "@/lib/redirect-url";
-import { formatMoney } from "./currency";
+import { formatMoney, telLink } from "./currency";
 
 type ActionTab = "packages" | "umrah" | "visa" | "flights" | "hotels";
 
@@ -419,7 +419,7 @@ export default function TravelActionPanel({
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button asChild variant="outline" className="rounded-lg h-11">
-                    <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
+                    <a href={telLink(phone ?? "") ?? "/services"}>
                       <Headphones className="mr-2 size-4" />
                       {phone?.trim() ? "Call Hajj Specialist" : "Contact Hajj Specialist"}
                     </a>
@@ -470,7 +470,7 @@ export default function TravelActionPanel({
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button asChild variant="outline" size="sm" className="rounded-lg h-10">
-                  <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
+                  <a href={telLink(phone ?? "") ?? "/services"}>
                     <Headphones className="mr-1.5 size-4" />
                     Offline Airline Desk
                   </a>
@@ -511,7 +511,7 @@ export default function TravelActionPanel({
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button asChild variant="outline" size="sm" className="rounded-lg h-10">
-                  <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
+                  <a href={telLink(phone ?? "") ?? "/services"}>
                     <Headphones className="mr-1.5 size-4" />
                     Concierge Hotel Desk
                   </a>

@@ -33,7 +33,7 @@ export function PopularDestinations({ destinations }: PopularDestinationsProps) 
             </p>
           </div>
           <Link
-            href="/packages"
+            href="/destinations"
             className="group inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline shrink-0"
           >
             <span>Explore all destinations</span>

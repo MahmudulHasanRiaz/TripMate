@@ -136,7 +136,7 @@ function PackageListing({ data }: { data: ServicePageData }) {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeading
             kicker="In this service"
-            title={`${data.name} packages`}
+            title={/packages$/i.test(data.name.trim()) ? data.name : `${data.name} packages`}
             lead={`Every published ${data.name} itinerary — fixed routes, transparent pricing.`}
           />
           <Link

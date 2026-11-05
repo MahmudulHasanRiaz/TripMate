@@ -211,7 +211,7 @@ async function DestinationPageBody({ params }: { params: Promise<{ slug: string 
             />
             {packages.total > 0 ? (
               <Link
-                href={`/packages?destination=${encodeURIComponent(destination.name)}`}
+                href={`/packages?dest=${encodeURIComponent(destination.slug)}`}
                 className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border border-border bg-transparent px-5 text-sm font-semibold text-foreground transition-colors hover:border-foreground/40"
               >
                 View all {packages.total} packages
@@ -326,7 +326,7 @@ async function DestinationPageBody({ params }: { params: Promise<{ slug: string 
         headline={`Plan your journey to ${destination.name}`}
         sub="Our destination specialists design customized tours, manage hotel bookings, and organize smooth visa paperwork."
         ctaLabel="Browse all packages"
-        ctaHref={`/packages?destination=${encodeURIComponent(destination.name)}`}
+        ctaHref={`/packages?dest=${encodeURIComponent(destination.slug)}`}
         phone={site.phone}
       />
     </>

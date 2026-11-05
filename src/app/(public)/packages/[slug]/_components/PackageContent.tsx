@@ -20,6 +20,14 @@ import type { PackageDetailData } from "../../_lib/catalog-data";
 export function PackageContent({ data }: { data: PackageDetailData }) {
   const { summary, description, gallery, videoUrl, itinerary, inclusions, exclusions } = data;
   const hasLongform = Boolean(summary || description);
+  // One photo set for the whole page (FU-28): the hero pill counts
+  // cover + gallery, so the gallery must SHOW cover + gallery —
+  // previously it showed the gallery only and the two counts
+  // contradicted each other ("3 photos" up top, "2 photos" here).
+  const allPhotos =
+    data.cover && !gallery.some((image) => image.url === data.cover?.url)
+      ? [data.cover, ...gallery]
+      : gallery;
 
   return (
     <div className="space-y-12 lg:space-y-14">
@@ -44,18 +52,18 @@ export function PackageContent({ data }: { data: PackageDetailData }) {
         </section>
       ) : null}
 
-      {gallery.length > 0 ? (
+      {allPhotos.length > 0 ? (
         <section
           id="package-gallery"
           aria-labelledby="package-gallery-heading"
           className="scroll-mt-28"
         >
-          <SectionHeading meta={`${gallery.length} ${gallery.length === 1 ? "photo" : "photos"}`}>
+          <SectionHeading meta={`${allPhotos.length} ${allPhotos.length === 1 ? "photo" : "photos"}`}>
             Gallery
           </SectionHeading>
           <Gallery
             className="mt-6"
-            images={gallery.map((image) => ({ src: image.url, alt: image.alt }))}
+            images={allPhotos.map((image) => ({ src: image.url, alt: image.alt }))}
           />
         </section>
       ) : null}

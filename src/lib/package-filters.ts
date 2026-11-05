@@ -60,7 +60,20 @@ function positiveInt(raw: string | undefined, fallback: number): number {
 export function parsePackageSearchParams(searchParams: RawParams): PackageFilters {
   const q = (first(searchParams?.q) ?? "").trim().slice(0, 200);
   const cat = (first(searchParams?.cat) ?? "").trim().slice(0, 120);
-  const dest = (first(searchParams?.dest) ?? "").trim().slice(0, 120);
+  // Canonical key is `dest` (a destination slug). The long-standing
+  // `destination` alias (emitted for years by destination pages with a
+  // display NAME, e.g. ?destination=Singapore) is accepted and slugified
+  // so those links land filtered instead of silently showing everything
+  // (FU-28: the alias was ignored entirely — the site's own destination
+  // CTAs appeared broken).
+  const destRaw = (first(searchParams?.dest) ?? "").trim().slice(0, 120);
+  const destAlias = (first(searchParams?.destination) ?? "").trim().slice(0, 120);
+  const dest =
+    destRaw ||
+    destAlias
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
   // `max` must be a whole positive taka value; anything else (blank, "0",
   // "abc") is treated as "no cap" rather than surfacing a confusing state.

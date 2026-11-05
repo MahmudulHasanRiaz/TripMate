@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db/client";
 import { orders } from "@/modules/bookings/schema";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import { usableRedirectUrl } from "@/lib/redirect-url";
 import { getSiteSettings } from "@/lib/site-settings";
 import { getPublicHomeSettings, getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { getSetting } from "@/modules/settings/service";
@@ -453,11 +454,13 @@ function toServiceItem(category: {
   redirectUrl: string | null;
   icon: string | null;
 }): ServiceGridItem {
-  const external = category.kind === "redirect" && Boolean(category.redirectUrl);
+  // FU-28 placeholder firewall: a seed/placeholder redirect host counts
+  // as unconfigured — the card then links the internal service page
+  // instead of a dead external domain.
+  const usable = usableRedirectUrl(category.redirectUrl);
+  const external = category.kind === "redirect" && Boolean(usable);
   return {
-    href: external
-      ? (category.redirectUrl as string)
-      : `/services/${category.slug}`,
+    href: external ? (usable as string) : `/services/${category.slug}`,
     slug: category.slug,
     external,
     icon: category.icon,

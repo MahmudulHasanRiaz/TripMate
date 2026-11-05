@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { DEFAULT_SITE_SETTINGS } from "@/lib/site-settings";
+import { getSiteSettings } from "@/lib/site-settings";
 import { SkipLink } from "@/components/site/SkipLink";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -19,10 +19,15 @@ import { SiteFooter } from "@/components/site/SiteFooter";
  * a primary route home plus obvious onward journeys (Packages, Blog) so a
  * dead link never reads as a dead end.
  */
-export default function NotFound() {
-  // A 404 must never depend on the database or a cache scope — static chrome
-  // with the brand defaults keeps error pages instant and build-safe.
-  const site = DEFAULT_SITE_SETTINGS;
+export default async function NotFound() {
+  // FU-28: this used the factory DEFAULT_SITE_SETTINGS directly, so every
+  // 404 on a configured tenant rendered the FACTORY brand ("TripMate", no
+  // logo, no contacts) — an unfinished-rebrand look on the exact page a
+  // mistyped link lands on. getSiteSettings is the same CACHED reader the
+  // (public) layout uses ('use cache' + settings tag): no per-request DB
+  // dependency, and it falls back to the defaults internally when no site
+  // row exists, so the build-safety property is unchanged.
+  const site = await getSiteSettings();
 
   return (
     <>
