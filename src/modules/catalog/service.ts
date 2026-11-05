@@ -6,6 +6,7 @@ import {
   eq,
   gte,
   ilike,
+  inArray,
   isNull,
   lte,
   or,
@@ -125,6 +126,9 @@ export class CatalogError extends Error {
 export type PublishedListingsQuery = {
   search?: string;
   categorySlug?: string;
+  /** Multi-category variant of `categorySlug` (Follow-up 14): when a
+   * non-empty list is given it wins over `categorySlug`. */
+  categorySlugs?: string[];
   destinationSlug?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -255,7 +259,9 @@ export async function listPublishedListings(
 
   const search = query.search?.trim();
   if (search) conditions.push(listingSearchCondition(search));
-  if (query.categorySlug) conditions.push(eq(serviceCategories.slug, query.categorySlug));
+  if (query.categorySlugs && query.categorySlugs.length > 0)
+    conditions.push(inArray(serviceCategories.slug, query.categorySlugs));
+  else if (query.categorySlug) conditions.push(eq(serviceCategories.slug, query.categorySlug));
   if (query.destinationSlug) conditions.push(eq(destinations.slug, query.destinationSlug));
   if (query.isFeatured !== undefined) conditions.push(eq(listings.isFeatured, query.isFeatured));
   if (query.minPrice !== undefined) conditions.push(gte(listings.price, query.minPrice.toFixed(2)));
