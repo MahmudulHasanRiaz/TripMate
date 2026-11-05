@@ -12,6 +12,7 @@ import {
 import { WhatsAppIcon } from "@/components/site/brand-icons";
 
 import { getSiteSettings } from "@/lib/site-settings";
+import { usableRedirectUrl } from "@/lib/redirect-url";
 import { detailMetadata } from "@/lib/seo-meta";
 import { PackageCard } from "@/components/site/PackageCard";
 import { SectionHeading } from "@/components/site/SectionHeading";
@@ -55,11 +56,13 @@ export async function generateMetadata(
   const { slug } = await props.params;
   const [data, site] = await Promise.all([getServicePageData(slug), getSiteSettings()]);
   if (!data) return { title: "Service not found" };
-  // No inline "| TripMate" suffix: the root layout's title.template
-  // ("%s | {brand}") appends it — an inline suffix would double it.
+  // FU-28: the brand goes through detailMetadata, which composes the
+  // absolute title itself — the root template never gets to double it,
+  // and legacy seed suffixes are stripped in the same place.
   return detailMetadata({
     path: `/services/${data.slug}`,
     title: data.name,
+    brand: site.title?.trim() || undefined,
     description: descriptionFor(data, site.title?.trim() || "TripMate"),
   });
 }
@@ -133,7 +136,7 @@ function PackageListing({ data }: { data: ServicePageData }) {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeading
             kicker="In this service"
-            title={`${data.name} packages`}
+            title={/packages$/i.test(data.name.trim()) ? data.name : `${data.name} packages`}
             lead={`Every published ${data.name} itinerary — fixed routes, transparent pricing.`}
           />
           <Link
@@ -277,6 +280,10 @@ function RedirectSection({
   data: ServicePageData;
   site: { title: string; phone: string; email: string };
 }) {
+  // FU-28 placeholder firewall: a seed/placeholder host (.example etc.)
+  // counts as not configured — the section then shows its "isn't set up
+  // yet" copy + contact options instead of a dead booking button.
+  const redirectUrl = usableRedirectUrl(data.redirectUrl);
   return (
     <section aria-labelledby="partner-heading" className="bg-background">
       <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24">
@@ -289,13 +296,13 @@ function RedirectSection({
             />
             <div className="mt-8 flex flex-col gap-3 rounded-lg border border-border bg-card p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                {data.redirectUrl
+                {redirectUrl
                   ? "Clicking through opens their website in a new tab."
                   : "The booking link isn't set up yet — reach us below and we'll connect you."}
               </p>
-              {data.redirectUrl ? (
+              {redirectUrl ? (
                 <a
-                  href={data.redirectUrl}
+                  href={redirectUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
@@ -307,7 +314,7 @@ function RedirectSection({
             </div>
           </div>
 
-          {data.redirectUrl ? (
+          {redirectUrl ? (
             <aside className="rounded-xl border border-border bg-muted/40 p-6 text-sm leading-relaxed text-muted-foreground">
               Need help choosing? Call or WhatsApp us and we&apos;ll point you at
               the right service for you.

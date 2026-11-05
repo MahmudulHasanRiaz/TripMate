@@ -8,6 +8,7 @@ import { FaqAccordion } from "@/components/site/FaqAccordion";
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
 import { detailMetadata } from "@/lib/seo-meta";
 import { isReservedSlug } from "@/modules/content/validation";
+import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 
 import { getStaticPageData, type StaticPageData } from "../p/_lib/page-data";
 import { tryParseFaqSections } from "../p/_lib/faq-parse";
@@ -23,11 +24,12 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await props.params;
   if (isReservedSlug(slug)) return { title: "Page not found" };
-  const data = await getStaticPageData(slug);
+  const [data, site] = await Promise.all([getStaticPageData(slug), getPublicSiteSettings()]);
   if (!data) return { title: "Page not found" };
   return detailMetadata({
     path: `/${data.slug}`,
     title: data.seoTitle || data.title,
+    brand: site.title?.trim() || undefined,
     description: data.seoDescription || undefined,
   });
 }

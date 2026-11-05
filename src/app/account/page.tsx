@@ -25,7 +25,10 @@ import ChangePasswordCard from "./_components/ChangePasswordCard";
 import type { OrderStatus } from "@/modules/bookings/validation";
 
 export const metadata: Metadata = {
-  title: "Customer Portal · TripMate",
+  // FU-28: was the hardcoded "Customer Portal · TripMate" — the factory
+  // brand baked into a string. The root template appends the configured
+  // brand ("Customer Portal | FlightBlu").
+  title: "Customer Portal",
 };
 
 export const instant = false;

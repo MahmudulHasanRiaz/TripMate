@@ -124,8 +124,11 @@ export function PackageEnquiryCard({
       </div>
 
       <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-        No online payment — enquire and an advisor confirms your dates before
-        booking.
+        {/* FU-28: the old copy claimed "No online payment" while the same
+            page's booking dialog takes payment — a flat contradiction.
+            This frames enquiry as the talk-first alternative it is. */}
+        Prefer to talk first? Enquire and an advisor confirms your dates
+        before booking.
       </p>
     </div>
   );

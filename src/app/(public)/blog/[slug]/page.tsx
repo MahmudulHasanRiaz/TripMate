@@ -29,13 +29,14 @@ export async function generateMetadata(
   props: PageProps<"/blog/[slug]">,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const post = await getBlogPostData(slug);
+  const [post, site] = await Promise.all([getBlogPostData(slug), getPublicSiteSettings()]);
   if (!post) return { title: "Post not found" };
 
   const description = post.seoDescription || post.excerpt || undefined;
   return detailMetadata({
     path: `/blog/${post.slug}`,
     title: post.seoTitle || post.title,
+    brand: site.title?.trim() || undefined,
     description,
     image: post.image,
   });

@@ -35,13 +35,14 @@ export async function generateMetadata(
   props: PageProps<"/packages/[slug]">,
 ): Promise<Metadata> {
   const { slug } = await props.params;
-  const data = await getPackageDetailData(slug);
+  const [data, site] = await Promise.all([getPackageDetailData(slug), getSiteSettings()]);
   if (!data) return { title: "Package not found" };
 
   const description = data.seoDescription || data.summary || undefined;
   return detailMetadata({
     path: `/packages/${data.slug}`,
     title: data.seoTitle || data.title,
+    brand: site.title?.trim() || undefined,
     description,
     image: data.cover,
   });

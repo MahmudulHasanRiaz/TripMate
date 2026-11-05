@@ -110,7 +110,7 @@ export default async function VisaPage() {
               </div>
               <h3 className="font-bold text-foreground">Submit Your Documents</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Upload scans securely online or submit physical documents at our Banani, Dhaka office.
+                Upload scans securely online or submit physical documents at our Dhaka office.
               </p>
             </div>
 

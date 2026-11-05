@@ -25,7 +25,8 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatMoney } from "./currency";
+import { usableRedirectUrl } from "@/lib/redirect-url";
+import { formatMoney, telLink } from "./currency";
 
 type ActionTab = "packages" | "umrah" | "visa" | "flights" | "hotels";
 
@@ -96,6 +97,11 @@ export default function TravelActionPanel({
   pilgrimSlug,
   visaServices,
 }: TravelActionPanelProps) {
+  // FU-28 placeholder firewall: seed/placeholder redirect hosts
+  // (.example etc.) count as NOT configured — the tabs then offer the
+  // internal service pages instead of a dead external domain.
+  const flightUrl = usableRedirectUrl(flightRedirectUrl);
+  const hotelUrl = usableRedirectUrl(hotelRedirectUrl);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActionTab>("packages");
 
@@ -413,7 +419,7 @@ export default function TravelActionPanel({
                 </div>
                 <div className="flex gap-2 shrink-0">
                   <Button asChild variant="outline" className="rounded-lg h-11">
-                    <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
+                    <a href={telLink(phone ?? "") ?? "/services"}>
                       <Headphones className="mr-2 size-4" />
                       {phone?.trim() ? "Call Hajj Specialist" : "Contact Hajj Specialist"}
                     </a>
@@ -464,14 +470,14 @@ export default function TravelActionPanel({
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button asChild variant="outline" size="sm" className="rounded-lg h-10">
-                  <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
+                  <a href={telLink(phone ?? "") ?? "/services"}>
                     <Headphones className="mr-1.5 size-4" />
                     Offline Airline Desk
                   </a>
                 </Button>
-                {flightRedirectUrl?.trim() ? (
+                {flightUrl ? (
                   <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
-                    <a href={flightRedirectUrl.trim()} target="_blank" rel="noopener noreferrer">
+                    <a href={flightUrl} target="_blank" rel="noopener noreferrer">
                       <span>Search Global Flights</span>
                       <ExternalLink className="size-3.5" />
                     </a>
@@ -505,14 +511,14 @@ export default function TravelActionPanel({
 
               <div className="flex flex-wrap items-center gap-2 shrink-0">
                 <Button asChild variant="outline" size="sm" className="rounded-lg h-10">
-                  <a href={phone?.trim() ? `tel:${phone.trim()}` : "/services"}>
+                  <a href={telLink(phone ?? "") ?? "/services"}>
                     <Headphones className="mr-1.5 size-4" />
                     Concierge Hotel Desk
                   </a>
                 </Button>
-                {hotelRedirectUrl?.trim() ? (
+                {hotelUrl ? (
                   <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
-                    <a href={hotelRedirectUrl.trim()} target="_blank" rel="noopener noreferrer">
+                    <a href={hotelUrl} target="_blank" rel="noopener noreferrer">
                       <span>Search Worldwide Hotels</span>
                       <ExternalLink className="size-3.5" />
                     </a>
