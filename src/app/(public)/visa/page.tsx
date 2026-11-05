@@ -3,16 +3,21 @@ import { connection } from "next/server";
 import { Award, FileCheck2, Headphones, ShieldCheck } from "lucide-react";
 import { getPublicSiteSettings } from "@/modules/settings/site-settings";
 import { getVisaExplorerData } from "./_lib/visa-data";
+import { resolveVisaDestinationId } from "./_lib/resolve-destination";
 import VisaExplorerClient from "./VisaExplorerClient";
 import { SectionHeading } from "@/components/site/SectionHeading";
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getPublicSiteSettings();
+  // Brand falls back the way the other public index pages do: when the
+  // site title is unset there is no factory name to borrow — the OG title
+  // simply goes out without one.
+  const brand = site.title?.trim();
   return {
     title: "Global Visa Services & Immigration Assistance",
     description:
       "Fast, reliable visa processing for Dubai, Malaysia, Singapore, Saudi Arabia, UK, and Schengen countries. Expert documentation check, transparent embassy fees, and high approval rates.",
-    openGraph: { title: `${site.title?.trim() || "TripMate"} Global Visa Services` },
+    openGraph: { title: brand ? `${brand} Global Visa Services` : "Global Visa Services" },
   };
 }
 
@@ -22,16 +27,30 @@ export async function generateMetadata(): Promise<Metadata> {
 // Data is runtime-cached per the listings tag in _lib/visa-data.ts.
 export const instant = false;
 
-export default async function VisaPage() {
+export default async function VisaPage(props: PageProps<"/visa">) {
   // Request-scoped marker: the route renders on demand and is never
   // build-prerendered, so the build never fills a DB-backed cache entry for it
   // (Vercel build-time cache-fill timeout seen when the page was one "use
   // cache" scope). Data itself is runtime-cached per the listings tag.
   await connection();
 
+  const searchParams = await props.searchParams;
   const { services, destinations, visaTypes } = await getVisaExplorerData();
   const site = await getPublicSiteSettings();
-  const brand = site.title?.trim() || "TripMate";
+  // Same tenant-free fallback as the blog/destinations/services indexes.
+  const brand = site.title?.trim() || "the agency";
+
+  // Deep-link contract (FU-32): the homepage panel links here with
+  // ?destination=<display name>. Resolve it against the destinations that
+  // actually have visa services (the explorer's pill universe) so the
+  // explorer can open with that destination pre-selected; an unknown or
+  // service-less country resolves to null and the explorer opens
+  // unfiltered instead of landing on an empty, chip-less state.
+  const serviceDestinationIds = new Set(services.map((s) => s.destinationId));
+  const initialDestinationId = resolveVisaDestinationId(
+    searchParams.destination,
+    destinations.filter((d) => serviceDestinationIds.has(d.id)),
+  );
 
   return (
     <main className="min-h-screen bg-background pb-20">
@@ -76,10 +95,15 @@ export default async function VisaPage() {
       {/* Visa Explorer Section */}
       <section className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-8">
         <VisaExplorerClient
+          // Keyed by the resolved deep-link: a same-page navigation to a
+          // different ?destination= (e.g. another panel visa card) remounts
+          // the explorer so its filter state re-seeds from the new param.
+          key={initialDestinationId ?? "all"}
           services={services}
           destinations={destinations}
           visaTypes={visaTypes}
           brand={brand}
+          initialDestinationId={initialDestinationId}
         />
       </section>
 

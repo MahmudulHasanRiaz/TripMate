@@ -96,8 +96,11 @@ export default async function PublicLayout({
         <SiteHeaderGate site={site} />
       </Suspense>
       {/* tabIndex=-1 makes main a valid skip-link target; outline-none keeps
-          the whole-page focus target from drawing a giant focus ring. */}
-      <main id="main" tabIndex={-1} className="outline-none pt-20 sm:pt-24">
+          the whole-page focus target from drawing a giant focus ring.
+          Top padding is the shared header-clearance token (FU-32) — the
+          fixed island's height lives in globals.css, not in a magic
+          number here. */}
+      <main id="main" tabIndex={-1} className="outline-none pt-header-clearance sm:pt-header-clearance-lg">
         {children}
       </main>
       {/* Rain fan-out chat widget: 100% settings-driven (Admin → Settings →

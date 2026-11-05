@@ -31,6 +31,18 @@
   --input: 40 12% 55%;
   --ring: 178 74% 21%;
   --radius: 0.625rem;
+  /* Header clearance (FU-32): the ONE offset every public page uses to
+     stay clear of the fixed floating-island header. Derived from the
+     island's worst case (unscrolled state, tallest bar content): top
+     offset (0.625rem / 1rem at sm) + bar height (~3.875rem incl.
+     padding, content and border) + at least 1rem of breathing room.
+     Before this token the clearance was re-guessed per surface —
+     layout pt-20/24, sidebar sticky top-24, gallery scroll-mt-28 —
+     and the tightest guess left ~0.5rem, so hero tops and anchored
+     headings could slide under the island. If the island's height ever
+     changes, change it HERE only. */
+  --header-clearance: 5.5rem;
+  --header-clearance-lg: 6.25rem;
   --sidebar: hsl(0 0% 100%);
   --sidebar-foreground: hsl(225 15% 12%);
   --sidebar-primary: hsl(178 74% 21%);
@@ -110,6 +122,11 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
 
+  /* Spacing utilities from the header-clearance vars (FU-32):
+     pt-header-clearance, top-header-clearance-lg, scroll-mt-*, … */
+  --spacing-header-clearance: var(--header-clearance);
+  --spacing-header-clearance-lg: var(--header-clearance-lg);
+
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-lg: 0 10px 30px -10px rgb(0 0 0 / 0.15);
 
@@ -142,6 +159,16 @@
   }
   html {
     font-size: 16px;
+    /* Anchor jumps, scroll-into-view and scroll restoration must land
+       BELOW the fixed header island, on every page (FU-32). Elements
+       with their own scroll-mt-* (e.g. the package gallery) still win
+       locally; this is the floor for everything else. */
+    scroll-padding-top: var(--header-clearance);
+  }
+  @media (min-width: 40rem) {
+    html {
+      scroll-padding-top: var(--header-clearance-lg);
+    }
   }
   body {
     @apply bg-background text-foreground font-body antialiased;

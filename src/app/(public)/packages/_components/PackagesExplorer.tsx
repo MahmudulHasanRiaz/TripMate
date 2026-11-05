@@ -207,8 +207,8 @@ export function PackagesExplorerFallback() {
   return (
     <div aria-hidden="true" className="select-none">
       <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,190px)_minmax(0,190px)_minmax(0,170px)]">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,190px)_minmax(0,190px)_minmax(0,190px)_minmax(0,170px)]">
+          {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="h-11 animate-pulse rounded-md bg-muted/80" />
           ))}
         </div>

@@ -1,10 +1,10 @@
 /**
  * URL-state filtering for the public packages index (`/packages`).
  *
- * Five query params drive the index — `q` (free-text search), `cat` (category
- * slug), `dest` (destination slug), `max` (whole-taka max-price cap) and
- * `page` — and they are the single source of truth for BOTH sides of the
- * feature:
+ * Six query params drive the index — `q` (free-text search), `cat` (category
+ * slug), `dest` (destination slug), `duration` (trip-length bucket),
+ * `max` (whole-taka max-price cap) and `page` — and they are the single
+ * source of truth for BOTH sides of the feature:
  *   - the server parses them into a `PackageFilters` value and passes it to
  *     `listPublishedListings` (filtering happens in SQL, never client-side);
  *   - the client filter island only REWRITES the URL (no fetch), so the values
@@ -29,6 +29,8 @@ export type PackageFilters = {
   cat: string;
   /** Destination slug to narrow to. Empty = none. */
   dest: string;
+  /** Trip-length bucket (see DURATION_BUCKETS). Empty = any duration. */
+  duration: string;
   /** Whole-taka max-price cap (inclusive). `undefined` = no cap. */
   max: number | undefined;
   /** 1-based page number (always >= 1). */
@@ -36,6 +38,49 @@ export type PackageFilters = {
 };
 
 export const PACKAGES_PER_PAGE = 9;
+
+/**
+ * Trip-length buckets for the `duration` param (FU-32: the homepage panel
+ * always had the select, but the value never reached the URL and the index
+ * had no duration filtering at all — the filter is real now, end to end).
+ *
+ * The value strings are the public URL contract: the panel's duration
+ * select emits exactly these and the /packages filter island mirrors them.
+ * Bounds are INCLUSIVE day counts matched against the listing's
+ * `durationDays` column:
+ *   "1-3"  → 1–3 days    "4-7"  → 4–7 days
+ *   "8-14" → 8–14 days   "15+"  → 15 days and up (no upper bound)
+ * A listing with NO recorded duration (NULL) matches no bucket — a bucket
+ * is a promise about trip length, and an unknown length cannot keep it.
+ */
+export const DURATION_BUCKETS = ["1-3", "4-7", "8-14", "15+"] as const;
+export type DurationBucket = (typeof DURATION_BUCKETS)[number];
+
+const DURATION_RANGES: Record<DurationBucket, { min: number; max?: number }> = {
+  "1-3": { min: 1, max: 3 },
+  "4-7": { min: 4, max: 7 },
+  "8-14": { min: 8, max: 14 },
+  "15+": { min: 15 },
+};
+
+export function isDurationBucket(raw: string): raw is DurationBucket {
+  return (DURATION_BUCKETS as readonly string[]).includes(raw);
+}
+
+/** Inclusive day bounds for a bucket value; `undefined` for empty/junk. */
+export function durationRangeForBucket(
+  bucket: string,
+): { min: number; max?: number } | undefined {
+  return isDurationBucket(bucket) ? DURATION_RANGES[bucket] : undefined;
+}
+
+/** Option list for the /packages filter island (value = URL bucket). */
+export const DURATION_OPTIONS: { value: DurationBucket; label: string }[] = [
+  { value: "1-3", label: "1–3 days" },
+  { value: "4-7", label: "4–7 days" },
+  { value: "8-14", label: "8–14 days" },
+  { value: "15+", label: "15+ days" },
+];
 
 type RawParams = Readonly<Record<string, string | string[] | undefined>> | undefined;
 
@@ -75,6 +120,19 @@ export function parsePackageSearchParams(searchParams: RawParams): PackageFilter
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
+  // `duration` must be one of the known buckets; anything else is "any
+  // duration". Tolerance: a hand-typed `?duration=15+` decodes the `+` as
+  // a space (form-encoding), landing here as "15" after the trim — accept
+  // that spelling too so a pasted link still filters (FU-28's lesson: the
+  // site's own links must land filtered). Serialisation always emits the
+  // canonical "15+".
+  const durationRaw = (first(searchParams?.duration) ?? "").trim().slice(0, 10);
+  const duration = isDurationBucket(durationRaw)
+    ? durationRaw
+    : durationRaw === "15"
+      ? "15+"
+      : "";
+
   // `max` must be a whole positive taka value; anything else (blank, "0",
   // "abc") is treated as "no cap" rather than surfacing a confusing state.
   const maxRaw = (first(searchParams?.max) ?? "").trim();
@@ -88,6 +146,7 @@ export function parsePackageSearchParams(searchParams: RawParams): PackageFilter
     q,
     cat,
     dest,
+    duration,
     max,
     page: positiveInt(first(searchParams?.page), 1),
   };
@@ -99,6 +158,7 @@ export function packageFiltersToSearchParams(f: PackageFilters): URLSearchParams
   if (f.q) params.set("q", f.q);
   if (f.cat) params.set("cat", f.cat);
   if (f.dest) params.set("dest", f.dest);
+  if (f.duration) params.set("duration", f.duration);
   if (f.max !== undefined) params.set("max", String(f.max));
   if (f.page > 1) params.set("page", String(f.page));
   return params;
@@ -112,5 +172,5 @@ export function packagesIndexHref(f: PackageFilters): string {
 
 /** True when the visitor has narrowed the index beyond the plain page-1 view. */
 export function hasActiveFilters(f: PackageFilters): boolean {
-  return Boolean(f.q || f.cat || f.dest || f.max !== undefined);
+  return Boolean(f.q || f.cat || f.dest || f.duration || f.max !== undefined);
 }

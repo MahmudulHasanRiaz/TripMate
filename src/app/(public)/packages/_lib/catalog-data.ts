@@ -2,7 +2,11 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { CACHE_TAGS } from "@/lib/cache-tags";
-import { PACKAGES_PER_PAGE, type PackageFilters } from "@/lib/package-filters";
+import {
+  PACKAGES_PER_PAGE,
+  durationRangeForBucket,
+  type PackageFilters,
+} from "@/lib/package-filters";
 import {
   getListingBySlug,
   listCategories,
@@ -129,11 +133,23 @@ export async function searchPackageCards(f: PackageFilters): Promise<PackageList
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+  // Duration bucket → inclusive day bounds on `duration_days` (FU-32).
+  // The bucket is part of the PackageFilters cache key, so each bucket is
+  // its own cached grid like every other filter combination.
+  const durationRange = durationRangeForBucket(f.duration);
   const toQuery = () => ({
     search: f.q || undefined,
     categorySlug: catSlugs.length === 1 ? catSlugs[0] : undefined,
     categorySlugs: catSlugs.length > 1 ? catSlugs : undefined,
     destinationSlug: f.dest || undefined,
+    ...(durationRange
+      ? {
+          minDurationDays: durationRange.min,
+          ...(durationRange.max !== undefined
+            ? { maxDurationDays: durationRange.max }
+            : {}),
+        }
+      : {}),
     maxPrice: f.max,
     page: f.page,
     perPage: PACKAGES_PER_PAGE,

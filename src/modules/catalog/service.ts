@@ -130,6 +130,12 @@ export type PublishedListingsQuery = {
    * non-empty list is given it wins over `categorySlug`. */
   categorySlugs?: string[];
   destinationSlug?: string;
+  /** Inclusive trip-length bounds in days, matched against
+   *  `listings.durationDays` (the /packages duration buckets, FU-32).
+   *  Either bound may be given alone; duration-less listings never match
+   *  a bounded query (NULL comparisons exclude them). */
+  minDurationDays?: number;
+  maxDurationDays?: number;
   minPrice?: number;
   maxPrice?: number;
   isFeatured?: boolean;
@@ -263,6 +269,10 @@ export async function listPublishedListings(
     conditions.push(inArray(serviceCategories.slug, query.categorySlugs));
   else if (query.categorySlug) conditions.push(eq(serviceCategories.slug, query.categorySlug));
   if (query.destinationSlug) conditions.push(eq(destinations.slug, query.destinationSlug));
+  if (query.minDurationDays !== undefined)
+    conditions.push(gte(listings.durationDays, query.minDurationDays));
+  if (query.maxDurationDays !== undefined)
+    conditions.push(lte(listings.durationDays, query.maxDurationDays));
   if (query.isFeatured !== undefined) conditions.push(eq(listings.isFeatured, query.isFeatured));
   if (query.minPrice !== undefined) conditions.push(gte(listings.price, query.minPrice.toFixed(2)));
   if (query.maxPrice !== undefined) conditions.push(lte(listings.price, query.maxPrice.toFixed(2)));

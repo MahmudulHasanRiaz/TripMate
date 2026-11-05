@@ -23,8 +23,10 @@ import type {
 } from "@/lib/site-settings";
 
 const DEFAULT_LINKS: { label: string; href: Route }[] = [
-  { label: "VIP Umrah Packages", href: "/packages" as Route },
-  { label: "Hajj 2026 Registration", href: "/packages" as Route },
+  // Category-filtered landings (FU-32): these labels promise Umrah/Hajj
+  // lists, so they carry the ?cat= filter instead of the bare index.
+  { label: "VIP Umrah Packages", href: "/packages?cat=umrah" as Route },
+  { label: "Hajj 2026 Registration", href: "/packages?cat=hajj" as Route },
   { label: "Fast-Track Visa Desk", href: "/visa" as Route },
   { label: "Travel Journal & Guides", href: "/blog" as Route },
   { label: "Pilgrim Customer Portal", href: "/account" as Route },

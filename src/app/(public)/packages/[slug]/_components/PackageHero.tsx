@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { Route } from "next";
 import { ArrowLeft, CalendarClock, Images, MapPin, Sparkles, Star } from "lucide-react";
 
+import { listingPhotos } from "@/lib/listing-photos";
+
 import type { PackageDetailData } from "../../_lib/catalog-data";
 
 /**
@@ -16,7 +18,11 @@ import type { PackageDetailData } from "../../_lib/catalog-data";
 export function PackageHero({ data }: { data: PackageDetailData }) {
   const cover = data.cover;
   const hasCover = Boolean(cover?.url);
-  const photoCount = data.gallery.length + (cover?.url ? 1 : 0);
+  // Same deduped set the gallery/lightbox show (lib/listing-photos) —
+  // a blind gallery.length + 1 double-counts a cover that is already in
+  // the gallery, which is how this pill once read "3 photos" over a
+  // 2-photo lightbox (FU-32).
+  const photoCount = listingPhotos(data.cover, data.gallery).length;
 
   return (
     <section

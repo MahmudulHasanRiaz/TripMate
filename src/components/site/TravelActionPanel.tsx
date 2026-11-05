@@ -162,6 +162,9 @@ export default function TravelActionPanel({
     e.preventDefault();
     const params = new URLSearchParams();
     if (selectedDestination) params.set("dest", selectedDestination);
+    // The duration bucket is a real /packages filter (FU-32) — it used to
+    // be collected here and silently dropped before the URL was built.
+    if (selectedDuration) params.set("duration", selectedDuration);
     router.push(`/packages?${params.toString()}` as Route);
   };
 
