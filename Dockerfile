@@ -17,12 +17,19 @@
 # discards it. Nothing from that database reaches the image — only the
 # prerendered cache does.
 #
-# PUBLIC-CONTENT FRESHNESS AFTER DEPLOY: the prerendered cache is only as
-# fresh as the seeded baseline it was built from (Follow-up 07 §1). The seed
-# is the neutral production baseline — NEVER the demo seeder — and public
-# readers cap staleness with cacheLife("minutes") (plus immediate
-# updateTag/revalidateTag bust on admin saves), so a deploy serves at most a
-# few minutes of baseline before the live DB takes over.
+# PUBLIC-CONTENT FRESHNESS AFTER DEPLOY: the prerendered cache is baked
+# from the seeded baseline + build env (APP_URL=http://localhost:3000), so
+# on its own it would shadow the live tenant until entries expire or an
+# admin saves settings (Follow-up 07 §1; observed live FU-31: robots.txt
+# served the build-time localhost origin). The seed is the neutral
+# production baseline — NEVER the demo seeder. Convergence is therefore a
+# BOOT step, not a waiting game: scripts/boot.sh starts the server, then
+# scripts/boot-revalidate.mjs calls the secret-guarded
+# POST /api/internal/boot-revalidate route exactly once per container
+# start, expiring the baked cache generation so the first real request
+# re-renders from the RUNTIME database/env. cacheLife("minutes") remains
+# as the safety net if that call ever fails, and admin saves still bust
+# the same tags immediately (updateTag/revalidateTag).
 #
 # SCHEMA AUTO-MIGRATION ON EVERY DEPLOY: the runner applies every pending
 # drizzle/ migration at container START (scripts/auto-migrate.mjs) before the
@@ -133,6 +140,8 @@ COPY --from=builder --chown=node:node /app/drizzle ./drizzle
 COPY --from=builder --chown=node:node /app/scripts/auto-migrate.mjs ./scripts/auto-migrate.mjs
 COPY --from=builder --chown=node:node /app/scripts/migrate-lib.mjs ./scripts/migrate-lib.mjs
 COPY --from=builder --chown=node:node /app/scripts/derive-db-url.mjs ./scripts/derive-db-url.mjs
+COPY --from=builder --chown=node:node /app/scripts/boot.sh ./scripts/boot.sh
+COPY --from=builder --chown=node:node /app/scripts/boot-revalidate.mjs ./scripts/boot-revalidate.mjs
 USER node
 EXPOSE 3000
 # /api/health returns 200 only when the app can query Postgres. Alpine ships
@@ -140,11 +149,10 @@ EXPOSE 3000
 # start-period 60s covers the first-boot migration run.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/api/health || exit 1
-# Every container start:
-#   1. DATABASE_URL="${DATABASE_URL:-<derived>}" — when the operator did NOT
-#      set DATABASE_URL (internal-database compose/Portainer deploy), derive it
-#      from POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB so the app and the
-#      bundled Postgres always agree. Unset everywhere → stays empty and the
-#      migrator fails fast with its actionable message.
-#   2. Apply pending migrations, then boot the server.
-CMD ["sh", "-c", "DATABASE_URL=\"${DATABASE_URL:-$(node scripts/derive-db-url.mjs)}\"; export DATABASE_URL; node scripts/auto-migrate.mjs && exec node server.js"]
+# Every container start runs scripts/boot.sh:
+#   1. Derive DATABASE_URL from POSTGRES_* when the operator did not set it.
+#   2. Apply pending migrations (fail fast), then start the server.
+#   3. Converge the cache: one secret-guarded call expires the build-baked
+#      cache generation so public pages render from the runtime DB/env
+#      (FU-31 — see the header note and src/lib/boot-revalidate.ts).
+CMD ["sh", "scripts/boot.sh"]
