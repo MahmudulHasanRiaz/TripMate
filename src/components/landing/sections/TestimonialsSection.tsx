@@ -51,7 +51,7 @@ export function TestimonialsSection({ config, items: directItems }: Testimonials
                 <div>
                   <div className="flex items-center justify-between">
                     <Quote className="size-7 text-primary/30" aria-hidden="true" />
-                    <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5 stars`}>
+                    <div className="flex items-center gap-0.5" role="img" aria-label={`${rating} out of 5 stars`}>
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}

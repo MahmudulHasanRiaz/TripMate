@@ -68,7 +68,7 @@ export function CTASection({
                 href={waHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-emerald-700 hover:scale-[1.02] active:scale-[0.98]"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-emerald-700 px-6 text-sm font-bold text-white shadow-lg transition-all duration-200 hover:bg-emerald-800 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <WhatsAppIcon className="size-4" />
                 <span>Chat on WhatsApp</span>

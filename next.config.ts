@@ -115,6 +115,12 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    // AVIF first, WebP fallback (PageSpeed round): the optimizer's default
+    // is WebP-only, which left ~30-50% of photographic bytes on the table —
+    // Lighthouse's image-delivery audit flagged ~192 KiB of avoidable weight
+    // on the home page alone. Browsers without AVIF support transparently
+    // fall back to WebP via the Accept header.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       // Direct Cloudflare R2 public bucket endpoints
       { protocol: "https", hostname: "*.r2.dev", pathname: "/**" },
