@@ -57,7 +57,10 @@ function fileResponse(
   if (isSvg) {
     // The CSP strips an SVG of every execution capability: no scripts, no
     // external fetches; only inline presentation attributes/styles survive so
-    // the image still renders.
+    // the image still renders. The immutable cache applies to SVG too
+    // (Follow-up 16): storage keys are never rewritten in place — a rename
+    // mints a NEW key — so a cached SVG can never go stale, and withholding
+    // the header made the (SVG) site logo re-download on every page view.
     return new Response(bytes, {
       headers: {
         "Content-Type": contentType,
@@ -65,6 +68,7 @@ function fileResponse(
           "default-src 'none'; style-src 'unsafe-inline'; media-src 'none'",
         "X-Content-Type-Options": "nosniff",
         "Content-Disposition": "inline",
+        "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
   }

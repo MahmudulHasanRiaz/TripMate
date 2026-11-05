@@ -19,17 +19,32 @@ export function BrandLogo({
   logoDarkUrl,
   title,
   className,
+  priority = false,
 }: {
   logoUrl: string;
   logoDarkUrl?: string;
   title: string;
   className?: string;
+  /** Header usage (Follow-up 16): fetch at top priority so the lockup
+   *  paints with the first paint instead of popping in after the page. */
+  priority?: boolean;
 }) {
+  const fetchPriority = priority ? ("high" as const) : undefined;
   if (logoDarkUrl) {
     return (
       <>
-        <img src={logoUrl} alt={title} className={cn(className, "dark:hidden")} />
-        <img src={logoDarkUrl} alt={title} className={cn(className, "hidden dark:block")} />
+        <img
+          src={logoUrl}
+          alt={title}
+          fetchPriority={fetchPriority}
+          className={cn(className, "dark:hidden")}
+        />
+        <img
+          src={logoDarkUrl}
+          alt={title}
+          fetchPriority={fetchPriority}
+          className={cn(className, "hidden dark:block")}
+        />
       </>
     );
   }
@@ -38,6 +53,7 @@ export function BrandLogo({
     <img
       src={logoUrl}
       alt={title}
+      fetchPriority={fetchPriority}
       className={cn(className, "dark:rounded-lg dark:bg-white dark:px-1.5 dark:py-1")}
     />
   );

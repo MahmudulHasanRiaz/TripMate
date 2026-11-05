@@ -111,6 +111,7 @@ export function SiteHeader({ title, logoUrl, logoDarkUrl, logoDisplay, phone, si
               logoUrl={logoUrl}
               logoDarkUrl={logoDarkUrl}
               title={title}
+              priority
               className="h-8 w-auto max-w-[180px] object-contain sm:h-9 sm:max-w-[210px]"
             />
           ) : (
