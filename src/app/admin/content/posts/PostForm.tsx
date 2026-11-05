@@ -42,6 +42,7 @@ import { savePost } from "./actions";
 import MediaPickerField, {
   MediaPickerButton,
 } from "@/components/admin/MediaPickerField";
+import VideosEditor from "@/components/admin/VideosEditor";
 import SeoConfigDrawer from "@/components/admin/SeoConfigDrawer";
 
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,7 @@ export type PostFormInitial = {
   content: string;
   featuredImageUrl: string;
   gallery: { url: string; alt: string }[];
+  videos: { url: string; title: string }[];
   categoryId: string; // "" = no category (categoryId is nullable)
   status: ContentStatus;
   seoTitle: string;
@@ -93,6 +95,7 @@ type PostFormValues = {
   content: string;
   featuredImageUrl: string;
   gallery: { url: string; alt: string }[];
+  videos: { url: string; title: string }[];
   categoryId: string;
   status: ContentStatus;
   seoTitle: string;
@@ -112,6 +115,9 @@ const formSchema = z.object({
   gallery: z
     .array(z.object({ url: z.string().max(2048), alt: z.string().max(200) }))
     .max(60, "Gallery is limited to 60 images"),
+  videos: z
+    .array(z.object({ url: z.string().max(2048), title: z.string().max(200) }))
+    .max(12, "Videos are limited to 12"),
   categoryId: z.string(),
   status: z.enum(CONTENT_STATUSES),
   seoTitle: z.string().max(70, "SEO title must be 70 characters or fewer"),
@@ -126,6 +132,9 @@ function toPostPayload(values: PostFormValues, id?: string): Record<string, unkn
   const gallery = values.gallery
     .map((g) => ({ url: g.url.trim(), alt: g.alt.trim() }))
     .filter((g) => g.url.length > 0);
+  const videos = values.videos
+    .map((v) => ({ url: v.url.trim(), title: v.title.trim() }))
+    .filter((v) => v.url.length > 0);
   const featuredImageUrl = values.featuredImageUrl.trim();
 
   return {
@@ -136,6 +145,7 @@ function toPostPayload(values: PostFormValues, id?: string): Record<string, unkn
     content: values.content || null,
     featuredImage: featuredImageUrl ? { url: featuredImageUrl } : null,
     gallery, // empty array → validation's blank→null preprocess clears the column
+    videos, // empty array → module validation converts [] to NULL
     categoryId: values.categoryId === "" ? null : values.categoryId,
     status: values.status,
     seo:
@@ -488,6 +498,22 @@ export default function PostForm({
               <p className="text-sm text-muted-foreground">No gallery images yet.</p>
             ) : null}
           </div>
+          <FormField
+            control={form.control}
+            name="videos"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <VideosEditor value={field.value} onChange={field.onChange} />
+                </FormControl>
+                <FormDescription>
+                  Shown in the Watch section of the public page; the first video
+                  leads.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </section>
 
         <Separator />

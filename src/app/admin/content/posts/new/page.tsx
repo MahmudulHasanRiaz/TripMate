@@ -21,6 +21,7 @@ function emptyFormInitial(): PostFormInitial {
     content: "",
     featuredImageUrl: "",
     gallery: [],
+    videos: [],
     categoryId: "",
     status: "draft",
     seoTitle: "",

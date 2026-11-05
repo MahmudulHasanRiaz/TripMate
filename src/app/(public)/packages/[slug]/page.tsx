@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getSiteSettings } from "@/lib/site-settings";
 import { detailMetadata } from "@/lib/seo-meta";
+import { buildVideoObject } from "@/lib/videos";
 import { PackageCard } from "@/components/site/PackageCard";
 import { JsonLd } from "@/components/site/JsonLd";
 
@@ -117,6 +118,15 @@ async function PackageDetailBody({
             }
           : undefined,
       },
+      // One VideoObject per video (FU-35) so search engines can index the
+      // Watch section's clips against this package.
+      ...data.videos.map((video) =>
+        buildVideoObject(video, {
+          entityTitle: data.title,
+          uploadDate: data.updatedAt,
+          fallbackThumbnailUrl: data.cover?.url ?? null,
+        }),
+      ),
     ],
   };
 

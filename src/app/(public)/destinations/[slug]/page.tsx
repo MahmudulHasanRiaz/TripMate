@@ -23,6 +23,9 @@ import {
 import { listVisaServices } from "@/modules/catalog/visa-service";
 import { PackageCard } from "@/components/site/PackageCard";
 import { SectionHeading } from "@/components/site/SectionHeading";
+import { Gallery } from "@/components/site/Gallery";
+import { VideoGallery } from "@/components/site/VideoGallery";
+import { buildVideoObject } from "@/lib/videos";
 import { CTASection } from "@/components/site/CTASection";
 import { formatMoney } from "@/components/site/currency";
 import { JsonLd } from "@/components/site/JsonLd";
@@ -126,6 +129,14 @@ async function DestinationPageBody({ params }: { params: Promise<{ slug: string 
         "image": destination.image || undefined,
         "touristType": ["Holiday", "Adventure", "Leisure", "Family"],
       },
+      // One VideoObject per video (FU-35), mirroring the packages page.
+      ...destination.videos.map((video) =>
+        buildVideoObject(video, {
+          entityTitle: destination.name,
+          uploadDate: destination.updatedAt,
+          fallbackThumbnailUrl: destination.image,
+        }),
+      ),
     ],
   };
 
@@ -201,6 +212,38 @@ async function DestinationPageBody({ params }: { params: Promise<{ slug: string 
 
       {/* Main Content Area */}
       <div className="mx-auto w-full max-w-[1400px] px-4 py-16 lg:px-8 lg:py-24 space-y-20">
+        {/* Gallery Section (FU-35 — only when the destination has photos) */}
+        {destination.gallery.length > 0 ? (
+          <section aria-label="Gallery">
+            <SectionHeading
+              kicker="Gallery"
+              title={`${destination.name} in pictures`}
+            />
+            <Gallery
+              className="mt-10"
+              images={destination.gallery.map((g) => ({
+                src: g.url,
+                alt: g.alt ?? destination.name,
+              }))}
+            />
+          </section>
+        ) : null}
+
+        {/* Watch Section (FU-35 — only when the destination has videos) */}
+        {destination.videos.length > 0 ? (
+          <section aria-label="Watch">
+            <SectionHeading
+              kicker="Watch"
+              title={`Experience ${destination.name}`}
+            />
+            <VideoGallery
+              className="mt-10"
+              videos={destination.videos}
+              title={destination.name}
+            />
+          </section>
+        ) : null}
+
         {/* Published Packages Section */}
         <section aria-labelledby="destination-packages-heading">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">

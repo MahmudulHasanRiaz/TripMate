@@ -8,6 +8,8 @@ export type DestinationRow = {
   name: string;
   slug: string;
   image: string | null;
+  gallery: { url: string; alt?: string }[];
+  videos: { url: string; title: string }[];
   description?: string | null;
   sortOrder?: number;
   isFeatured?: boolean;

@@ -30,6 +30,7 @@ function toFormInitial(post: PostWithRefs): PostFormInitial {
       url: image.url,
       alt: image.alt ?? "",
     })),
+    videos: post.videos.map((v) => ({ url: v.url, title: v.title })),
     categoryId: post.categoryId ?? "",
     status: post.status,
     seoTitle: post.seo?.title ?? "",

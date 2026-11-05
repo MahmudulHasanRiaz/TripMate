@@ -50,7 +50,9 @@ export type BlogPostData = {
   content: string;
   image: { url: string; alt: string } | null;
   gallery: { url: string; alt: string }[];
-  videoUrl: string | null;
+  videos: { url: string; title: string }[];
+  /** ISO last-update stamp — feeds the VideoObjects' uploadDate. */
+  updatedAt: string;
   author: string;
   category: string | null;
   /** ISO date of first publication. */
@@ -129,7 +131,8 @@ export async function getBlogPostData(
       ? { url: post.featuredImage.url, alt: post.featuredImage.alt ?? post.title }
       : null,
     gallery: post.gallery.map((g) => ({ url: g.url, alt: g.alt ?? post.title })),
-    videoUrl: post.videoUrl,
+    videos: post.videos,
+    updatedAt: post.updatedAt.toISOString(),
     author: post.author?.name ?? authorFallback,
     category: post.category?.name ?? null,
     publishedAt: (post.publishedAt ?? post.createdAt).toISOString(),

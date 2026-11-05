@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { slugify, destinationInput } from "@/modules/catalog/validation";
 import { saveDestination } from "./actions";
 import type { DestinationRow } from "./types";
@@ -10,7 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import MediaPickerField from "@/components/admin/MediaPickerField";
+import MediaPickerField, {
+  MediaPickerButton,
+} from "@/components/admin/MediaPickerField";
+import VideosEditor from "@/components/admin/VideosEditor";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +48,12 @@ export default function DestinationFormDialog({
   const [slug, setSlug] = useState(row?.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(editing);
   const [image, setImage] = useState(row?.image ?? "");
+  const [galleryRows, setGalleryRows] = useState<{ url: string; alt: string }[]>(
+    (row?.gallery ?? []).map((g) => ({ url: g.url, alt: g.alt ?? "" })),
+  );
+  const [videoRows, setVideoRows] = useState<{ url: string; title: string }[]>(
+    (row?.videos ?? []).map((v) => ({ url: v.url, title: v.title })),
+  );
   const [description, setDescription] = useState(row?.description ?? "");
   const [sortOrder, setSortOrder] = useState<number>(row?.sortOrder ?? 0);
   const [isFeatured, setIsFeatured] = useState<boolean>(row?.isFeatured ?? false);
@@ -52,6 +61,15 @@ export default function DestinationFormDialog({
   const [errors, setErrors] = useState<FieldErrors>({});
   const [rootError, setRootError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const updateGalleryRow = (
+    index: number,
+    patch: Partial<{ url: string; alt: string }>,
+  ) => {
+    setGalleryRows((rows) =>
+      rows.map((entry, i) => (i === index ? { ...entry, ...patch } : entry)),
+    );
+  };
 
   const handleName = (value: string) => {
     setName(value);
@@ -71,6 +89,12 @@ export default function DestinationFormDialog({
         name,
         slug,
         image: image.trim() || null,
+        gallery: galleryRows
+          .map((entry) => ({ url: entry.url.trim(), alt: entry.alt.trim() }))
+          .filter((entry) => entry.url.length > 0),
+        videos: videoRows
+          .map((entry) => ({ url: entry.url.trim(), title: entry.title.trim() }))
+          .filter((entry) => entry.url.length > 0),
         description: description.trim() || null,
         sortOrder,
         isFeatured,
@@ -85,6 +109,8 @@ export default function DestinationFormDialog({
           if (field === "name" || field === "slug" || field === "image" || field === "description" || field === "sortOrder") {
             if (!next[field]) next[field] = issue.message;
           } else if (!root) {
+            // gallery / videos have no field slot — the first such message
+            // surfaces as the root error instead.
             root = issue.message;
           }
         }
@@ -111,7 +137,7 @@ export default function DestinationFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onCancel(); }}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">{editing ? "Edit destination" : "New destination"}</DialogTitle>
           <DialogDescription className="text-sm text-muted-foreground">
@@ -163,6 +189,67 @@ export default function DestinationFormDialog({
               <p className="text-xs font-medium text-destructive">{errors.image}</p>
             ) : null}
           </div>
+
+          {/* Gallery rows — same row-editor pattern as the ListingForm. */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Gallery</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setGalleryRows([...galleryRows, { url: "", alt: "" }])}
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add image
+              </Button>
+            </div>
+            <ul className="space-y-3">
+              {galleryRows.map((entry, index) => (
+                <li key={index} className="rounded-md border border-border p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="grid flex-1 gap-3 sm:grid-cols-3">
+                      <div className="flex items-start gap-1 sm:col-span-2">
+                        <Input
+                          className="flex-1"
+                          placeholder="https://…/image.jpg"
+                          aria-label={`Gallery image ${index + 1} URL`}
+                          value={entry.url}
+                          onChange={(e) => updateGalleryRow(index, { url: e.target.value })}
+                        />
+                        <MediaPickerButton
+                          accept="image"
+                          label={`Browse media for gallery image ${index + 1}`}
+                          onPick={(url) => updateGalleryRow(index, { url })}
+                        />
+                      </div>
+                      <Input
+                        placeholder="Alt text"
+                        aria-label={`Gallery image ${index + 1} alt text`}
+                        value={entry.alt}
+                        onChange={(e) => updateGalleryRow(index, { alt: e.target.value })}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setGalleryRows(galleryRows.filter((_, i) => i !== index))}
+                      aria-label={`Remove gallery image ${index + 1}`}
+                      className="mt-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {galleryRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No gallery images yet.</p>
+            ) : null}
+          </div>
+
+          <VideosEditor value={videoRows} onChange={setVideoRows} />
 
           <div className="space-y-1.5">
             <Label htmlFor="destination-desc" className="text-[13px] font-medium text-foreground">Editorial Description</Label>

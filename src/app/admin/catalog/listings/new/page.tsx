@@ -25,7 +25,7 @@ function emptyFormInitial(): {
   summary: string;
   description: string;
   coverImage: string;
-  videoUrl: string;
+  videos: { url: string; title: string }[];
   durationDays: string;
   rating: string;
   price: string;
@@ -46,7 +46,7 @@ function emptyFormInitial(): {
     summary: "",
     description: "",
     coverImage: "",
-    videoUrl: "",
+    videos: [],
     durationDays: "",
     rating: "",
     price: "",
