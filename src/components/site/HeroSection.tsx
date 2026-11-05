@@ -39,7 +39,7 @@ export function HeroSection({
             priority
             sizes="100vw"
             referrerPolicy="no-referrer"
-            className="object-cover"
+            className="anim-kenburns object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/10 to-black/80" />
         </div>
@@ -51,11 +51,14 @@ export function HeroSection({
 
       {/* Copy: headline + one subtext line, aligned with the panel card. */}
       <div className="relative mx-auto w-full max-w-[1280px] px-4 sm:px-6">
-        <h1 className="max-w-3xl text-balance font-display text-[28px] font-bold leading-[1.15] tracking-tight text-white sm:text-[40px] sm:leading-[1.12]">
+        <h1 className="anim-rise max-w-3xl text-balance font-display text-[28px] font-bold leading-[1.15] tracking-tight text-white sm:text-[40px] sm:leading-[1.12]">
           {headline}
         </h1>
         {sub ? (
-          <p className="mt-3 max-w-2xl text-balance text-sm font-medium leading-relaxed text-white/90 sm:mt-4 sm:text-[17px]">
+          <p
+            className="anim-rise mt-3 max-w-2xl text-balance text-sm font-medium leading-relaxed text-white/90 sm:mt-4 sm:text-[17px]"
+            style={{ animationDelay: "140ms" }}
+          >
             {sub}
           </p>
         ) : null}

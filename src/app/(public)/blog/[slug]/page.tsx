@@ -140,7 +140,7 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
             fill
             priority
             sizes="(min-width: 1024px) 66vw, 100vw"
-            className="object-cover"
+            className="anim-kenburns object-cover"
           />
         </div>
       ) : null}

@@ -34,10 +34,10 @@ export function PopularDestinations({ destinations }: PopularDestinationsProps) 
           </div>
           <Link
             href="/packages"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline shrink-0"
+            className="group inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline shrink-0"
           >
             <span>Explore all destinations</span>
-            <ArrowRight className="size-4" />
+            <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
           </Link>
         </div>
 
