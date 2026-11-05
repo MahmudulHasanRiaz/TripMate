@@ -17,6 +17,7 @@ import { WhatsAppIcon } from "./brand-icons";
 import { BrandLogo } from "./BrandLogo";
 
 import Logo from "@/components/icons/Logo";
+import { CredentialViewer } from "./CredentialViewer";
 import type {
   SiteAccreditation,
   SiteFooterColumn,
@@ -164,17 +165,32 @@ export function SiteFooter({
                           {badge.sublabel}
                         </span>
                       ) : null}
-                      {badge.linkUrl ? (
-                        <a
-                          href={badge.linkUrl}
-                          {...(external
-                            ? { target: "_blank", rel: "noopener noreferrer" }
-                            : {})}
-                          className="mt-3 inline-flex items-center gap-1 rounded-sm text-[13px] font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                        >
-                          View details
-                          <ArrowUpRight className="size-3.5" aria-hidden="true" />
-                        </a>
+                      {badge.credentialText ? (
+                        <span className="mt-2 text-[13px] font-semibold leading-snug text-foreground/80">
+                          {badge.credentialText}
+                        </span>
+                      ) : null}
+                      {badge.credentialImageUrl || badge.linkUrl ? (
+                        <span className="flex flex-wrap items-center justify-center gap-x-4">
+                          {badge.credentialImageUrl ? (
+                            <CredentialViewer
+                              imageUrl={badge.credentialImageUrl}
+                              label={badge.label}
+                            />
+                          ) : null}
+                          {badge.linkUrl ? (
+                            <a
+                              href={badge.linkUrl}
+                              {...(external
+                                ? { target: "_blank", rel: "noopener noreferrer" }
+                                : {})}
+                              className="mt-3 inline-flex items-center gap-1 rounded-sm text-[13px] font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                            >
+                              View details
+                              <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                            </a>
+                          ) : null}
+                        </span>
                       ) : null}
                     </div>
                   </li>

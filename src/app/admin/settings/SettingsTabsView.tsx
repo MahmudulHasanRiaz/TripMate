@@ -124,6 +124,8 @@ export default function SettingsTabsView({
           label: a.label || "",
           sublabel: a.sublabel || "",
           linkUrl: a.linkUrl || "",
+          credentialText: a.credentialText || "",
+          credentialImageUrl: a.credentialImageUrl || "",
         }))
       : [];
   });
@@ -146,6 +148,8 @@ export default function SettingsTabsView({
         label: a.label.trim(),
         sublabel: a.sublabel.trim(),
         linkUrl: a.linkUrl.trim(),
+        credentialText: a.credentialText.trim(),
+        credentialImageUrl: a.credentialImageUrl.trim(),
       }));
     startSiteTransition(async () => {
       try {

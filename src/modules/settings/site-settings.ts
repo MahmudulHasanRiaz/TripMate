@@ -70,6 +70,12 @@ export type Accreditation = {
   label: string;
   sublabel: string;
   linkUrl: string;
+  /** Optional credential detail (Follow-up 18): a licence/membership
+   *  number as plain text, and/or the credential document itself as an
+   *  image (e.g. a certificate photo) that visitors can open from the
+   *  card. Both optional and agency-supplied — empty renders nothing. */
+  credentialText: string;
+  credentialImageUrl: string;
 };
 
 export type FooterLink = { label: string; href: string };
@@ -182,6 +188,9 @@ function asAccreditations(value: unknown): Accreditation[] {
       label: a.label as string,
       sublabel: typeof a.sublabel === "string" ? a.sublabel : "",
       linkUrl: typeof a.linkUrl === "string" ? a.linkUrl : "",
+      credentialText: typeof a.credentialText === "string" ? a.credentialText : "",
+      credentialImageUrl:
+        typeof a.credentialImageUrl === "string" ? a.credentialImageUrl : "",
     }));
 }
 
