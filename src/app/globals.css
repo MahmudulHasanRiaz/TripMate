@@ -393,9 +393,13 @@
      alternate zoom, so the hero's pixels never matched the final frame
      and Lighthouse's Speed Index could never complete (15.1s on desktop
      despite a 0.5s LCP). The arrival drift is unchanged — same 1 → 1.08
-     cinematic zoom — but it now plays once over 7s with an ease-out tail
-     and stays at the end state, letting the page visually settle. */
-  animation: fu-kenburns 7s cubic-bezier(0.22, 1, 0.36, 1) both;
+     cinematic zoom — but it now plays once and stays at the end state,
+     letting the page visually settle. Duration is 2.8s, not longer:
+     measured after the first ship, a 7s settle still cost Speed Index
+     most of its remaining score (desktop SI 2.7s at score 0.36 with a
+     0.5s FCP) because the zooming hero sits inside the viewport — its
+     motion tail IS the visual-completion tail. */
+  animation: fu-kenburns 2.8s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
