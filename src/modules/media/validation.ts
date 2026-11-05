@@ -47,16 +47,20 @@ const EXT_PATTERN = Object.values(MIME_EXTENSIONS).join("|");
 
 /**
  * A storage key is a lowercase uuid stem plus a whitelisted extension
- * (`<uuid>.png`). Keys are SERVER-generated from the validated mime — never
- * derived from a client filename — so they cannot smuggle path separators or
- * odd extensions into the storage path. Parsed at every boundary where a key
- * is trusted (the local driver also defends against traversal regardless).
+ * (`<uuid>.png`). Keys are SERVER-generated — uploads from a UUID + the
+ * validated mime, renames from a server-slugified stem (see slugifyFileStem)
+ * — never taken raw from a client filename, so they cannot smuggle path
+ * separators or odd extensions into the storage path. Parsed at every
+ * boundary where a key is trusted (the local driver also defends against
+ * traversal regardless).
  */
+const UUID_STEM = `[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`;
+const SLUG_STEM = `[a-z0-9]+(?:-[a-z0-9]+)*`;
 export const storageKeySchema = z
   .string()
   .regex(
-    new RegExp(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(${EXT_PATTERN})$`),
-    "Storage key must be a UUID with an allowed extension",
+    new RegExp(`^(?:${UUID_STEM}|${SLUG_STEM})\\.(${EXT_PATTERN})$`),
+    "Storage key must be a UUID or slug with an allowed extension",
   );
 export type StorageKey = z.infer<typeof storageKeySchema>;
 
@@ -66,6 +70,48 @@ export function buildStorageKey(uuid: string, mime: string): string | null {
   if (!ext) return null;
   const key = `${uuid}.${ext}`;
   return storageKeySchema.safeParse(key).success ? key : null;
+}
+
+/** Longest stem a rename may produce (keeps URLs and filesystems sane). */
+export const MAX_SLUG_STEM_LENGTH = 80;
+
+/**
+ * Turn a user-typed file name into an SEO-friendly URL stem: lowercase ASCII,
+ * diacritics stripped (café → cafe), every run of non [a-z0-9] characters
+ * collapsed to one hyphen, hyphens trimmed, capped at MAX_SLUG_STEM_LENGTH.
+ * Returns "" when nothing ASCII-usable remains (e.g. a purely Bengali name) —
+ * the caller must refuse the rename with guidance, never invent a stem.
+ */
+export function slugifyFileStem(input: string): string {
+  const slug = input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return slug.slice(0, MAX_SLUG_STEM_LENGTH).replace(/-+$/g, "");
+}
+
+/** Compose a validated slug storage key from a slugified stem + mime. */
+export function buildSlugStorageKey(stem: string, mime: string): string | null {
+  const ext = extensionForMime(mime);
+  if (!ext) return null;
+  const key = `${stem}.${ext}`;
+  return storageKeySchema.safeParse(key).success ? key : null;
+}
+
+/**
+ * Pick the first free key for a rename: `<stem>.<ext>`, then `<stem>-2.<ext>`,
+ * `<stem>-3.<ext>`… against the set of keys already taken by OTHER files.
+ * Pure so the collision rule is unit-testable without storage or a DB.
+ */
+export function planRenamedKey(stem: string, ext: string, taken: ReadonlySet<string>): string {
+  const base = `${stem}.${ext}`;
+  if (!taken.has(base)) return base;
+  for (let n = 2; ; n += 1) {
+    const candidate = `${stem}-${n}.${ext}`;
+    if (!taken.has(candidate)) return candidate;
+  }
 }
 
 /**

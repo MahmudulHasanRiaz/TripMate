@@ -126,3 +126,85 @@ test("media upload round-trip: >1MB PNG, alt edit, trash", async ({ page }) => {
     await expect(page.getByText(fileName, { exact: true })).toHaveCount(0, wait);
   });
 });
+
+// FU-13: the detail dialog (click a card → preview/meta/copy/open/download,
+// SEO rename that really moves the file + rewrites references), then the
+// trash view's per-file Restore and permanent Delete.
+test("media detail dialog: copy URL, SEO rename, trash restore + purge", async ({ page }) => {
+  await signInAsAdmin(page);
+
+  const png = makeLargeRgbPng(120, 80);
+  const stamp = Date.now();
+  const fileName = `e2e-detail-${stamp}.png`;
+  const slug = `e2e-seo-view-${stamp}`;
+  const renamed = `${slug}.png`;
+
+  await test.step("upload a small PNG", async () => {
+    await page.goto("/admin/media");
+    await expect(page.getByRole("heading", { name: "Media library" })).toBeVisible(wait);
+    await page.setInputFiles("#media-file-input", {
+      name: fileName,
+      mimeType: "image/png",
+      buffer: png,
+    });
+    await expect(page.getByText(fileName, { exact: true }).first()).toBeVisible(wait);
+  });
+
+  const dialog = page.getByRole("dialog");
+  let publicUrl = "";
+
+  await test.step("click the card name — the detail dialog opens", async () => {
+    const card = page.locator("li", { hasText: fileName }).first();
+    await card.getByRole("button", { name: fileName, exact: true }).click();
+    await expect(dialog).toBeVisible(wait);
+    await expect(dialog.getByLabel("File URL")).toHaveValue(new RegExp(`/uploads/.+\\.png$`), wait);
+  });
+
+  await test.step("copy URL gives feedback", async () => {
+    await dialog.getByRole("button", { name: "Copy URL" }).click();
+    await expect(dialog.getByRole("button", { name: "Copied" })).toBeVisible(wait);
+  });
+
+  await test.step("rename to an SEO slug — card + URL follow", async () => {
+    await dialog.getByLabel(/File name/).fill(slug);
+    await dialog.getByRole("button", { name: "Rename", exact: true }).click();
+    await expect(page.getByText(renamed, { exact: true }).first()).toBeVisible(wait);
+    await expect(dialog.getByLabel("File URL")).toHaveValue(new RegExp(`${slug}\\.png$`), wait);
+    // The public URL really serves the renamed object.
+    publicUrl = await dialog.getByLabel("File URL").inputValue();
+    const res = await page.request.get(publicUrl);
+    expect(res.ok()).toBe(true);
+  });
+
+  await test.step("trash from the dialog, then restore from the trash view", async () => {
+    await dialog.getByRole("button", { name: "Move to trash" }).click();
+    await dialog.getByRole("button", { name: "Trash file" }).click();
+    await expect(page.getByText(renamed, { exact: true })).toHaveCount(0, wait);
+
+    await page.getByRole("link", { name: /Trash \(\d+\)/ }).click();
+    const row = page.locator("li", { hasText: renamed }).first();
+    await expect(row).toBeVisible(wait);
+    await row.getByRole("button", { name: "Restore" }).click();
+    await expect(page.getByText(renamed, { exact: true })).toHaveCount(0, wait);
+
+    await page.getByRole("link", { name: "Library" }).click();
+    await expect(page.getByText(renamed, { exact: true }).first()).toBeVisible(wait);
+  });
+
+  await test.step("trash again, then delete permanently from the trash view", async () => {
+    await page.getByRole("button", { name: `Trash ${renamed}` }).click();
+    await page.getByRole("button", { name: "Trash file" }).click();
+    await expect(page.getByText(renamed, { exact: true })).toHaveCount(0, wait);
+
+    await page.getByRole("link", { name: /Trash \(\d+\)/ }).click();
+    const row = page.locator("li", { hasText: renamed }).first();
+    await expect(row).toBeVisible(wait);
+    await row.getByRole("button", { name: "Delete", exact: true }).click();
+    await page.getByRole("button", { name: "Delete permanently" }).click();
+    await expect(page.getByText(renamed, { exact: true })).toHaveCount(0, wait);
+
+    // The object itself is gone from storage too.
+    const res = await page.request.get(publicUrl);
+    expect(res.status()).toBe(404);
+  });
+});

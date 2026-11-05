@@ -41,6 +41,7 @@ import {
 } from "@/lib/landing-helpers";
 import { saveLandingPage } from "@/modules/landing-pages/actions";
 import { LandingRenderer } from "@/components/landing/LandingRenderer";
+import { MediaPickerButton } from "@/components/admin/MediaPickerField";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -904,14 +905,21 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                   return (
                     <div key={fieldDef.key}>
                       <Label className="text-xs">{fieldDef.label}</Label>
-                      <Input
-                        value={typeof val === "string" ? val : ""}
-                        onChange={(e) => updateSelectedConfig(fieldDef.key, e.target.value)}
-                        placeholder="https://..."
-                        className="mt-1 h-8 text-xs"
-                      />
+                      <div className="mt-1 flex items-center gap-1">
+                        <Input
+                          value={typeof val === "string" ? val : ""}
+                          onChange={(e) => updateSelectedConfig(fieldDef.key, e.target.value)}
+                          placeholder="https://..."
+                          className="h-8 flex-1 text-xs"
+                        />
+                        <MediaPickerButton
+                          label={`Browse media library for ${fieldDef.label}`}
+                          accept="image"
+                          onPick={(url) => updateSelectedConfig(fieldDef.key, url)}
+                        />
+                      </div>
                       <p className="mt-1 text-[10px] text-muted-foreground">
-                        Attach via Media Library URL or external image link.
+                        Pick from the Media Library (upload there too), or paste an external image link.
                       </p>
                     </div>
                   );
@@ -991,16 +999,27 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                               </>
                             ) : selectedSection.type === "gallery" ? (
                               <>
-                                <Input
-                                  value={strVal(item.url)}
-                                  onChange={(e) => {
-                                    const next = [...items];
-                                    next[itIdx] = { ...item, url: e.target.value };
-                                    updateSelectedConfig(fieldDef.key, next);
-                                  }}
-                                  placeholder="Image URL"
-                                  className="h-7 text-xs"
-                                />
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    value={strVal(item.url)}
+                                    onChange={(e) => {
+                                      const next = [...items];
+                                      next[itIdx] = { ...item, url: e.target.value };
+                                      updateSelectedConfig(fieldDef.key, next);
+                                    }}
+                                    placeholder="Image URL"
+                                    className="h-7 flex-1 text-xs"
+                                  />
+                                  <MediaPickerButton
+                                    label={`Browse media library for gallery image ${itIdx + 1}`}
+                                    accept="image"
+                                    onPick={(url) => {
+                                      const next = [...items];
+                                      next[itIdx] = { ...item, url };
+                                      updateSelectedConfig(fieldDef.key, next);
+                                    }}
+                                  />
+                                </div>
                                 <Input
                                   value={strVal(item.alt)}
                                   onChange={(e) => {

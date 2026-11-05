@@ -1,5 +1,5 @@
 import "server-only";
-import { mkdir, writeFile, unlink } from "node:fs/promises";
+import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
 import { dirname } from "node:path";
 import { legacyUploadsRoot, localUploadsRoot, resolveUnderRoot } from "../paths";
 import type { StorageDriver } from "../driver-types";
@@ -37,6 +37,19 @@ export class LocalDriver implements StorageDriver {
     await mkdir(dirname(full), { recursive: true });
     await writeFile(full, data);
     return { url: `/uploads/${key.split("\\").join("/")}` };
+  }
+
+  async get(key: string) {
+    // Same legacy-root fallback as delete: pre-storage-root-change objects
+    // live under public/uploads and must stay readable for a rename copy.
+    try {
+      return await readFile(this.safe(key));
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+      const legacy = resolveUnderRoot(legacyUploadsRoot(), key);
+      if (!legacy) throw e;
+      return readFile(legacy); // missing there too → throws → caller aborts
+    }
   }
 
   async delete(key: string) {

@@ -65,6 +65,26 @@ export async function putFileObject(
 }
 
 /**
+ * Copy a stored object to a NEW key on the SAME disk (the rename path: the
+ * object is read through the driver that owns it and written under the new
+ * key; the caller updates the DB row + references, then deletes the old key
+ * via deleteFileObject). Returns the new object's public URL as the driver
+ * derives it, so local `/uploads/<key>` and R2 custom-domain URLs both stay
+ * driver-owned. Failures propagate — the rename aborts with the original
+ * object untouched.
+ */
+export async function copyFileObject(
+  disk: "local" | "r2",
+  oldPath: string,
+  newKey: string,
+  mime: string,
+): Promise<{ url: string }> {
+  const driver = getStorageDriver(disk);
+  const bytes = await driver.get(oldPath);
+  return driver.put(newKey, bytes, mime);
+}
+
+/**
  * Delete a stored object through the driver that OWNS it. Unlike
  * putFileObject (which dispatches on the LIVE storage setting — a new object
  * goes wherever storage is configured NOW), deletion dispatches on the disk

@@ -7,4 +7,6 @@ export type MediaItem = {
   /** bytes */
   size: number;
   alt: string | null;
+  /** ISO timestamp of the upload (detail dialog's "Uploaded" row). */
+  createdAt: string;
 };
