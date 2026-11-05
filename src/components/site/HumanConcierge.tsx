@@ -128,7 +128,7 @@ export function HumanConcierge({
                     Receive customized package estimates and travel guidance.
                   </p>
                 </div>
-                <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
                   <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
                   Online
                 </span>
@@ -149,7 +149,7 @@ export function HumanConcierge({
                         href={`https://wa.me/${cleanPhone.replace("+", "")}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs h-11 px-6 shadow-md transition-all"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs h-11 px-6 shadow-md transition-all"
                       >
                         <WhatsAppIcon className="size-4" />
                         Open WhatsApp Chat
@@ -181,12 +181,12 @@ export function HumanConcierge({
                             onClick={() => setSelectedJourney(journey.id)}
                             className={`flex flex-col text-left p-3 rounded-xl border text-xs transition-all duration-200 cursor-pointer ${
                               isSelected
-                                ? "border-primary bg-primary/10 text-primary font-semibold ring-1 ring-primary shadow-xs"
+                                ? "border-primary bg-primary text-primary-foreground font-semibold ring-1 ring-primary shadow-xs"
                                 : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground"
                             }`}
                           >
                             <span className="font-bold">{journey.label}</span>
-                            <span className="text-[10px] opacity-75 mt-0.5 line-clamp-2 leading-snug">{journey.desc}</span>
+                            <span className="text-xs mt-0.5 line-clamp-2 leading-snug">{journey.desc}</span>
                           </button>
                         );
                       })}
@@ -196,12 +196,13 @@ export function HumanConcierge({
                   {/* Pilgrim Name & Group Size */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      <label htmlFor="concierge-name" className="block text-xs font-semibold text-foreground mb-1.5">
                         Your Full Name
                       </label>
                       <div className="relative">
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                         <input
+                          id="concierge-name"
                           type="text"
                           required
                           value={pilgrimName}
@@ -213,12 +214,13 @@ export function HumanConcierge({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      <label htmlFor="concierge-travelers" className="block text-xs font-semibold text-foreground mb-1.5">
                         Number of Travelers
                       </label>
                       <div className="relative">
                         <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                         <select
+                          id="concierge-travelers"
                           value={travelersCount}
                           onChange={(e) => setTravelersCount(Number(e.target.value))}
                           className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-xs font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -236,11 +238,12 @@ export function HumanConcierge({
                   {/* Contact Phone & Travel Period */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      <label htmlFor="concierge-phone" className="block text-xs font-semibold text-foreground mb-1.5">
                         WhatsApp Contact Number
                       </label>
                       <div className="flex gap-2">
                         <select
+                          aria-label="Country code"
                           value={countryCode}
                           onChange={(e) => setCountryCode(e.target.value)}
                           className="rounded-xl border border-border bg-background px-2.5 py-2.5 text-xs font-medium text-foreground focus:border-primary focus:outline-none"
@@ -252,6 +255,7 @@ export function HumanConcierge({
                           ))}
                         </select>
                         <input
+                          id="concierge-phone"
                           type="tel"
                           required
                           value={phoneNumber}
@@ -263,12 +267,13 @@ export function HumanConcierge({
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      <label htmlFor="concierge-month" className="block text-xs font-semibold text-foreground mb-1.5">
                         Target Travel Timing
                       </label>
                       <div className="relative">
                         <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                         <input
+                          id="concierge-month"
                           type="text"
                           value={preferredMonth}
                           onChange={(e) => setPreferredMonth(e.target.value)}
@@ -295,7 +300,7 @@ export function HumanConcierge({
                         </>
                       )}
                     </Button>
-                    <p className="mt-2 text-center text-[10px] text-muted-foreground">
+                    <p className="mt-2 text-center text-xs text-muted-foreground">
                       Your inquiry is received directly by our concierge team for immediate follow-up.
                     </p>
                   </div>
@@ -304,7 +309,7 @@ export function HumanConcierge({
             </div>
 
             {/* Quick Guarantees Strip */}
-            <div className="mt-6 pt-4 border-t border-border grid grid-cols-3 gap-2 text-center text-[11px] text-muted-foreground">
+            <div className="mt-6 pt-4 border-t border-border grid grid-cols-3 gap-2 text-center text-xs text-muted-foreground">
               <div className="flex flex-col items-center gap-1">
                 <ShieldCheck className="size-3.5 text-primary" />
                 <span className="font-semibold text-foreground">Verified Operator</span>
@@ -331,7 +336,7 @@ export function HumanConcierge({
                 </div>
 
                 <div className="space-y-1">
-                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
                     <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Online &amp; Taking Inquiries
                   </div>
@@ -359,10 +364,10 @@ export function HumanConcierge({
                       </div>
                       <div>
                         <div className="text-xs font-bold text-foreground">Direct WhatsApp Chat</div>
-                        <div className="text-[11px] text-muted-foreground">Instant quotes &amp; brochures</div>
+                        <div className="text-xs text-muted-foreground">Instant quotes &amp; brochures</div>
                       </div>
                     </div>
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
+                    <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
                       Chat →
                     </span>
                   </a>
@@ -379,7 +384,7 @@ export function HumanConcierge({
                       </div>
                       <div>
                         <div className="text-xs font-bold text-foreground">Priority Voice Line</div>
-                        <div className="text-[11px] text-muted-foreground">{phone}</div>
+                        <div className="text-xs text-muted-foreground">{phone}</div>
                       </div>
                     </div>
                     <span className="text-xs font-semibold text-primary group-hover:translate-x-1 transition-transform">

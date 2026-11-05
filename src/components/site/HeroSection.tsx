@@ -37,6 +37,7 @@ export function HeroSection({
             alt={imageAlt}
             fill
             priority
+            fetchPriority="high"
             sizes="100vw"
             referrerPolicy="no-referrer"
             className="anim-kenburns object-cover"
