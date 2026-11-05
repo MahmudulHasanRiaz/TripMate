@@ -132,7 +132,7 @@ async function PackageDetailBody({
           </div>
 
           <aside className="hidden lg:block">
-            <div className="sticky top-24">
+            <div className="sticky top-header-clearance sm:top-header-clearance-lg">
               <PackageEnquiryCard data={data} phone={site.phone} email={site.email} />
             </div>
           </aside>

@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { ChevronDown, Search, X } from "lucide-react";
 
+import { DURATION_OPTIONS } from "@/lib/package-filters";
 import { cn } from "@/lib/utils";
 
 export type PackageFilterSelectOption = { value: string; label: string };
@@ -28,13 +29,14 @@ const FIELD_SELECT = cn(
 
 const FIELD_SEARCH = cn(FIELD, "pl-9");
 
-type Fields = { q: string; cat: string; dest: string; max: string };
+type Fields = { q: string; cat: string; dest: string; duration: string; max: string };
 
 function fieldParams(searchParams: URLSearchParams): Fields {
   return {
     q: searchParams.get("q") ?? "",
     cat: searchParams.get("cat") ?? "",
     dest: searchParams.get("dest") ?? "",
+    duration: searchParams.get("duration") ?? "",
     max: searchParams.get("max") ?? "",
   };
 }
@@ -83,6 +85,7 @@ export function PackageFilters({ options }: { options: PackageFilterOptions }) {
     if (next.q) params.set("q", next.q);
     if (next.cat) params.set("cat", next.cat);
     if (next.dest) params.set("dest", next.dest);
+    if (next.duration) params.set("duration", next.duration);
     if (next.max) params.set("max", next.max);
     const query = params.toString();
     const target = query ? `${pathname}?${query}` : pathname;
@@ -103,17 +106,21 @@ export function PackageFilters({ options }: { options: PackageFilterOptions }) {
 
   const clearAll = () => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const empty: Fields = { q: "", cat: "", dest: "", max: "" };
+    const empty: Fields = { q: "", cat: "", dest: "", duration: "", max: "" };
     setFields(empty);
     commit(empty);
   };
 
   const active =
-    fields.q !== "" || fields.cat !== "" || fields.dest !== "" || fields.max !== "";
+    fields.q !== "" ||
+    fields.cat !== "" ||
+    fields.dest !== "" ||
+    fields.duration !== "" ||
+    fields.max !== "";
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,190px)_minmax(0,190px)_minmax(0,170px)_auto]">
+      <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,190px)_minmax(0,190px)_minmax(0,190px)_minmax(0,170px)_auto]">
         {/* Search */}
         <div className="relative sm:col-span-2 lg:col-span-1">
           <Search
@@ -176,6 +183,31 @@ export function PackageFilters({ options }: { options: PackageFilterOptions }) {
             {options.destinations.map((d) => (
               <option key={d.value} value={d.value} className="text-foreground">
                 {d.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+            aria-hidden="true"
+          />
+        </div>
+
+        {/* Duration */}
+        <div className="relative">
+          <label className="sr-only" htmlFor="package-duration">
+            Duration
+          </label>
+          <select
+            id="package-duration"
+            className={cn(FIELD_SELECT, fields.duration === "" && "text-muted-foreground")}
+            aria-label="Duration"
+            value={fields.duration}
+            onChange={(e) => changeField("duration", e.target.value, true)}
+          >
+            <option value="">Any duration</option>
+            {DURATION_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value} className="text-foreground">
+                {o.label}
               </option>
             ))}
           </select>

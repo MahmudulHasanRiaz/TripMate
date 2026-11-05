@@ -30,15 +30,24 @@ export default function VisaExplorerClient({
   destinations,
   visaTypes,
   brand,
+  initialDestinationId,
 }: {
   services: VisaServiceWithRefs[];
   destinations: Destination[];
   visaTypes: VisaType[];
   /** Site title — flows into the inquiry modal's trust line. */
   brand?: string;
+  /**
+   * Destination resolved server-side from the `?destination=` deep-link
+   * (FU-32). Seeds the destination filter so a visitor arriving from the
+   * homepage panel lands with their chosen country already selected; the
+   * page keys this component by the resolved id, so a same-page
+   * re-navigation to another country remounts and re-seeds.
+   */
+  initialDestinationId?: string | null;
 }) {
   const [search, setSearch] = useState("");
-  const [selectedDestId, setSelectedDestId] = useState<string>("all");
+  const [selectedDestId, setSelectedDestId] = useState<string>(initialDestinationId ?? "all");
   const [selectedTypeId, setSelectedTypeId] = useState<string>("all");
 
   const [inquiryVisa, setInquiryVisa] = useState<VisaServiceWithRefs | null>(null);

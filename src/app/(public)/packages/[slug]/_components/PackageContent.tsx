@@ -4,6 +4,7 @@ import { Check, ChevronDown, X } from "lucide-react";
 
 import { ProseMarkdown } from "@/components/site/ProseMarkdown";
 import { Gallery } from "@/components/site/Gallery";
+import { listingPhotos } from "@/lib/listing-photos";
 import { youtubeEmbedUrl } from "@/lib/seo-meta";
 
 import type { PackageDetailData } from "../../_lib/catalog-data";
@@ -20,14 +21,10 @@ import type { PackageDetailData } from "../../_lib/catalog-data";
 export function PackageContent({ data }: { data: PackageDetailData }) {
   const { summary, description, gallery, videoUrl, itinerary, inclusions, exclusions } = data;
   const hasLongform = Boolean(summary || description);
-  // One photo set for the whole page (FU-28): the hero pill counts
-  // cover + gallery, so the gallery must SHOW cover + gallery —
-  // previously it showed the gallery only and the two counts
-  // contradicted each other ("3 photos" up top, "2 photos" here).
-  const allPhotos =
-    data.cover && !gallery.some((image) => image.url === data.cover?.url)
-      ? [data.cover, ...gallery]
-      : gallery;
+  // One photo set for the whole page, from the shared definition in
+  // lib/listing-photos (FU-28/FU-32): the hero pill, this section's
+  // heading and the lightbox all count/show exactly this array.
+  const allPhotos = listingPhotos(data.cover, gallery);
 
   return (
     <div className="space-y-12 lg:space-y-14">
@@ -56,7 +53,7 @@ export function PackageContent({ data }: { data: PackageDetailData }) {
         <section
           id="package-gallery"
           aria-labelledby="package-gallery-heading"
-          className="scroll-mt-28"
+          className="scroll-mt-header-clearance sm:scroll-mt-header-clearance-lg"
         >
           <SectionHeading meta={`${allPhotos.length} ${allPhotos.length === 1 ? "photo" : "photos"}`}>
             Gallery
