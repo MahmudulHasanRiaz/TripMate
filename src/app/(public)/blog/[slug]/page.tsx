@@ -140,6 +140,7 @@ async function BlogPostBody({ params }: { params: Promise<{ slug: string }> }) {
             alt={post.image.alt}
             fill
             priority
+            fetchPriority="high"
             sizes="(min-width: 1024px) 66vw, 100vw"
             className="anim-kenburns object-cover"
           />
