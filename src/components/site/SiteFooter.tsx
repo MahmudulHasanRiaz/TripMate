@@ -100,6 +100,56 @@ export function SiteFooter({
 
   return (
     <footer className="border-t border-border bg-card/60 backdrop-blur-md">
+      {/* Accreditation band — settings-driven credentials (Follow-up 09 §5,
+          band layout Follow-up 15). Each item renders the way its kind
+          reads best: a REAL organization logo on a white plate when one is
+          configured, otherwise a designed credential tile (a licence
+          number is information, not a logo). 100% settings content —
+          nothing is hardcoded, and nothing renders when the agency
+          configured no accreditations. */}
+      {accreditations && accreditations.length > 0 ? (
+        <div className="border-b border-border/70">
+          <div className="mx-auto w-full max-w-[1400px] px-4 pb-10 pt-10 lg:px-8">
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Licensed &amp; Accredited
+            </p>
+            <ul className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+              {accreditations.map((badge, i) => (
+                <li
+                  key={`${badge.label}-${i}`}
+                  className="flex items-center gap-3 rounded-xl border border-border bg-background p-3 transition-colors duration-150 hover:border-primary/40"
+                >
+                  {badge.imageUrl ? (
+                    <span className="flex h-12 w-[72px] shrink-0 items-center justify-center rounded-lg bg-white px-2 py-1.5 ring-1 ring-border/60">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={badge.imageUrl}
+                        alt=""
+                        className="max-h-9 w-auto max-w-full object-contain"
+                      />
+                    </span>
+                  ) : (
+                    <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/20">
+                      <Award className="size-6 text-primary" aria-hidden="true" />
+                    </span>
+                  )}
+                  <span className="flex min-w-0 flex-col">
+                    <span className="text-[13px] font-bold leading-snug text-foreground">
+                      {badge.label}
+                    </span>
+                    {badge.sublabel ? (
+                      <span className="text-xs leading-snug text-muted-foreground">
+                        {badge.sublabel}
+                      </span>
+                    ) : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ) : null}
+
       {/* Upper Footer Grid */}
       <div className="mx-auto grid w-full max-w-[1400px] gap-10 px-4 py-16 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1.2fr] lg:px-8">
         {/* Brand & Mission */}
@@ -132,48 +182,6 @@ export function SiteFooter({
             {footerDescription ||
               "Bangladesh's premier luxury travel & pilgrimage agency. Approved by the Ministry of Hajj & Umrah, Saudi Arabia. Dedicated to seamless spiritual excellence."}
           </p>
-
-          {/* Accreditation badges — settings-driven REAL organization
-              logos (Follow-up 09 §5). An item without an image (e.g. a
-              license number) renders as a credential tile. Nothing is
-              rendered when the agency configured no accreditations. */}
-          {accreditations && accreditations.length > 0 ? (
-            <div className="pt-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Licensed &amp; Accredited
-              </p>
-              <ul className="mt-2.5 flex flex-wrap gap-x-5 gap-y-3">
-                {accreditations.map((badge, i) => (
-                  <li key={`${badge.label}-${i}`} className="flex items-center gap-2.5">
-                    {badge.imageUrl ? (
-                      <span className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-white px-2.5 py-1.5 ring-1 ring-border/60">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={badge.imageUrl}
-                          alt=""
-                          className="h-8 w-auto max-w-[104px] object-contain"
-                        />
-                      </span>
-                    ) : (
-                      <span className="flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 px-3 ring-1 ring-primary/20">
-                        <Award className="size-5 text-primary" aria-hidden="true" />
-                      </span>
-                    )}
-                    <span className="flex flex-col">
-                      <span className="text-xs font-bold leading-tight text-foreground">
-                        {badge.label}
-                      </span>
-                      {badge.sublabel ? (
-                        <span className="text-[11px] leading-tight text-muted-foreground">
-                          {badge.sublabel}
-                        </span>
-                      ) : null}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
 
           {/* Social Icons */}
           <ul className="flex items-center gap-1 pt-2">
