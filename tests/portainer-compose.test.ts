@@ -305,8 +305,33 @@ describe("docker build context", () => {
   it("ships scripts/derive-db-url.mjs and runs it in the boot CMD", () => {
     expect(dockerignore).toMatch(/^!scripts\/derive-db-url\.mjs$/m);
     expect(dockerfile).toMatch(/COPY --from=builder[^\n]*scripts\/derive-db-url\.mjs/);
-    // The CMD must derive DATABASE_URL before auto-migration and the server.
-    expect(dockerfile).toMatch(/derive-db-url\.mjs/);
-    expect(dockerfile).toMatch(/auto-migrate\.mjs && exec node server\.js/);
+    // FU-31: the image CMD delegates to scripts/boot.sh, which must derive
+    // DATABASE_URL before auto-migration and the server start. Ordering is
+    // asserted on code lines only — the header comment narrates the steps
+    // too and would poison a naive indexOf.
+    expect(dockerfile).toMatch(/CMD \["sh", "scripts\/boot\.sh"\]/);
+    const boot = readFileSync(join(repoRoot, "scripts/boot.sh"), "utf8");
+    const bootCode = boot
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("#"))
+      .join("\n");
+    expect(bootCode).toMatch(/derive-db-url\.mjs/);
+    expect(bootCode.indexOf("derive-db-url.mjs")).toBeLessThan(bootCode.indexOf("auto-migrate.mjs"));
+    expect(bootCode.indexOf("auto-migrate.mjs")).toBeLessThan(bootCode.indexOf("node server.js"));
+  });
+
+  it("ships the FU-31 boot scripts (boot.sh + boot-revalidate.mjs)", () => {
+    expect(dockerignore).toMatch(/^!scripts\/boot\.sh$/m);
+    expect(dockerignore).toMatch(/^!scripts\/boot-revalidate\.mjs$/m);
+    expect(dockerfile).toMatch(/COPY --from=builder[^\n]*scripts\/boot\.sh/);
+    expect(dockerfile).toMatch(/COPY --from=builder[^\n]*scripts\/boot-revalidate\.mjs/);
+    // boot.sh must invoke the convergence client after starting the server
+    // (code lines only, same comment caveat as above).
+    const boot = readFileSync(join(repoRoot, "scripts/boot.sh"), "utf8");
+    const bootCode = boot
+      .split("\n")
+      .filter((line) => !line.trimStart().startsWith("#"))
+      .join("\n");
+    expect(bootCode.indexOf("node server.js")).toBeLessThan(bootCode.indexOf("boot-revalidate.mjs"));
   });
 });

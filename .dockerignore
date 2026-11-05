@@ -35,12 +35,16 @@ playwright.config.ts
 # dev-only scripts (runner is standalone-only). NOTE: drizzle/ +
 # drizzle.config.ts are NOT ignored — the builder migrates its throwaway
 # embedded Postgres before `next build` (see Dockerfile). migrate-lib.mjs and
-# derive-db-url.mjs must ship too: auto-migrate.mjs imports the former and the
-# image CMD runs the latter; the runner COPYs both explicitly.
+# derive-db-url.mjs must ship too: auto-migrate.mjs imports the former and
+# boot.sh runs the latter. boot.sh (the image CMD) and boot-revalidate.mjs
+# (FU-31 cache convergence) ship for the same reason; the runner COPYs all
+# of them explicitly.
 scripts/*
 !scripts/auto-migrate.mjs
 !scripts/migrate-lib.mjs
 !scripts/derive-db-url.mjs
+!scripts/boot.sh
+!scripts/boot-revalidate.mjs
 
 # runtime data (bind-mounted by compose, not baked in)
 storage

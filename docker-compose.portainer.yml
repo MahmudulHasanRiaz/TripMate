@@ -15,6 +15,10 @@
 #      (see .env.example → "Portainer stack" section for the full sample set).
 #   5. Deploy. Postgres + app start; the app auto-migrates the schema at boot
 #      (scripts/auto-migrate.mjs) and /api/health reports migrationsPending: 0.
+#      Boot also converges the public cache automatically (FU-31): the image's
+#      build-time prerender is expired once per container start, so the site
+#      serves THIS stack's settings + APP_URL within seconds of a redeploy —
+#      no manual Admin → Settings save is needed after deploying.
 #   6. Open https://<your-APP_URL>/setup once to create the superadmin.
 #
 # Required variables (deploy FAILS FAST with an actionable message if unset):
