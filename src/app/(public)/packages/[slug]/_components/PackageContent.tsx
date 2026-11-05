@@ -76,7 +76,13 @@ export function PackageContent({ data }: { data: PackageDetailData }) {
                 className="group rounded-xl border border-border bg-card transition-[border-color,box-shadow] duration-300 open:border-primary/30 open:shadow-[0_1px_0_0_rgba(0,0,0,0.02),0_8px_24px_-16px_rgba(0,0,0,0.25)]"
               >
                 <summary className="flex min-h-12 cursor-pointer list-none items-center gap-3.5 rounded-xl px-4 py-3.5 text-sm font-semibold [&::-webkit-details-marker]:hidden [&::marker]:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-secondary text-xs font-bold tabular-nums text-primary ring-1 ring-primary/10 transition-colors group-open:bg-primary group-open:text-primary-foreground group-open:ring-primary/30">
+                  {/* Day badge (pill fix, FU-27): a fixed circle broke
+                      on range labels — "10-12" wrapped mid-string. The
+                      badge is now a pill (36px circle minimum, grows
+                      sideways with padding) and the label never wraps,
+                      so any day value — 1, 21, 10-12, 100-120 — sits
+                      on one line exactly as designed. */}
+                  <span className="inline-flex h-9 min-w-9 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-secondary px-1.5 text-xs font-bold tabular-nums text-primary ring-1 ring-primary/10 transition-colors group-open:bg-primary group-open:text-primary-foreground group-open:ring-primary/30">
                     {day.day}
                   </span>
                   <span className="min-w-0 flex-1">{day.title}</span>
