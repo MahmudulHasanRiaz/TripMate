@@ -36,8 +36,13 @@
  *    headers. The headers alone are NOT sufficient — verified live on
  *    Vercel (FU-40 first deploy): the platform consumes the router
  *    headers before the proxy runs, so a header-only check marked
- *    flight responses public. The `_rsc` parameter and the Accept
- *    header reach the proxy on every platform.
+ *    flight responses public. Verified live again after the fix:
+ *    Vercel also consumes the `_rsc` parameter before the proxy, so
+ *    there the Accept header is the one signal that survives; on
+ *    self-hosted Node (Portainer) all three reach the proxy. That is
+ *    enough on every platform because a real flight fetch always
+ *    sends all three signals together — the check needs only one of
+ *    them to survive.
  *
  * The public value mirrors the pattern already proven on the EcoMate
  * storefronts: browsers revalidate every time (max-age=0, cheap
