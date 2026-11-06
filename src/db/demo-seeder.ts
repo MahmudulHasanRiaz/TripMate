@@ -41,7 +41,7 @@ export async function seedDemoData() {
   const ASSETS: Record<string, SeedAsset> = {
     hero: {
       name: "hero-luxury-travel.jpg",
-      sourceUrl: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1600&auto=format&fit=crop",
+      sourceUrl: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?q=80&w=1600&auto=format&fit=crop",
       mime: "image/jpeg",
       alt: "Luxury travel journey with scenic vistas",
       fallbackSvg: generateTravelSvg("Your Next Journey", "Curated tours, spiritual pilgrimages and flight concierge", "178 74% 21%"),
@@ -103,15 +103,15 @@ export async function seedDemoData() {
       fallbackSvg: generateTravelSvg("Executive Umrah 14-Day", "Deluxe Hotels & Full Ground Support", "41 55% 44%"),
     },
     pkgMalaysiaCover: {
-      name: "pkg-malaysia-family.jpg",
-      sourceUrl: "https://images.unsplash.com/photo-1528728329032-2972f65dfb3f?q=80&w=1200&auto=format&fit=crop",
+      name: "pkg-malaysia-singapore-family.jpg",
+      sourceUrl: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?q=80&w=1200&auto=format&fit=crop",
       mime: "image/jpeg",
-      alt: "Universal Studios Singapore and Sentosa Island",
+      alt: "Singapore Marina Bay Sands and ArtScience Museum",
       fallbackSvg: generateTravelSvg("Malaysia & Singapore Family Tour", "7 Days All-Inclusive City & Resort", "158 64% 25%"),
     },
     pkgDubaiCover: {
       name: "pkg-dubai-desert.jpg",
-      sourceUrl: "https://images.unsplash.com/photo-1518684079-3c830dcef090?q=80&w=1200&auto=format&fit=crop",
+      sourceUrl: "https://images.pexels.com/photos/10794659/pexels-photo-10794659.jpeg?auto=compress&cs=tinysrgb&w=1200",
       mime: "image/jpeg",
       alt: "Sunset over golden dunes in Dubai desert safari",
       fallbackSvg: generateTravelSvg("Dubai Luxury & Desert Safari", "5 Days 4-Star Stay & Dhow Cruise", "215 78% 28%"),
@@ -125,16 +125,16 @@ export async function seedDemoData() {
     },
     guideUmrah: {
       name: "guide-umrah-preparation.jpg",
-      sourceUrl: "https://images.unsplash.com/photo-1542810634-71277d95dcbb?q=80&w=1200&auto=format&fit=crop",
+      sourceUrl: "https://images.pexels.com/photos/32290181/pexels-photo-32290181.jpeg?auto=compress&cs=tinysrgb&w=1200",
       mime: "image/jpeg",
-      alt: "Prayer beads and Islamic guide",
+      alt: "Pilgrims gathered at the Kaaba in Makkah",
       fallbackSvg: generateTravelSvg("First-Time Umrah Guide", "Step-by-Step Preparation & Advice", "41 55% 44%"),
     },
     guideMalaysia: {
       name: "guide-malaysia-family.jpg",
-      sourceUrl: "https://images.unsplash.com/photo-1548013146-72479768bada?q=80&w=1200&auto=format&fit=crop",
+      sourceUrl: "https://images.pexels.com/photos/94420/pexels-photo-94420.jpeg?auto=compress&cs=tinysrgb&w=1200",
       mime: "image/jpeg",
-      alt: "Scenic Asian tea plantation",
+      alt: "Kuala Lumpur skyline and Petronas Towers at sunset",
       fallbackSvg: generateTravelSvg("Malaysia Family Travel Tips", "What to see, eat and experience", "158 64% 25%"),
     },
   };
@@ -389,8 +389,8 @@ export async function seedDemoData() {
           image: storedUrls.destMalaysia || null,
           gallery: [
             { url: storedUrls.destMalaysia || "", alt: "Kuala Lumpur Petronas Towers and city skyline" },
-            { url: storedUrls.pkgMalaysiaCover || "", alt: "Universal Studios Singapore and Sentosa Island" },
-            { url: storedUrls.guideMalaysia || "", alt: "Scenic Asian tea plantation" },
+            { url: storedUrls.pkgMalaysiaCover || "", alt: "Singapore Marina Bay skyline" },
+            { url: storedUrls.guideMalaysia || "", alt: "Kuala Lumpur skyline and Petronas Towers at sunset" },
           ],
           videos: [
             { url: "https://www.youtube.com/watch?v=ScIGjctcz7o", title: "Kuala Lumpur Travel Guide — All Sights and the Petronas Towers" },
@@ -832,9 +832,9 @@ export async function seedDemoData() {
           alt: "Sentosa Island and Singapore skyline",
         },
         gallery: [
-          { url: storedUrls.pkgMalaysiaCover || "", alt: "Universal Studios Sentosa" },
+          { url: storedUrls.pkgMalaysiaCover || "", alt: "Singapore Marina Bay skyline" },
           { url: storedUrls.destMalaysia || "", alt: "Kuala Lumpur Petronas Towers" },
-          { url: storedUrls.guideMalaysia || "", alt: "Scenic Asian tea plantation" },
+          { url: storedUrls.guideMalaysia || "", alt: "Kuala Lumpur skyline and Petronas Towers at sunset" },
         ],
         videos: [
           { url: "https://www.youtube.com/watch?v=P_q3BdrFsLI", title: "Singapore Vacation Travel Guide — Expedia" },
@@ -962,8 +962,8 @@ export async function seedDemoData() {
           alt: "Prince Court Medical Centre Kuala Lumpur",
         },
         gallery: [
-          { url: storedUrls.pkgMalaysiaCover || "", alt: "Universal Studios Singapore and Sentosa Island" },
-          { url: storedUrls.guideMalaysia || "", alt: "Scenic Asian tea plantation" },
+          { url: storedUrls.pkgMalaysiaCover || "", alt: "Singapore Marina Bay skyline" },
+          { url: storedUrls.guideMalaysia || "", alt: "Kuala Lumpur skyline and Petronas Towers at sunset" },
         ],
         videos: [
           { url: "https://www.youtube.com/watch?v=ScIGjctcz7o", title: "Kuala Lumpur Travel Guide — All Sights and the Petronas Towers" },
@@ -1164,7 +1164,7 @@ export async function seedDemoData() {
           alt: "Umrah prayer beads and Islamic holy sanctuary",
         },
         gallery: [
-          { url: storedUrls.guideUmrah || "", alt: "Prayer beads and Islamic guide" },
+          { url: storedUrls.guideUmrah || "", alt: "Pilgrims gathered at the Kaaba in Makkah" },
           { url: storedUrls.destMakkah || "", alt: "Masjid al-Haram in Makkah" },
           { url: storedUrls.pkgUmrahCover || "", alt: "The Prophet's Mosque in Madinah illuminated at sunset" },
         ],
@@ -1187,12 +1187,12 @@ export async function seedDemoData() {
         content: `## Family Fun in Tropical Southeast Asia\n\nMalaysia remains the top choice for Bangladeshi families traveling with young children and seniors. Its modern infrastructure, halal cuisine everywhere, and friendly hospitality make it effortless to explore.\n\n### 1. Genting SkyWorlds Theme Park\nPerched atop Genting Highlands at 6,000 feet, enjoy cool mountain air and state-of-the-art cinematic rides.\n\n### 2. Aquaria KLCC\nLocated directly underneath the iconic Petronas Towers, walk through a 90-meter underwater tunnel surrounded by tiger sharks and giant stingrays.\n\n### 3. Sunway Lagoon Water Park\nCool off in massive surf wave pools and wildlife sanctuaries located 30 minutes from Kuala Lumpur.`,
         featuredImage: {
           url: storedUrls.guideMalaysia || "",
-          alt: "Scenic tea plantations in Cameron Highlands, Malaysia",
+          alt: "Kuala Lumpur skyline and Petronas Towers at sunset",
         },
         gallery: [
-          { url: storedUrls.guideMalaysia || "", alt: "Scenic tea plantations in Cameron Highlands, Malaysia" },
+          { url: storedUrls.guideMalaysia || "", alt: "Kuala Lumpur skyline and Petronas Towers at sunset" },
           { url: storedUrls.destMalaysia || "", alt: "Kuala Lumpur Petronas Towers and city skyline" },
-          { url: storedUrls.pkgMalaysiaCover || "", alt: "Universal Studios Singapore and Sentosa Island" },
+          { url: storedUrls.pkgMalaysiaCover || "", alt: "Singapore Marina Bay skyline" },
         ],
         videos: [
           { url: "https://www.youtube.com/watch?v=sdbJmcyBMXE", title: "Sunway Lagoon Water Park and Aquaria KLCC — Malaysia Travel Vlog" },
