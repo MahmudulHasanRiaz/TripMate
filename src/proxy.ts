@@ -27,6 +27,8 @@ export function proxy(request: NextRequest) {
     pathname: request.nextUrl.pathname,
     headerNames: new Set(request.headers.keys()),
     cookies: request.cookies.getAll(),
+    searchParamNames: new Set(request.nextUrl.searchParams.keys()),
+    accept: request.headers.get("accept"),
   });
   if (cacheControl !== null) {
     response.headers.set("Cache-Control", cacheControl);

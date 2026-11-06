@@ -15,6 +15,8 @@ function input(
     pathname: "/",
     headerNames: new Set<string>(),
     cookies: [],
+    searchParamNames: new Set<string>(),
+    accept: "text/html,application/xhtml+xml",
     ...overrides,
   };
 }
@@ -133,6 +135,31 @@ describe("resolvePageCacheControl — RSC flight requests are never public", () 
         }),
       ),
     ).toBe(PRIVATE_PAGE_CACHE_CONTROL);
+  });
+
+  it("pins private via the _rsc query parameter alone (platforms that strip router headers)", () => {
+    expect(
+      resolvePageCacheControl(
+        input({ searchParamNames: new Set(["_rsc"]) }),
+      ),
+    ).toBe(PRIVATE_PAGE_CACHE_CONTROL);
+  });
+
+  it("pins private via the flight Accept header alone", () => {
+    expect(
+      resolvePageCacheControl(input({ accept: "text/x-component" })),
+    ).toBe(PRIVATE_PAGE_CACHE_CONTROL);
+  });
+
+  it("stays public for a document Accept header and unrelated query params", () => {
+    expect(
+      resolvePageCacheControl(
+        input({
+          accept: "text/html,application/xhtml+xml,application/xml;q=0.9",
+          searchParamNames: new Set(["cat", "dest"]),
+        }),
+      ),
+    ).toBe(PUBLIC_PAGE_CACHE_CONTROL);
   });
 });
 
