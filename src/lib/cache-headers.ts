@@ -21,13 +21,23 @@
  *    carries their identity and must never enter a shared cache. An
  *    empty cookie value counts as anonymous (post-sign-out residue).
  *  - Real documents only. App Router also answers CLIENT navigations
- *    at the same URL with an RSC flight payload (text/x-component)
- *    when the request carries RSC / Next-Router-* headers. Cloudflare
- *    does not segment its cache by those headers (it honours Vary only
- *    for Accept-Encoding), so a cached flight payload would be served
- *    to browsers expecting HTML — the documented "RSC cache poisoning"
- *    failure. Flight requests therefore always get `private, no-store`
- *    and only plain document responses are ever stored at the edge.
+ *    at the same URL with an RSC flight payload (text/x-component).
+ *    Cloudflare does not segment its cache by the headers that
+ *    distinguish the two (it honours Vary only for Accept-Encoding),
+ *    so a cached flight payload would be served to browsers expecting
+ *    HTML — the documented "RSC cache poisoning" failure. Flight
+ *    requests therefore always get `private, no-store` and only plain
+ *    document responses are ever stored at the edge.
+ *
+ *    Flight detection uses three independent signals because no
+ *    single one survives every platform: the router appends a `_rsc`
+ *    query parameter to every flight fetch; flight fetches negotiate
+ *    `Accept: text/x-component`; and the RSC / Next-Router-* request
+ *    headers. The headers alone are NOT sufficient — verified live on
+ *    Vercel (FU-40 first deploy): the platform consumes the router
+ *    headers before the proxy runs, so a header-only check marked
+ *    flight responses public. The `_rsc` parameter and the Accept
+ *    header reach the proxy on every platform.
  *
  * The public value mirrors the pattern already proven on the EcoMate
  * storefronts: browsers revalidate every time (max-age=0, cheap
@@ -76,7 +86,18 @@ export interface PageCacheDecisionInput {
   /** Lower-cased names of the request headers present. */
   headerNames: ReadonlySet<string>;
   cookies: ReadonlyArray<{ name: string; value: string }>;
+  /** Names of the query parameters present (values are irrelevant). */
+  searchParamNames: ReadonlySet<string>;
+  /** The request's Accept header, or null when absent. */
+  accept: string | null;
 }
+
+/** Query parameter the App Router client appends to every flight
+ *  fetch (document requests never carry it). */
+const FLIGHT_QUERY_PARAM = "_rsc";
+
+/** Media type a flight fetch negotiates for its payload. */
+const FLIGHT_ACCEPT = "text/x-component";
 
 function isNonPublicPath(pathname: string): boolean {
   return NON_PUBLIC_PREFIXES.some(
@@ -113,9 +134,10 @@ export function resolvePageCacheControl(
   if (looksLikeStaticFile(input.pathname)) return null;
   if (isNonPublicPath(input.pathname)) return null;
 
-  const isFlightRequest = FLIGHT_HEADER_NAMES.some((name) =>
-    input.headerNames.has(name),
-  );
+  const isFlightRequest =
+    FLIGHT_HEADER_NAMES.some((name) => input.headerNames.has(name)) ||
+    input.searchParamNames.has(FLIGHT_QUERY_PARAM) ||
+    (input.accept?.includes(FLIGHT_ACCEPT) ?? false);
   if (isFlightRequest) return PRIVATE_PAGE_CACHE_CONTROL;
   if (hasSessionCookie(input.cookies)) return PRIVATE_PAGE_CACHE_CONTROL;
   return PUBLIC_PAGE_CACHE_CONTROL;
