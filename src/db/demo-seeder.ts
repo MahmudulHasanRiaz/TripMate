@@ -21,6 +21,32 @@ import { downloadAndStoreDemoAsset, generateTravelSvg, type SeedAsset } from "./
 import { DEFAULT_THEME_SETTINGS } from "@/modules/settings/theme";
 import { sql } from "drizzle-orm";
 
+
+/** Designed SAMPLE certificate placeholder for demo accreditations: a
+ *  paper-style certificate document (border, seal, watermark) so the demo
+ *  trust cards can show a credential behind the eye button exactly like a
+ *  real deployment where the agency uploads its certificate scan. */
+function generateCertificateSvg(title: string, detail: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 850" width="1200" height="850">
+  <rect width="1200" height="850" fill="#FDFBF4"/>
+  <rect x="24" y="24" width="1152" height="802" fill="none" stroke="#B8912F" stroke-width="6"/>
+  <rect x="44" y="44" width="1112" height="762" fill="none" stroke="#B8912F" stroke-width="1.5"/>
+  <text x="600" y="400" font-family="Georgia, serif" font-size="190" font-weight="700" fill="#1F2937" fill-opacity="0.05" text-anchor="middle" transform="rotate(-24 600 425)">SAMPLE</text>
+  <text x="600" y="150" font-family="Georgia, serif" font-size="30" letter-spacing="14" fill="#8A6D1F" text-anchor="middle">CERTIFICATE</text>
+  <text x="600" y="265" font-family="Georgia, serif" font-size="58" font-weight="700" fill="#14342B" text-anchor="middle">${title}</text>
+  <text x="600" y="345" font-family="Georgia, serif" font-size="24" font-style="italic" fill="#5B6470" text-anchor="middle">This is to certify that</text>
+  <text x="600" y="425" font-family="Georgia, serif" font-size="44" font-weight="700" fill="#14342B" text-anchor="middle">TripMate Travel</text>
+  <line x1="400" y1="465" x2="800" y2="465" stroke="#B8912F" stroke-width="1.5"/>
+  <text x="600" y="525" font-family="Georgia, serif" font-size="28" fill="#374151" text-anchor="middle">${detail}</text>
+  <line x1="120" y1="700" x2="380" y2="700" stroke="#9CA3AF" stroke-width="1.5"/>
+  <text x="250" y="735" font-family="Georgia, serif" font-size="19" fill="#5B6470" text-anchor="middle">Authorised Signatory</text>
+  <circle cx="950" cy="672" r="78" fill="#C9A227"/>
+  <circle cx="950" cy="672" r="62" fill="none" stroke="#FDFBF4" stroke-width="2.5"/>
+  <text x="950" y="664" font-family="Georgia, serif" font-size="23" font-weight="700" fill="#FDFBF4" text-anchor="middle">SAMPLE</text>
+  <text x="950" y="694" font-family="Georgia, serif" font-size="15" fill="#FDFBF4" text-anchor="middle">SEAL</text>
+</svg>`;
+}
+
 /**
  * Demo Seeder for TripMate.
  *
@@ -137,6 +163,20 @@ export async function seedDemoData() {
       alt: "Kuala Lumpur skyline and Petronas Towers at sunset",
       fallbackSvg: generateTravelSvg("Malaysia Family Travel Tips", "What to see, eat and experience", "158 64% 25%"),
     },
+    certCaab: {
+      name: "cert-caab-sample.svg",
+      sourceUrl: "https://invalid.example/sample-certificate-caab",
+      mime: "image/svg+xml",
+      alt: "Sample Civil Aviation Licence certificate (placeholder)",
+      fallbackSvg: generateCertificateSvg("Civil Aviation Licence", "Licence No. SAMPLE"),
+    },
+    certHajj: {
+      name: "cert-hajj-sample.svg",
+      sourceUrl: "https://invalid.example/sample-certificate-hajj",
+      mime: "image/svg+xml",
+      alt: "Sample Hajj Licence certificate (placeholder)",
+      fallbackSvg: generateCertificateSvg("Hajj Licence", "Licence No. 741 — Din Air International"),
+    },
   };
 
   const storedUrls: Record<string, string> = {};
@@ -183,11 +223,46 @@ export async function seedDemoData() {
           email: "support@tripmate.com",
           address: "Concord Bilkis Tower, 6th Floor, Madani Avenue, Gulshan-2, Dhaka-1212",
           accreditations: [
-            { imageUrl: "/badges/caab.svg", label: "Civil Aviation Licensed", sublabel: "CAAB — Bangladesh" },
-            { imageUrl: "/badges/iata.svg", label: "IATA Authorised Agent", sublabel: "" },
-            { imageUrl: "", label: "Hajj License No. 741", sublabel: "Din Air International" },
-            { imageUrl: "/badges/saudi-hajj-umrah.svg", label: "Official Partner", sublabel: "Saudi Umrah Visa" },
-            { imageUrl: "/badges/atab.png", label: "ATAB Member", sublabel: "Association of Travel Agents of Bangladesh" },
+            {
+              imageUrl: "/badges/caab.svg",
+              label: "Civil Aviation Licence",
+              sublabel: "CAAB — Bangladesh",
+              linkUrl: "",
+              credentialText: "Licence No. SAMPLE",
+              credentialImageUrl: storedUrls.certCaab || "",
+            },
+            {
+              imageUrl: "/badges/iata.svg",
+              label: "IATA Authorised Agent",
+              sublabel: "",
+              linkUrl: "",
+              credentialText: "",
+              credentialImageUrl: "",
+            },
+            {
+              imageUrl: "",
+              label: "Hajj Licence",
+              sublabel: "Din Air International",
+              linkUrl: "",
+              credentialText: "Licence No. 741",
+              credentialImageUrl: storedUrls.certHajj || "",
+            },
+            {
+              imageUrl: "/badges/saudi-hajj-umrah.svg",
+              label: "Official Partner",
+              sublabel: "Saudi Umrah Visa",
+              linkUrl: "",
+              credentialText: "",
+              credentialImageUrl: "",
+            },
+            {
+              imageUrl: "/badges/atab.png",
+              label: "ATAB Member",
+              sublabel: "Association of Travel Agents of Bangladesh",
+              linkUrl: "",
+              credentialText: "",
+              credentialImageUrl: "",
+            },
           ],
           footerDescription: "Bangladesh's premier B2C travel commerce platform. Providing specialized Hajj & Umrah pilgrimages, curated holiday tours, medical travel assistance, and express visa concierge services.",
         },
