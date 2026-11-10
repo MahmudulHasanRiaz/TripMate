@@ -43,6 +43,9 @@ type ServiceOptionsSelectorProps = {
   categorySlug: string;
   options: ServiceOptionCardData[];
   site: { phone: string; email: string };
+  /** Plan pre-selected via the ?option=<slug> deep-link (homepage panel
+   *  cards); null/absent opens with nothing selected, as before. */
+  initialOptionSlug?: string | null;
 };
 
 type PublicGateway = {
@@ -57,9 +60,12 @@ export function ServiceOptionsSelector({
   categoryName,
   options,
   site,
+  initialOptionSlug,
 }: ServiceOptionsSelectorProps) {
   const formUid = useId();
-  const [selectedOption, setSelectedOption] = useState<ServiceOptionCardData | null>(null);
+  const [selectedOption, setSelectedOption] = useState<ServiceOptionCardData | null>(
+    () => options.find((o) => o.slug === initialOptionSlug) ?? null,
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [step, setStep] = useState<1 | 2>(1);
   const [isPending, startTransition] = useTransition();

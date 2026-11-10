@@ -70,13 +70,24 @@ export async function generateMetadata(
 export default function ServicePage(props: PageProps<"/services/[slug]">) {
   return (
     <Suspense fallback={<ServicePageFallback />}>
-      <ServicePageBody params={props.params} />
+      <ServicePageBody params={props.params} searchParams={props.searchParams} />
     </Suspense>
   );
 }
 
-async function ServicePageBody({ params }: { params: Promise<{ slug: string }> }) {
+async function ServicePageBody({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { slug } = await params;
+  // Deep-link from the homepage panel's option cards (e.g. the Passport
+  // tab): ?option=<slug> opens this page with that plan pre-selected, so
+  // the tab and this page behave as one flow (owner, 2026-11-10).
+  const sp = searchParams ? await searchParams : {};
+  const optionParam = Array.isArray(sp.option) ? sp.option[0] : sp.option;
   const [data, site] = await Promise.all([getServicePageData(slug), getSiteSettings()]);
   if (!data) notFound();
 
@@ -93,6 +104,7 @@ async function ServicePageBody({ params }: { params: Promise<{ slug: string }> }
             categorySlug={data.slug}
             options={data.serviceOptions}
             site={site}
+            initialOptionSlug={optionParam ?? null}
           />
         ) : (
           <InquirySection data={data} site={site} />
