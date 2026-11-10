@@ -51,35 +51,20 @@ export type PanelPackage = {
   createdAt?: string;
 };
 
-/** Kaaba glyph for the Hajj & Umrah tab — lucide has no Kaaba, so the cube
- *  is drawn in the same outline style as the rest of the set: flat-topped
- *  cube in slight perspective, the gold band (hizam) across the upper
- *  front, and the door — the glyph type ShareTrip's Umrah tab carries.
- *  Stroke follows currentColor, so the active brand treatment applies. */
-function KaabaIcon({
-  className,
-  strokeWidth = 2,
-}: {
-  className?: string;
-  strokeWidth?: number;
-}) {
+/** Kaaba glyph for the Hajj & Umrah tab — the exact glyph ShareTrip ships
+ *  (element supplied by the owner, 2026-11-10): a SOLID cube whose facet,
+ *  band and door lines are knocked out of the fill via evenodd, not a
+ *  stroke drawing. fill is currentColor: muted in the inactive tab, the
+ *  theme brand colour when active — the colour states are ours, the
+ *  geometry is theirs verbatim. */
+function KaabaIcon({ className }: { className?: string; strokeWidth?: number }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M5 11 8 8.5h12V19a1 1 0 0 1-1 1H5Z" />
-      <path d="M5 11h12v9" />
-      <path d="M17 11l3-2.5" />
-      <path d="M5 13.8h12" />
-      <path d="M17 13.8l3-.9" />
-      <path d="M13.6 20v-3.6h2.6V20" />
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M9.70407 2.739C11.1911 2.22248 12.8088 2.22225 14.296 2.73835L20.1293 4.76274C21.1352 5.11184 21.8097 6.05978 21.8097 7.12456V16.5199C21.8097 17.7976 21.0003 18.9351 19.7932 19.3541L14.295 21.2621C12.8085 21.778 11.1916 21.778 9.70505 21.2621L4.20686 19.3541C2.99974 18.9351 2.19043 17.7976 2.19043 16.5199V7.12706C2.19043 6.06254 2.86453 5.11477 3.87011 4.76548L9.70407 2.739ZM15.4049 18.76V15.1151C15.4049 14.5628 15.8526 14.1151 16.4049 14.1151C16.9571 14.1151 17.4049 14.5628 17.4049 15.1151V18.0659L19.1375 17.4646C19.5399 17.325 19.8097 16.9458 19.8097 16.5199V10.6352L13 12.9995V19.548C13.2158 19.504 13.4294 19.4455 13.6393 19.3727L15.4049 18.76ZM11 19.548V12.9996L4.19043 10.6364V16.5199C4.19043 16.9458 4.4602 17.325 4.86257 17.4646L10.3608 19.3727C10.5707 19.4455 10.7843 19.504 11 19.548ZM4.19043 8.51938L11 10.8826V9.59689L4.19043 7.19475V8.51938ZM6.61499 5.92924L12.0156 7.83433L17.6681 6.02563L13.6402 4.6278C12.578 4.25916 11.4225 4.25932 10.3603 4.62827L6.61499 5.92924ZM19.8097 7.44026L13 9.61921V10.8824L19.8097 8.51807V7.44026Z"
+      />
     </svg>
   );
 }
@@ -345,7 +330,7 @@ export default function TravelActionPanel({
               >
                 <Icon
                   strokeWidth={1.7}
-                  className={`size-5 shrink-0 sm:size-6 ${isActive ? "fill-primary/20 text-primary" : ""}`}
+                  className={`size-5 shrink-0 sm:size-6 ${isActive ? "text-primary" : ""}`}
                 />
                 {label}
                 {isActive ? (
