@@ -151,7 +151,7 @@ export default function PackagePickerField({
               </div>
             ) : (
               <div className="space-y-0.5">
-                <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Available Packages ({items.length})
                 </div>
                 {items.map((item) => {
@@ -168,7 +168,7 @@ export default function PackagePickerField({
                     >
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-foreground truncate">{item.title}</p>
-                        <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
+                        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                           {item.price !== null ? (
                             <span className="font-mono font-medium text-foreground tabular-nums">
                               {formatMoney(item.price, (item.currency as "BDT" | "USD" | "SAR") || "BDT")}

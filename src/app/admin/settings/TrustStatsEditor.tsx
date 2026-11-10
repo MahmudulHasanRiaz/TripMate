@@ -113,7 +113,7 @@ export default function TrustStatsEditor({ stats, onChange }: TrustStatsEditorPr
 
               {/* Value input */}
               <div className="w-full sm:w-1/3 space-y-1">
-                <Label className="text-[11px] font-medium text-muted-foreground">
+                <Label className="text-xs font-medium text-muted-foreground">
                   Figure / Value
                 </Label>
                 <Input
@@ -126,7 +126,7 @@ export default function TrustStatsEditor({ stats, onChange }: TrustStatsEditorPr
 
               {/* Label input */}
               <div className="w-full sm:flex-1 space-y-1">
-                <Label className="text-[11px] font-medium text-muted-foreground">
+                <Label className="text-xs font-medium text-muted-foreground">
                   Description Label
                 </Label>
                 <Input
@@ -158,7 +158,7 @@ export default function TrustStatsEditor({ stats, onChange }: TrustStatsEditorPr
       {/* Live Preview Strip */}
       {stats.some((s) => s.value.trim() && s.label.trim()) && (
         <div className="rounded-lg border border-border/80 bg-muted/40 p-4 space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Live Preview on Homepage
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-2">

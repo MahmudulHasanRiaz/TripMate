@@ -329,7 +329,7 @@ export default function SettingsTabsView({
                                 {...field}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Agency brand name displayed in headers, footers, browser title tags, and meta tags.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -352,7 +352,7 @@ export default function SettingsTabsView({
                                 className="h-10 text-xs font-mono"
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Internal path starting with / (e.g. /logo.svg) or full https:// URL —
                               or pick from the media library. Recommended: a transparent PNG or
                               SVG in a wide lockup (about 4:1–6:1), at least 80 px tall and
@@ -379,7 +379,7 @@ export default function SettingsTabsView({
                                 className="h-10 text-xs font-mono"
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Light/white version of the logo, shown when dark mode is on.
                               If left empty, the main logo appears on a small white plate
                               in dark mode instead.
@@ -404,7 +404,7 @@ export default function SettingsTabsView({
                                 className="h-10 text-xs font-mono"
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Browser tab icon. Internal path starting with / or full https:// URL —
                               or pick from the media library.
                             </FormDescription>
@@ -433,7 +433,7 @@ export default function SettingsTabsView({
                                 <SelectItem value="logo-only">Logo image only</SelectItem>
                               </SelectContent>
                             </Select>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Icon + name shows the logo beside the site title. Logo image only
                               shows one wide logo image by itself — use a logo that already
                               contains your agency name.
@@ -477,7 +477,7 @@ export default function SettingsTabsView({
                                 {...field}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Displayed in header/footer and landing page CTA buttons.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -499,7 +499,7 @@ export default function SettingsTabsView({
                                 {...field}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Public inquiry inbox and customer contact address.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -520,7 +520,7 @@ export default function SettingsTabsView({
                                 {...field}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Physical agency office address shown in the footer and contact page.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -545,7 +545,7 @@ export default function SettingsTabsView({
                                 onChange={field.onChange}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Optional summary text rendered in the public footer. Leave blank to clear.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -574,7 +574,7 @@ export default function SettingsTabsView({
                               </FormLabel>
                               <Badge
                                 variant={field.value ? "success" : "destructive"}
-                                className="text-[10px] font-mono px-1.5 py-0"
+                                className="text-xs font-mono px-1.5 py-0"
                               >
                                 {field.value ? "Indexable" : "Hidden (noindex)"}
                               </Badge>
@@ -602,7 +602,7 @@ export default function SettingsTabsView({
 
                   {/* Submit actions */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border/60">
-                    <p className="text-[11px] text-muted-foreground font-mono">
+                    <p className="text-xs text-muted-foreground font-mono">
                       Leaving optional text empty clears the field back to system defaults.
                     </p>
                     <div className="flex items-center gap-2">
@@ -736,7 +736,7 @@ export default function SettingsTabsView({
                                 onChange={field.onChange}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Primary H1 headline on the home page. Leave blank to use default marketing copy.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -759,7 +759,7 @@ export default function SettingsTabsView({
                                 onChange={field.onChange}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Lead paragraph below the headline. Also read by home page metadata description.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -794,7 +794,7 @@ export default function SettingsTabsView({
                                 className="h-10 text-xs font-mono"
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Pick from the media library, or paste a full https:// URL or
                               internal path. Leave blank to clear and use theme default.
                             </FormDescription>
@@ -817,7 +817,7 @@ export default function SettingsTabsView({
                                 onChange={field.onChange}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Accessibility and screen-reader description for the hero image.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -848,7 +848,7 @@ export default function SettingsTabsView({
                                 onChange={field.onChange}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Text displayed inside the primary hero CTA button.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -870,7 +870,7 @@ export default function SettingsTabsView({
                                 onChange={field.onChange}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Internal path (e.g. /packages) or external URL.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -900,7 +900,7 @@ export default function SettingsTabsView({
                                 onChange={field.onChange}
                               />
                             </FormControl>
-                            <FormDescription className="text-[11px]">
+                            <FormDescription className="text-xs">
                               Small label above the featured section title.
                             </FormDescription>
                             <FormMessage className="text-xs" />
@@ -1005,7 +1005,7 @@ export default function SettingsTabsView({
                           <h3 className="text-sm font-semibold text-foreground">
                             Customer Testimonials &amp; Reviews
                           </h3>
-                          <Badge variant="secondary" className="text-[11px] font-normal">
+                          <Badge variant="secondary" className="text-xs font-normal">
                             New Module
                           </Badge>
                         </div>
@@ -1028,7 +1028,7 @@ export default function SettingsTabsView({
 
                   {/* Submit actions */}
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border/60">
-                    <p className="text-[11px] text-muted-foreground font-mono">
+                    <p className="text-xs text-muted-foreground font-mono">
                       Empty fields clear saved copy, allowing the marketing home page fallbacks to render.
                     </p>
                     <div className="flex items-center gap-2">

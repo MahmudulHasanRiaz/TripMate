@@ -151,7 +151,7 @@ function HexColorInput({
       autoComplete="off"
       aria-label={`${label} hex value`}
       title="Paste or type a hex code"
-      className="h-8 w-20 rounded-md border border-input bg-background px-2 font-mono text-[11px] uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      className="h-8 w-20 rounded-md border border-input bg-background px-2 font-mono text-xs uppercase outline-none focus-visible:ring-2 focus-visible:ring-ring"
       onChange={(e) => {
         setDraft(e.target.value);
         const next = normalize(e.target.value);
@@ -307,7 +307,7 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
                       <Check className="size-3" />
                     </span>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                    <Badge variant="outline" className="text-xs px-1.5 py-0 font-normal">
                       {t.badge}
                     </Badge>
                   )}
@@ -495,7 +495,7 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
                   Featured Journey
                 </span>
                 <div
-                  className="absolute top-2 right-2 flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                  className="absolute top-2 right-2 flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full"
                   style={{
                     backgroundColor: `hsl(${colors.card})`,
                     color: `hsl(${colors.accentText})`,
@@ -508,7 +508,7 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
 
               <div className="p-4 space-y-2">
                 <span
-                  className="text-[11px] font-semibold uppercase tracking-wider"
+                  className="text-xs font-semibold uppercase tracking-wider"
                   style={{ color: `hsl(${colors.mutedForeground})` }}
                 >
                   Makkah & Madinah · 21 Days
@@ -518,7 +518,7 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
                 </h5>
                 <div className="pt-2 flex items-baseline justify-between border-t" style={{ borderColor: `hsl(${colors.border})` }}>
                   <div>
-                    <span className="text-[10px] uppercase block" style={{ color: `hsl(${colors.mutedForeground})` }}>
+                    <span className="text-xs uppercase block" style={{ color: `hsl(${colors.mutedForeground})` }}>
                       Starting From
                     </span>
                     <span className="font-mono text-base font-bold" style={{ color: `hsl(${colors.foreground})` }}>
@@ -614,7 +614,7 @@ export default function ThemeCustomizer({ initialTheme }: ThemeCustomizerProps) 
                   <Label className="text-xs font-semibold text-foreground">
                     {item.label}
                   </Label>
-                  <p className="text-[11px] text-muted-foreground truncate" title={item.desc}>
+                  <p className="text-xs text-muted-foreground truncate" title={item.desc}>
                     {item.desc}
                   </p>
                 </div>

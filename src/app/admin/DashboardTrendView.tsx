@@ -328,7 +328,7 @@ export default function DashboardTrendView({ trend }: DashboardTrendViewProps) {
 
               {/* first + last date labels (artifact footer) */}
               {trend.length > 0 && (
-                <div className="pointer-events-none absolute -bottom-6 left-0 right-0 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+                <div className="pointer-events-none absolute -bottom-6 left-0 right-0 flex items-center justify-between font-mono text-xs text-muted-foreground">
                   <span>{formatShortDate(trend[0].date)}</span>
                   <span>{formatShortDate(trend[trend.length - 1].date)}</span>
                 </div>
@@ -336,7 +336,7 @@ export default function DashboardTrendView({ trend }: DashboardTrendViewProps) {
             </div>
 
             {/* Quiet baseline footnote */}
-            <p className="text-[11px] text-muted-foreground pt-4 text-center sm:text-left flex items-center gap-1">
+            <p className="text-xs text-muted-foreground pt-4 text-center sm:text-left flex items-center gap-1">
               <TrendingUp className="size-3 text-muted-foreground shrink-0" aria-hidden="true" />
               Continuous daily series anchored to database current date. Hover or tab through bars for day totals.
             </p>
@@ -366,7 +366,7 @@ export default function DashboardTrendView({ trend }: DashboardTrendViewProps) {
                         </TableCell>
                         <TableCell className="text-right">
                           {point.leads > 0 ? (
-                            <Badge variant="info" className="px-1.5 py-0 text-[10px]">
+                            <Badge variant="info" className="px-1.5 py-0 text-xs">
                               {point.leads}
                             </Badge>
                           ) : (
@@ -375,7 +375,7 @@ export default function DashboardTrendView({ trend }: DashboardTrendViewProps) {
                         </TableCell>
                         <TableCell className="text-right">
                           {point.orders > 0 ? (
-                            <Badge variant="default" className="px-1.5 py-0 text-[10px]">
+                            <Badge variant="default" className="px-1.5 py-0 text-xs">
                               {point.orders}
                             </Badge>
                           ) : (

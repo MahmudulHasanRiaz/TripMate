@@ -329,12 +329,12 @@ export default function TestimonialsView({
                             <div className="font-medium text-foreground">{item.name}</div>
                             <div className="flex items-center gap-2 mt-0.5">
                               {item.videoUrl && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-500">
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-rose-500">
                                   <Video className="size-3" /> Video
                                 </span>
                               )}
                               {galleryCount > 0 && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-sky-500">
+                                <span className="inline-flex items-center gap-1 text-xs font-medium text-sky-500">
                                   <ImageIcon className="size-3" /> {galleryCount}
                                 </span>
                               )}
@@ -356,7 +356,7 @@ export default function TestimonialsView({
                           {item.packageName && (
                             <Badge
                               variant="secondary"
-                              className="text-[11px] font-normal truncate max-w-[180px] inline-block"
+                              className="text-xs font-normal truncate max-w-[180px] inline-block"
                               title={item.packageName}
                             >
                               {item.packageName}

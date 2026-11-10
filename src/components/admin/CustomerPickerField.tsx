@@ -86,7 +86,7 @@ export default function CustomerPickerField({
           />
           {value ? (
             <span
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-muted-foreground pointer-events-none"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-mono text-muted-foreground pointer-events-none"
               title="You can type freely for walk-in customers or pick an existing customer"
             >
               Manual/Picker
@@ -148,7 +148,7 @@ export default function CustomerPickerField({
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  <div className="px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Directory matches ({items.length})
                   </div>
                   {items.map((item) => {
@@ -170,7 +170,7 @@ export default function CustomerPickerField({
                               {item.role}
                             </Badge>
                           </div>
-                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                             {item.phone ? (
                               <span className="font-mono text-foreground/80">{item.phone}</span>
                             ) : null}
