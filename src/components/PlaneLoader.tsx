@@ -1,7 +1,17 @@
 /**
  * PlaneLoader — the project's single loading face (owner spec, 2026-11-10):
- * an outline paper plane flying a smooth curved path on a ~2.4s loop, in
- * the style of the classic travel-site loader. No text, no spinner.
+ * an outline paper plane flying a smooth circular loop in the CENTRE of
+ * the screen, in the style of the classic travel-site loader. No text, no
+ * spinner. It shows exactly as long as the load takes — a long load loops
+ * it longer, a short one cuts it short.
+ *
+ * Geometry rules (owner correction, 2026-11-10 — the first version swept
+ * in from off-stage and out again, small and sideways, which read as
+ * broken): the flight path is a CLOSED loop around the centre, so the
+ * plane is on screen, centred and full-size for 100% of the loop, on a
+ * phone and on a desktop alike. The motion path rides in the
+ * animateMotion `path` attribute (no mpath reference — mobile Safari is
+ * unreliable with mpath, which contributed to the glitch).
  *
  * The plane is drawn with `currentColor`, so it always flies in the ACTIVE
  * THEME's branding colour: wrap it in a `text-primary` context (the default
@@ -9,10 +19,8 @@
  * preset or fully custom brand colour — on the public site, in the customer
  * portal and in the admin shell alike. Never hardcode a colour here.
  *
- * Motion: SMIL animateMotion along an invisible swoop path with
- * rotate="auto" so the plane banks into the curve. Under
- * prefers-reduced-motion the flying group is hidden and a static centred
- * plane renders instead.
+ * Under prefers-reduced-motion the flying group is hidden and a static
+ * centred plane renders instead.
  */
 export default function PlaneLoader({
   label = "Loading",
@@ -38,33 +46,24 @@ export default function PlaneLoader({
       <span className="sr-only">{label}</span>
       <svg
         aria-hidden="true"
-        viewBox="0 0 340 210"
-        className="h-auto w-[min(340px,72vw)]"
+        viewBox="0 0 240 200"
+        className="h-auto w-[min(272px,68vw)]"
         fill="none"
       >
-        <defs>
-          {/* Swoop: enter low-left, climb, dip through the middle, rise out
-              top-right — one smooth pass, looped. */}
-          <path
-            id="plane-loader-path"
-            d="M -40 158 C 55 66, 118 196, 182 108 C 232 40, 306 84, 384 52"
-          />
-        </defs>
-
-        {/* Flying plane (hidden for reduced-motion users). */}
+        {/* Flying plane (hidden for reduced-motion users). The loop is a
+            circle around the stage centre (120,100), r=54; the plane
+            glyph is ~72 units long, so plane + loop together span the
+            middle of the stage and never leave it. rotate="auto" keeps
+            the nose on the tangent, banking through the loop. */}
         <g className="motion-reduce:hidden">
           <g>
-            <animateMotion dur="2.4s" repeatCount="indefinite" rotate="auto">
-              <mpath href="#plane-loader-path" />
-            </animateMotion>
-            <animate
-              attributeName="opacity"
-              values="0;1;1;0"
-              keyTimes="0;0.12;0.86;1"
-              dur="2.4s"
+            <animateMotion
+              dur="2.2s"
               repeatCount="indefinite"
+              rotate="auto"
+              path="M 66 100 A 54 54 0 1 1 174 100 A 54 54 0 1 1 66 100 Z"
             />
-            <g transform="translate(-24,-24) scale(1.35)">
+            <g transform="translate(-24,-24) scale(1.5)">
               <path
                 d="M46 24 L5 5 L15 24 L5 43 Z"
                 fill="currentColor"
@@ -91,8 +90,8 @@ export default function PlaneLoader({
         </g>
 
         {/* Static plane for prefers-reduced-motion. */}
-        <g className="hidden motion-reduce:block" transform="translate(146,81)">
-          <g transform="rotate(-18 24 24)">
+        <g className="hidden motion-reduce:block" transform="translate(120,100)">
+          <g transform="rotate(-18) scale(1.5) translate(-24,-24)">
             <path
               d="M46 24 L5 5 L15 24 L5 43 Z"
               fill="currentColor"
