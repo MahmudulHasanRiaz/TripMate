@@ -205,7 +205,7 @@ function TestimonialFormContent({
             selectedTitle={packageName ?? undefined}
             placeholder="Search package title from catalog..."
           />
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Linking a package shows the trip badge and ties this review to the package page.
           </p>
         </div>
@@ -244,7 +244,7 @@ function TestimonialFormContent({
             <Label htmlFor="testimonial-quote" className="text-xs font-medium">
               Review Quote / Story <span className="text-destructive">*</span>
             </Label>
-            <span className="text-[11px] font-mono text-muted-foreground tabular-nums">
+            <span className="text-xs font-mono text-muted-foreground tabular-nums">
               {quote.length} / 2000 chars
             </span>
           </div>
@@ -307,13 +307,13 @@ function TestimonialFormContent({
                       <Eye className="size-3.5 text-muted-foreground" />
                       Valid YouTube Video ID: {youtubeVideoId}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Will display as a playable video story on your marketing site.
                     </p>
                   </div>
                 </div>
               ) : (
-                <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                <p className="text-xs text-amber-600 dark:text-amber-400">
                   Please provide a standard YouTube URL (youtube.com/watch?v=... or youtu.be/...).
                 </p>
               )}
@@ -326,7 +326,7 @@ function TestimonialFormContent({
           <div className="flex items-center justify-between">
             <div>
               <Label className="text-xs font-medium">Trip Gallery Photos (Optional)</Label>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Add photos taken by this traveler during their trip.
               </p>
             </div>
@@ -336,7 +336,7 @@ function TestimonialFormContent({
                 variant="outline"
                 size="sm"
                 onClick={handleAddGalleryUrl}
-                className="h-7 text-[11px] gap-1"
+                className="h-7 text-xs gap-1"
               >
                 <Plus className="size-3" /> Add Photo
               </Button>
@@ -374,7 +374,7 @@ function TestimonialFormContent({
           <div className="flex items-center justify-between rounded-lg border border-border p-3">
             <div className="space-y-0.5">
               <Label className="text-xs font-medium cursor-pointer">Published</Label>
-              <p className="text-[10px] text-muted-foreground">Visible on site</p>
+              <p className="text-xs text-muted-foreground">Visible on site</p>
             </div>
             <Switch
               checked={isPublished}
@@ -386,7 +386,7 @@ function TestimonialFormContent({
           <div className="flex items-center justify-between rounded-lg border border-border p-3">
             <div className="space-y-0.5">
               <Label className="text-xs font-medium cursor-pointer">Featured</Label>
-              <p className="text-[10px] text-muted-foreground">Priority display</p>
+              <p className="text-xs text-muted-foreground">Priority display</p>
             </div>
             <Switch
               checked={featured}

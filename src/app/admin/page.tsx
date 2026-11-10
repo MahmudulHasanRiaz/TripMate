@@ -231,7 +231,7 @@ export default async function AdminDashboardPage(props: {
             >
               {formatMoney(rangeKpis.revenue, "BDT")}
             </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               Verified · {rangeKpis.days}-day range
             </p>
           </CardContent>
@@ -257,7 +257,7 @@ export default async function AdminDashboardPage(props: {
             >
               {formatMoney(rangeKpis.costOfSales, "BDT")}
             </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               Direct orders cost
             </p>
           </CardContent>
@@ -283,7 +283,7 @@ export default async function AdminDashboardPage(props: {
             >
               {formatMoney(rangeKpis.grossProfit, "BDT")}
             </p>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+            <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
               <span>Margin:</span>
               <span className="font-semibold text-foreground">{rangeKpis.grossMarginPercent}%</span>
             </div>
@@ -310,7 +310,7 @@ export default async function AdminDashboardPage(props: {
             >
               {formatMoney(rangeKpis.expenses, "BDT")}
             </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
+            <p className="mt-1 text-xs text-muted-foreground">
               Approved in range
             </p>
           </CardContent>
@@ -342,10 +342,10 @@ export default async function AdminDashboardPage(props: {
             >
               {formatMoney(rangeKpis.net, "BDT")}
             </p>
-            <div className="mt-1 flex items-center justify-between text-[11px]">
+            <div className="mt-1 flex items-center justify-between text-xs">
               <Badge
                 variant={rangeKpis.net >= 0 ? "success" : "destructive"}
-                className="text-[10px] px-1 py-0"
+                className="text-xs px-1 py-0"
               >
                 {rangeKpis.net >= 0 ? "Profitable" : "Deficit"}
               </Badge>
@@ -376,7 +376,7 @@ export default async function AdminDashboardPage(props: {
             </p>
             <Link
               href={"/admin/payments" as Route}
-              className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+              className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               <span>{rangeKpis.pendingPaymentsCount} awaiting verification</span>
               <ArrowRight className="size-2.5" aria-hidden="true" />
@@ -401,9 +401,9 @@ export default async function AdminDashboardPage(props: {
             <p className="kpi-value font-mono text-2xl font-bold tracking-tight">
               {rangeKpis.leads}
             </p>
-            <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+            <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
               <span>In selected range</span>
-              <Badge variant="secondary" className="text-[10px] px-1 py-0 font-mono">
+              <Badge variant="secondary" className="text-xs px-1 py-0 font-mono">
                 {rangeKpis.leadConversionRate}% conv
               </Badge>
             </div>
@@ -429,7 +429,7 @@ export default async function AdminDashboardPage(props: {
             </p>
             <Link
               href={"/admin/leads" as Route}
-              className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors"
+              className="mt-1 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               <span>Overdue or due now</span>
               <ArrowRight className="size-2.5" aria-hidden="true" />
@@ -493,7 +493,7 @@ export default async function AdminDashboardPage(props: {
             <p className="kpi-value mt-0.5 font-mono text-2xl font-bold tracking-tight tabular-nums">
               {kpis.pendingPaymentsCount}
             </p>
-            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
               {kpis.pendingPaymentsCount === 0
                 ? "Queue clear — all verified"
                 : `${kpis.pendingPaymentsCount} receipt${kpis.pendingPaymentsCount === 1 ? "" : "s"} awaiting review`}
@@ -517,7 +517,7 @@ export default async function AdminDashboardPage(props: {
             <p className="kpi-value mt-0.5 font-mono text-2xl font-bold tracking-tight tabular-nums">
               {kpis.pendingExpensesCount}
             </p>
-            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
               {kpis.pendingExpensesCount === 0
                 ? "Queue clear — all approved"
                 : `${kpis.pendingExpensesCount} claim${kpis.pendingExpensesCount === 1 ? "" : "s"} awaiting approval`}
@@ -541,7 +541,7 @@ export default async function AdminDashboardPage(props: {
             <p className="kpi-value mt-0.5 font-mono text-2xl font-bold tracking-tight tabular-nums">
               {rangeKpis.followUpsDue}
             </p>
-            <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+            <p className="mt-0.5 truncate text-xs text-muted-foreground">
               {rangeKpis.followUpsDue === 0
                 ? "Nothing overdue"
                 : `${rangeKpis.followUpsDue} lead${rangeKpis.followUpsDue === 1 ? "" : "s"} past the follow-up date`}
@@ -680,7 +680,7 @@ export default async function AdminDashboardPage(props: {
                       className="-mx-2 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-secondary/40"
                     >
                       <span className="font-mono text-xs font-bold">{order.orderNo}</span>
-                      <Badge variant={ORDER_STATUS_BADGE_VARIANTS[order.status as OrderStatus]} className="text-[10px] capitalize">
+                      <Badge variant={ORDER_STATUS_BADGE_VARIANTS[order.status as OrderStatus]} className="text-xs capitalize">
                         {ORDER_STATUS_LABELS[order.status as OrderStatus] ?? order.status}
                       </Badge>
                       <span className="font-mono text-xs tabular-nums" data-money>
@@ -720,7 +720,7 @@ export default async function AdminDashboardPage(props: {
                       className="-mx-2 flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-2 transition-colors hover:bg-secondary/40"
                     >
                       <span className="font-mono text-xs">{payment.orderId.slice(0, 8)}…</span>
-                      <Badge variant="outline" className="text-[10px] capitalize">{payment.status}</Badge>
+                      <Badge variant="outline" className="text-xs capitalize">{payment.status}</Badge>
                       <span className="font-mono text-xs font-bold tabular-nums" data-money>
                         {formatMoney(payment.amount, "BDT")}
                       </span>

@@ -295,7 +295,7 @@ export default function ServiceOptionFormDialog({
                 size="sm"
                 onClick={addRequirement}
                 disabled={busy}
-                className="h-8 text-xs font-semibold rounded-lg"
+                className="h-9 text-xs font-semibold rounded-lg"
               >
                 <Plus className="mr-1 size-3.5" /> Add Item
               </Button>

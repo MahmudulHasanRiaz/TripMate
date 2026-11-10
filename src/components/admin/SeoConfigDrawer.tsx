@@ -124,7 +124,7 @@ export default function SeoConfigDrawer({
             </Label>
             <div className="rounded-xl border border-border bg-card p-4 shadow-xs space-y-1.5 font-sans">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="flex size-4 items-center justify-center rounded-full bg-muted text-[10px]">
+                <span className="flex size-4 items-center justify-center rounded-full bg-muted text-xs">
                   G
                 </span>
                 <span className="truncate max-w-[280px] text-xs opacity-80">{baseUrl}</span>
@@ -161,7 +161,7 @@ export default function SeoConfigDrawer({
                 maxLength={70}
                 disabled={saving}
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Optimal length is 50–60 characters. Search engines typically truncate titles over 65 characters.
               </p>
             </div>
@@ -188,7 +188,7 @@ export default function SeoConfigDrawer({
                 maxLength={160}
                 disabled={saving}
               />
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Optimal length is 140–160 characters. Highlight key inclusions, starting rates, or guarantees.
               </p>
             </div>
@@ -200,7 +200,7 @@ export default function SeoConfigDrawer({
               <Info className="size-3.5 text-primary" />
               SEO Best Practices
             </div>
-            <ul className="space-y-1 pl-4 list-disc text-[11px]">
+            <ul className="space-y-1 pl-4 list-disc text-xs">
               <li>Leave blank to inherit automatic dynamic page titles and descriptions.</li>
               <li>Include target destination keywords and pricing points for higher CTR.</li>
               <li>Changes reflect automatically on search engine crawler re-indexing.</li>

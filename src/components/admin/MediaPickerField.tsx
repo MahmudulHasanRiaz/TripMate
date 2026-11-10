@@ -344,7 +344,7 @@ function MediaPickerDialog({
                       <span className="relative block aspect-square w-full bg-muted">
                         <PickerThumb item={item} />
                       </span>
-                      <span className="block truncate px-1.5 py-1 text-[11px] text-muted-foreground">
+                      <span className="block truncate px-1.5 py-1 text-xs text-muted-foreground">
                         {item.name}
                       </span>
                     </button>

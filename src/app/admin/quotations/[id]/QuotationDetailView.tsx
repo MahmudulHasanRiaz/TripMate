@@ -247,7 +247,7 @@ export default function QuotationDetailView({
         {/* Customer & Lead Details */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
           <div className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <User className="size-3.5" /> Customer Name
             </span>
             <div className="font-semibold text-foreground text-sm">
@@ -256,7 +256,7 @@ export default function QuotationDetailView({
           </div>
 
           <div className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Phone className="size-3.5" /> Contact Phone
             </span>
             <div className="font-medium text-foreground text-sm">
@@ -265,7 +265,7 @@ export default function QuotationDetailView({
           </div>
 
           <div className="space-y-1">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
               <Mail className="size-3.5" /> Email Address
             </span>
             <div className="font-medium text-foreground text-sm">

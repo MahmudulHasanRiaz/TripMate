@@ -224,7 +224,7 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
                               >
                                 {order.orderNo}
                               </Link>
-                              <Badge variant="outline" className="text-[10px] uppercase font-semibold px-1.5 py-0">
+                              <Badge variant="outline" className="text-xs uppercase font-semibold px-1.5 py-0">
                                 {order.type}
                               </Badge>
                             </div>
@@ -320,7 +320,7 @@ export default function OrdersBoard({ initialItems, counts }: OrdersBoardProps) 
                               </a>
                             ) : null}
 
-                            <div className="ml-1.5 flex items-center text-[11px] text-muted-foreground tabular-nums">
+                            <div className="ml-1.5 flex items-center text-xs text-muted-foreground tabular-nums">
                               <Clock className="mr-1 size-3" aria-hidden="true" />
                               {formatRelativeTime(order.createdAt)}
                             </div>

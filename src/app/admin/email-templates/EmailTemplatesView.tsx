@@ -268,7 +268,7 @@ export default function EmailTemplatesView({ templates }: EmailTemplatesViewProp
                   Sandboxed HTML Output
                 </span>
                 <span className="font-mono text-xs text-muted-foreground">
-                  sandbox=&quot;&quot; (inert, scripts disabled)
+                  Safe preview — links and scripts are disabled here
                 </span>
               </div>
 

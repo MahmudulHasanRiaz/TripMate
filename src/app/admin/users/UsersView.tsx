@@ -69,7 +69,7 @@ function roleBadge(role: UserRole) {
   switch (role) {
     case "superadmin":
       return (
-        <Badge variant="default" className="bg-purple-600 text-white hover:bg-purple-700">
+        <Badge variant="default" className="bg-foreground text-background hover:bg-foreground/90">
           <ShieldCheck className="mr-1 size-3" /> Superadmin
         </Badge>
       );
@@ -376,7 +376,7 @@ export default function UsersView({
                           <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                             <span>{user.name.trim() || "Nameless User"}</span>
                             {isSelf && (
-                              <Badge variant="outline" className="text-[10px] py-0 px-1 font-mono">
+                              <Badge variant="outline" className="text-xs py-0 px-1 font-mono">
                                 You
                               </Badge>
                             )}

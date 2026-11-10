@@ -70,7 +70,7 @@ export default function ListingRowActions({
         size="sm"
         disabled={busy !== null}
         onClick={() => void run("publish")}
-        className="h-8 px-3 rounded-md text-xs font-medium"
+        className="h-9 px-3 rounded-md text-xs font-medium"
       >
         {busy === "publish" && <Loader2 className="mr-1.5 size-3.5 animate-spin" aria-hidden="true" />}
         {isPublished ? "Unpublish" : "Publish"}

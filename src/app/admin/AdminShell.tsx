@@ -235,7 +235,7 @@ function SidebarNav({ menu }: { menu: AdminMenuItem[] }) {
     <>
       {groups.map((group) => (
         <SidebarGroup key={group.name} className="py-1">
-          <SidebarGroupLabel className="px-2 text-[11px] font-bold uppercase tracking-wider text-sidebar-foreground/60">
+          <SidebarGroupLabel className="px-2 text-xs font-bold uppercase tracking-wider text-sidebar-foreground/60">
             {group.name}
           </SidebarGroupLabel>
           <SidebarGroupContent>

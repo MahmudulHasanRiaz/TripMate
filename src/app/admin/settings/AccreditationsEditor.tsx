@@ -79,7 +79,7 @@ export default function AccreditationsEditor({
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             Accreditations &amp; Licenses
           </h3>
-          <p className="text-[11px] text-muted-foreground mt-1 max-w-xl">
+          <p className="text-xs text-muted-foreground mt-1 max-w-xl">
             Shown as real logos in the footer&apos;s “Licensed &amp; Accredited” strip. Add only
             credentials your agency actually holds. Leave the image empty for a credential with
             no logo (e.g. a Hajj license number) — it renders as a text tile.
@@ -99,7 +99,7 @@ export default function AccreditationsEditor({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium">Section heading (optional)</Label>
+          <Label className="text-xs font-medium">Section heading (optional)</Label>
           <Input
             value={heading}
             onChange={(e) => onHeadingChange(e.target.value)}
@@ -109,7 +109,7 @@ export default function AccreditationsEditor({
           />
         </div>
         <div className="space-y-1.5">
-          <Label className="text-[11px] font-medium">Section description (optional)</Label>
+          <Label className="text-xs font-medium">Section description (optional)</Label>
           <Input
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
@@ -132,7 +132,7 @@ export default function AccreditationsEditor({
               className="rounded-xl border border-border bg-card p-3.5 space-y-3"
             >
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-muted-foreground">
+                <span className="text-xs font-bold text-muted-foreground">
                   BADGE {i + 1}
                 </span>
                 <div className="flex items-center gap-1">
@@ -172,7 +172,7 @@ export default function AccreditationsEditor({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium">Logo image</Label>
+                <Label className="text-xs font-medium">Logo image</Label>
                 <MediaPickerField
                   value={row.imageUrl}
                   onChange={(v) => handleUpdate(i, "imageUrl", v)}
@@ -184,7 +184,7 @@ export default function AccreditationsEditor({
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">Label</Label>
+                  <Label className="text-xs font-medium">Label</Label>
                   <Input
                     value={row.label}
                     onChange={(e) => handleUpdate(i, "label", e.target.value)}
@@ -194,7 +194,7 @@ export default function AccreditationsEditor({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">Sub-label (optional)</Label>
+                  <Label className="text-xs font-medium">Sub-label (optional)</Label>
                   <Input
                     value={row.sublabel}
                     onChange={(e) => handleUpdate(i, "sublabel", e.target.value)}
@@ -206,7 +206,7 @@ export default function AccreditationsEditor({
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-medium">
+                <Label className="text-xs font-medium">
                   Details / verification link (optional)
                 </Label>
                 <Input
@@ -220,7 +220,7 @@ export default function AccreditationsEditor({
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">
+                  <Label className="text-xs font-medium">
                     Credential text (optional)
                   </Label>
                   <Input
@@ -232,7 +232,7 @@ export default function AccreditationsEditor({
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] font-medium">
+                  <Label className="text-xs font-medium">
                     Credential image (optional)
                   </Label>
                   <MediaPickerField

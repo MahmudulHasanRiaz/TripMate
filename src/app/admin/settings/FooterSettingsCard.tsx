@@ -352,7 +352,7 @@ export default function FooterSettingsCard({ initial }: { initial: SiteSettings 
                             </Button>
                           </div>
                           {link.href.trim() && isInvalid && (
-                            <p className="text-[11px] text-destructive flex items-center gap-1 pl-1">
+                            <p className="text-xs text-destructive flex items-center gap-1 pl-1">
                               <AlertCircle className="size-3" />
                               Must start with / or https://
                             </p>
@@ -367,7 +367,7 @@ export default function FooterSettingsCard({ initial }: { initial: SiteSettings 
                         variant="ghost"
                         size="sm"
                         onClick={() => addLink(colIdx)}
-                        className="h-7 text-[11px] text-muted-foreground hover:text-foreground gap-1 px-2"
+                        className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1 px-2"
                       >
                         <Plus className="size-3" /> Add Link
                       </Button>
@@ -463,7 +463,7 @@ export default function FooterSettingsCard({ initial }: { initial: SiteSettings 
                     </div>
 
                     {soc.href.trim() && isInvalid && (
-                      <p className="text-[11px] text-destructive flex items-center gap-1 pl-1">
+                      <p className="text-xs text-destructive flex items-center gap-1 pl-1">
                         <AlertCircle className="size-3" />
                         Enter a valid URL (starting with https:// or http://)
                       </p>

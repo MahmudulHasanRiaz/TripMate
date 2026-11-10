@@ -138,7 +138,7 @@ export default function ContactChannelsCard({ initial }: ContactChannelsCardProp
                     <FormControl>
                       <Input placeholder="+880 1700 000000" className="h-10 text-xs font-mono" value={field.value ?? ""} onChange={field.onChange} />
                     </FormControl>
-                    <FormDescription className="text-[11px]">
+                    <FormDescription className="text-xs">
                       {waPreview ? (
                         <>Opens: <span className="font-mono break-all">{waPreview}</span></>
                       ) : (
@@ -158,7 +158,7 @@ export default function ContactChannelsCard({ initial }: ContactChannelsCardProp
                     <FormControl>
                       <Input placeholder="tripmate.travel" className="h-10 text-xs font-mono" value={field.value ?? ""} onChange={field.onChange} />
                     </FormControl>
-                    <FormDescription className="text-[11px]">
+                    <FormDescription className="text-xs">
                       {mgPreview ? (
                         <>Opens: <span className="font-mono break-all">{mgPreview}</span></>
                       ) : (
@@ -179,7 +179,7 @@ export default function ContactChannelsCard({ initial }: ContactChannelsCardProp
                   <FormControl>
                     <Textarea rows={2} placeholder="Salam! I need help with…" className="text-xs resize-none" value={field.value ?? ""} onChange={field.onChange} />
                   </FormControl>
-                  <FormDescription className="text-[11px]">
+                  <FormDescription className="text-xs">
                     Pre-filled chat text visitors send on first tap.
                   </FormDescription>
                   <FormMessage className="text-xs" />
@@ -196,7 +196,7 @@ export default function ContactChannelsCard({ initial }: ContactChannelsCardProp
                     <FormControl>
                       <Input placeholder="+880 1700 000000" className="h-10 text-xs font-mono" value={field.value ?? ""} onChange={field.onChange} />
                     </FormControl>
-                    <FormDescription className="text-[11px]">
+                    <FormDescription className="text-xs">
                       {callPreview ? (
                         <>Opens: <span className="font-mono break-all">{callPreview}</span></>
                       ) : (
@@ -216,7 +216,7 @@ export default function ContactChannelsCard({ initial }: ContactChannelsCardProp
                     <FormControl>
                       <Input placeholder="@handle or https://instagram.com/…" className="h-10 text-xs font-mono" value={field.value ?? ""} onChange={field.onChange} />
                     </FormControl>
-                    <FormDescription className="text-[11px]">
+                    <FormDescription className="text-xs">
                       {igPreview ? (
                         <>Opens: <span className="font-mono break-all">{igPreview}</span></>
                       ) : (

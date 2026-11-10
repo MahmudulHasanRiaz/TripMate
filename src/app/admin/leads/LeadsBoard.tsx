@@ -427,7 +427,7 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
                         </div>
 
                       {/* Footer: Time + Assignee Chip */}
-                      <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
+                      <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <Clock className="size-3" aria-hidden="true" />
                           {formatRelativeTime(lead.createdAt)}
@@ -435,7 +435,7 @@ export default function LeadsBoard({ initialItems, counts, staffUsers }: LeadsBo
 
                         <span
                           className={cn(
-                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium text-[10px]",
+                            "inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium text-xs",
                             lead.assignedToName
                               ? "bg-primary/10 text-primary"
                               : "bg-muted text-muted-foreground",

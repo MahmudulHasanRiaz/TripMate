@@ -333,7 +333,7 @@ export default function PaymentQueueView({
                             setVerifyNote("");
                           }}
                           disabled={isPending}
-                          className="h-8 px-2.5 rounded-md text-xs font-medium text-success border-success/30 hover:bg-success/10 hover:text-success"
+                          className="h-9 px-2.5 rounded-md text-xs font-medium text-success border-success/30 hover:bg-success/10 hover:text-success"
                         >
                           Verify
                         </Button>
@@ -345,7 +345,7 @@ export default function PaymentQueueView({
                             setRejectNote("");
                           }}
                           disabled={isPending}
-                          className="h-8 px-2.5 rounded-md text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                          className="h-9 px-2.5 rounded-md text-xs font-medium text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                         >
                           Reject
                         </Button>
@@ -376,7 +376,7 @@ export default function PaymentQueueView({
               variant="outline"
               size="sm"
               disabled={page <= 1}
-              className="h-8 gap-1 text-xs"
+              className="h-9 gap-1 text-xs"
             >
               <Link href={`/admin/payments?${makeParams(currentStatus, page - 1)}` as Route}>
                 <ChevronLeft className="size-3.5" aria-hidden="true" />
@@ -391,7 +391,7 @@ export default function PaymentQueueView({
               variant="outline"
               size="sm"
               disabled={page >= totalPages}
-              className="h-8 gap-1 text-xs"
+              className="h-9 gap-1 text-xs"
             >
               <Link href={`/admin/payments?${makeParams(currentStatus, page + 1)}` as Route}>
                 Next

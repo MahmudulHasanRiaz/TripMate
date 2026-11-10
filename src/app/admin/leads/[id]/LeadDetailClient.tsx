@@ -293,30 +293,30 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
             <CardContent className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-[11px] text-muted-foreground">Full Name</Label>
+                  <Label className="text-xs text-muted-foreground">Full Name</Label>
                   <p className="mt-1 font-medium text-foreground text-sm">
                     {lead.name || "—"}
                   </p>
                 </div>
 
                 <div>
-                  <Label className="text-[11px] text-muted-foreground">Phone Number</Label>
+                  <Label className="text-xs text-muted-foreground">Phone Number</Label>
                   <p className="mt-1 font-mono font-medium text-foreground text-sm">
                     {lead.phone || "—"}
                   </p>
                 </div>
 
                 <div>
-                  <Label className="text-[11px] text-muted-foreground">Email</Label>
+                  <Label className="text-xs text-muted-foreground">Email</Label>
                   <p className="mt-1 font-medium text-foreground">
                     {lead.email || "—"}
                   </p>
                 </div>
 
                 <div>
-                  <Label className="text-[11px] text-muted-foreground">Source / Campaign</Label>
+                  <Label className="text-xs text-muted-foreground">Source / Campaign</Label>
                   <div className="mt-1 flex items-center gap-2">
-                    <Badge variant="secondary" className="capitalize text-[10px]">
+                    <Badge variant="secondary" className="capitalize text-xs">
                       {lead.source}
                     </Badge>
                     {lead.landingTitle ? (
@@ -330,7 +330,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
 
               {lead.message ? (
                 <div className="border-t border-border/60 pt-4">
-                  <Label className="text-[11px] text-muted-foreground">Message / Request</Label>
+                  <Label className="text-xs text-muted-foreground">Message / Request</Label>
                   <p className="mt-1.5 rounded-lg bg-secondary/40 p-3 text-foreground leading-relaxed">
                     {lead.message}
                   </p>
@@ -355,7 +355,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                       key={key}
                       className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-3 text-xs bg-card hover:bg-muted/20"
                     >
-                      <span className="font-mono text-muted-foreground uppercase tracking-wider text-[11px]">
+                      <span className="font-mono text-muted-foreground uppercase tracking-wider text-xs">
                         {key.replace(/[_-]/g, " ")}
                       </span>
                       <span className="font-medium text-foreground sm:text-right max-w-md break-words">
@@ -438,10 +438,28 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                         ? `Converted to booking (from ${from})`
                         : "Converted to booking";
                     } else if (event.payload) {
-                      payloadText =
-                        typeof event.payload === "string"
-                          ? event.payload
-                          : JSON.stringify(event.payload);
+                      // Unknown event kinds still read as plain language —
+                      // never dump raw JSON at the operator (§4f).
+                      if (typeof event.payload === "string") {
+                        payloadText = event.payload;
+                      } else {
+                        const p = event.payload as Record<string, unknown>;
+                        const noteKey = ["note", "message", "text"].find(
+                          (k) => typeof p[k] === "string" && p[k] !== ""
+                        );
+                        if (noteKey) {
+                          payloadText = String(p[noteKey]);
+                        } else {
+                          const parts = Object.entries(p)
+                            .filter(([, v]) => v !== null && typeof v !== "object")
+                            .slice(0, 3)
+                            .map(([k, v]) => `${k.replace(/_/g, " ")}: ${String(v)}`);
+                          payloadText =
+                            parts.length > 0
+                              ? parts.join(" · ")
+                              : "Details recorded with this event";
+                        }
+                      }
                     }
 
                     return (
@@ -465,7 +483,7 @@ export default function LeadDetailClient({ lead, staffUsers }: LeadDetailClientP
                               {event.actorName || "System / Guest"}
                             </span>
                             <span className="text-muted-foreground">•</span>
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="text-xs text-muted-foreground">
                               {new Date(event.createdAt).toLocaleTimeString("en-GB", {
                                 hour: "2-digit",
                                 minute: "2-digit",

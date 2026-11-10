@@ -15,12 +15,15 @@ import {
   ExternalLink,
   FileCheck2,
   Headphones,
+  HeartPulse,
+  IdCard,
   LayoutGrid,
   MapPin,
   Moon,
   Palmtree,
   Plane,
   Search,
+  Smartphone,
   Star,
   Users,
 } from "lucide-react";
@@ -28,7 +31,7 @@ import { Button } from "@/components/ui/button";
 import { usableRedirectUrl } from "@/lib/redirect-url";
 import { formatMoney, telLink } from "./currency";
 
-type ActionTab = "packages" | "umrah" | "visa" | "flights" | "hotels";
+type ActionTab = "flights" | "umrah" | "packages" | "visa" | "hotels" | "medical" | "passport" | "esim";
 
 /** Slim serializable package shape for the panel sliders (Follow-up 12). */
 export type PanelPackage = {
@@ -79,6 +82,18 @@ export type TravelActionPanelProps = {
   pilgrimSlug?: string;
   /** Visa tab (Follow-up 12): active visa services as slider cards. */
   visaServices?: PanelVisaService[];
+  /** Medical tab: published listings of the medical-travel category, as
+   *  slider cards exactly like the Hajj & Umrah tab (owner spec 2026-11-10). */
+  medicalPackages?: PanelPackage[];
+  medicalSlug?: string;
+  /** Passport tab: published listings of the passport category, as slider
+   *  cards exactly like the Hajj & Umrah tab (owner spec 2026-11-10). */
+  passportPackages?: PanelPackage[];
+  passportSlug?: string;
+  /** eSIM tab: a pure redirect tab like Flights/Hotels — the URL lives on
+   *  the "esim" category (Admin → Categories), never in code. */
+  esimRedirectUrl?: string | null;
+  esimSlug?: string;
 };
 
 export default function TravelActionPanel({
@@ -96,14 +111,23 @@ export default function TravelActionPanel({
   pilgrimPackages,
   pilgrimSlug,
   visaServices,
+  medicalPackages,
+  medicalSlug,
+  passportPackages,
+  passportSlug,
+  esimRedirectUrl,
+  esimSlug = "esim",
 }: TravelActionPanelProps) {
   // FU-28 placeholder firewall: seed/placeholder redirect hosts
   // (.example etc.) count as NOT configured — the tabs then offer the
   // internal service pages instead of a dead external domain.
   const flightUrl = usableRedirectUrl(flightRedirectUrl);
   const hotelUrl = usableRedirectUrl(hotelRedirectUrl);
+  const esimUrl = usableRedirectUrl(esimRedirectUrl);
+  const medicalList = medicalPackages ?? [];
+  const passportList = passportPackages ?? [];
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<ActionTab>("packages");
+  const [activeTab, setActiveTab] = useState<ActionTab>("flights");
 
   // Tour Package search state
   const [selectedDestination, setSelectedDestination] = useState("");
@@ -216,19 +240,22 @@ export default function TravelActionPanel({
       <div className="rounded-xl border border-border bg-card p-4 shadow-2xl sm:p-6">
         {/* Tab Navigation — horizontal scroll with snap + right-edge fade
             affordance so the clipped "next tab" reads as swipeable on
-            narrow phones instead of looking silently cut off. */}
+            narrow phones instead of looking silently cut off.
+            Order + labels are the owner's serial (2026-11-10): Flights,
+            Hajj & Umrah, Tour Packages, Visa, Hotels, Medical, Passport,
+            eSIM. */}
         <div className="flex gap-1 overflow-x-auto border-b border-border/60 pb-2.5 sm:justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_0%,black_calc(100%_-_36px),transparent_100%)]">
           <button
             type="button"
-            onClick={() => setActiveTab("packages")}
+            onClick={() => setActiveTab("flights")}
             className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "packages"
+              activeTab === "flights"
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
             }`}
           >
-            <Palmtree className="size-4" />
-            Tour Packages
+            <Plane className="size-4" />
+            Flights
           </button>
 
           <button
@@ -246,6 +273,19 @@ export default function TravelActionPanel({
 
           <button
             type="button"
+            onClick={() => setActiveTab("packages")}
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === "packages"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+            }`}
+          >
+            <Palmtree className="size-4" />
+            Tour Packages
+          </button>
+
+          <button
+            type="button"
             onClick={() => setActiveTab("visa")}
             className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
               activeTab === "visa"
@@ -254,24 +294,9 @@ export default function TravelActionPanel({
             }`}
           >
             <FileCheck2 className="size-4" />
-            Visa Services
+            Visa
           </button>
 
-          {/* Flights - External */}
-          <button
-            type="button"
-            onClick={() => setActiveTab("flights")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "flights"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <Plane className="size-4" />
-            Flights
-          </button>
-
-          {/* Hotels - External */}
           <button
             type="button"
             onClick={() => setActiveTab("hotels")}
@@ -283,6 +308,45 @@ export default function TravelActionPanel({
           >
             <Building2 className="size-4" />
             Hotels
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("medical")}
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === "medical"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+            }`}
+          >
+            <HeartPulse className="size-4" />
+            Medical
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("passport")}
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === "passport"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+            }`}
+          >
+            <IdCard className="size-4" />
+            Passport
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("esim")}
+            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === "esim"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+            }`}
+          >
+            <Smartphone className="size-4" />
+            eSIM
           </button>
         </div>
 
@@ -387,7 +451,7 @@ export default function TravelActionPanel({
                             {key === "all" ? "All" : key === "hajj" ? "Hajj" : "Umrah"}
                           </span>
                           <span
-                            className={`rounded-full px-1.5 py-px text-[10px] font-bold tabular-nums ${
+                            className={`rounded-full px-1.5 py-px text-xs font-bold tabular-nums ${
                               isActive ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
                             }`}
                           >
@@ -542,6 +606,130 @@ export default function TravelActionPanel({
               </div>
             </div>
           )}
+
+          {/* TAB 6: Medical — the medical-travel category's published
+              listings as slider cards, exactly like Hajj & Umrah; a promo
+              block with the medical desk is the fallback until the first
+              medical package is published (owner spec 2026-11-10). */}
+          {activeTab === "medical" && (
+            medicalList.length > 0 ? (
+              <CardSlider
+                viewAllHref={`/packages?cat=${encodeURIComponent(medicalSlug ?? "medical-travel")}`}
+                viewAllLabel="View all Medical Travel packages"
+              >
+                {medicalList.map((pkg) => (
+                  <PanelPackageCard key={pkg.slug} pkg={pkg} />
+                ))}
+              </CardSlider>
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2">
+                <div>
+                  <h4 className="text-base font-bold text-foreground">
+                    Medical Travel, Arranged End to End
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Hospital matching, doctor appointments, medical visas and travel — coordinated by our medical travel desk.
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Button asChild variant="outline" className="rounded-lg h-11">
+                    <a href={telLink(phone ?? "") ?? "/services"}>
+                      <Headphones className="mr-2 size-4" />
+                      {phone?.trim() ? "Call Medical Desk" : "Contact Medical Desk"}
+                    </a>
+                  </Button>
+                  <Button asChild className="rounded-lg h-11">
+                    <Link href={`/packages?cat=${encodeURIComponent(medicalSlug ?? "medical-travel")}` as Route}>
+                      View Medical Packages
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* TAB 7: Passport — the passport category's published listings
+              as slider cards, exactly like Hajj & Umrah; promo fallback
+              until the first passport service is published (owner spec
+              2026-11-10). */}
+          {activeTab === "passport" && (
+            passportList.length > 0 ? (
+              <CardSlider
+                viewAllHref={`/packages?cat=${encodeURIComponent(passportSlug ?? "passport")}`}
+                viewAllLabel="View all Passport services"
+              >
+                {passportList.map((pkg) => (
+                  <PanelPackageCard key={pkg.slug} pkg={pkg} />
+                ))}
+              </CardSlider>
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between py-2">
+                <div>
+                  <h4 className="text-base font-bold text-foreground">
+                    Passport Services — New, Renewal &amp; Correction
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Fresh e-passport applications, renewals, information corrections and lost-passport replacement, guided step by step.
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <Button asChild variant="outline" className="rounded-lg h-11">
+                    <a href={telLink(phone ?? "") ?? "/services"}>
+                      <Headphones className="mr-2 size-4" />
+                      {phone?.trim() ? "Call Passport Desk" : "Contact Passport Desk"}
+                    </a>
+                  </Button>
+                  <Button asChild className="rounded-lg h-11">
+                    <Link href={`/packages?cat=${encodeURIComponent(passportSlug ?? "passport")}` as Route}>
+                      View Passport Services
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* TAB 8: eSIM - External Redirect or Internal Service (the URL
+              lives on the esim category in Admin → Categories). */}
+          {activeTab === "esim" && (
+            <div className="flex flex-col gap-4 rounded-lg bg-muted/40 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+                  <Smartphone className="size-4" />
+                  <span>Instant eSIM Data Plans</span>
+                </div>
+                <h4 className="text-sm font-bold text-foreground">
+                  Stay Connected the Moment You Land
+                </h4>
+                <p className="text-xs text-muted-foreground max-w-2xl">
+                  Prepaid eSIM data for 190+ countries — scan a QR code and you are online instantly: no roaming bills and no hunting for a local SIM at the airport.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <Button asChild variant="outline" size="sm" className="rounded-lg h-10">
+                  <a href={telLink(phone ?? "") ?? "/services"}>
+                    <Headphones className="mr-1.5 size-4" />
+                    Travel Desk
+                  </a>
+                </Button>
+                {esimUrl ? (
+                  <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
+                    <a href={esimUrl} target="_blank" rel="noopener noreferrer">
+                      <span>Get Your eSIM</span>
+                      <ExternalLink className="size-3.5" />
+                    </a>
+                  </Button>
+                ) : (
+                  <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
+                    <Link href={`/services/${esimSlug}` as Route}>
+                      <span>eSIM Services</span>
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -630,12 +818,12 @@ function PanelPackageCard({ pkg }: { pkg: PanelPackage }) {
           </div>
         )}
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 bg-gradient-to-t from-black/70 via-black/25 to-transparent p-2.5 pt-7">
-          <span className="inline-flex min-w-0 items-center gap-1 text-[11px] font-semibold text-white">
+          <span className="inline-flex min-w-0 items-center gap-1 text-xs font-semibold text-white">
             <MapPin className="size-3 shrink-0 text-accent" />
             <span className="truncate">{pkg.destinationName}</span>
           </span>
           {typeof pkg.durationDays === "number" && pkg.durationDays > 0 && (
-            <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold text-white/90">
+            <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-white/90">
               <Clock className="size-3 text-accent" />
               {pkg.durationDays} {pkg.durationDays === 1 ? "Day" : "Days"}
             </span>
@@ -647,7 +835,7 @@ function PanelPackageCard({ pkg }: { pkg: PanelPackage }) {
           {pkg.title}
         </h5>
         {typeof pkg.rating === "number" && (
-          <span className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+          <span className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
             <Star className="size-3 fill-amber-400 text-amber-400" />
             <span className="font-bold tabular-nums text-foreground">{pkg.rating.toFixed(1)}</span>
             Rating
@@ -661,7 +849,7 @@ function PanelPackageCard({ pkg }: { pkg: PanelPackage }) {
                 : "Upon request"}
             </span>
             {typeof pkg.price === "number" && pkg.price > 0 && (
-              <span className="text-[10px] font-medium text-muted-foreground">/ person</span>
+              <span className="text-xs font-medium text-muted-foreground">/ person</span>
             )}
           </span>
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-200 group-hover:translate-x-0.5">
@@ -694,7 +882,7 @@ function PanelVisaCard({ service }: { service: PanelVisaService }) {
             <FileCheck2 className="size-8 opacity-30" />
           </div>
         )}
-        <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur-md">
+        <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-full bg-black/65 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md">
           <FileCheck2 className="size-3 text-accent" />
           {service.visaTypeName}
         </span>
@@ -704,7 +892,7 @@ function PanelVisaCard({ service }: { service: PanelVisaService }) {
           {service.destinationName}
         </h5>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">{service.title}</p>
-        <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">
+        <div className="mt-2 space-y-1 text-xs text-muted-foreground">
           {service.processingTime && (
             <span className="flex items-center gap-1.5">
               <Clock className="size-3 shrink-0 text-primary" />
@@ -723,7 +911,7 @@ function PanelVisaCard({ service }: { service: PanelVisaService }) {
             <span className="font-display text-base font-bold tabular-nums text-foreground">
               ৳{service.price.toLocaleString()}
             </span>
-            <span className="text-[10px] font-medium text-muted-foreground">/ visa</span>
+            <span className="text-xs font-medium text-muted-foreground">/ visa</span>
           </span>
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-200 group-hover:translate-x-0.5">
             <ArrowRight className="size-3.5" />

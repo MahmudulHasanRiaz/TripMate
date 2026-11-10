@@ -671,9 +671,9 @@ export default function TrackingClient({
                               json: evt.capiResponse || evt.fbParams || null,
                             })
                           }
-                          className="h-8 px-2.5 text-xs font-mono text-muted-foreground hover:text-foreground rounded-md"
+                          className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground rounded-md"
                         >
-                          View JSON
+                          Details
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -713,22 +713,42 @@ export default function TrackingClient({
         </CardContent>
       </Card>
 
-      {/* JSON Payload Inspection Dialog */}
+      {/* Event response details — rendered as plain label/value rows so
+          operators never face a raw JSON dump (§4f). */}
       <Dialog open={activeJsonPayload !== null} onOpenChange={() => setActiveJsonPayload(null)}>
         <DialogContent className="max-w-xl rounded-xl border border-border bg-card shadow-lg">
           <DialogHeader>
-            <DialogTitle className="text-base font-semibold text-foreground font-mono">
-              {activeJsonPayload?.title || "Event Payload"}
+            <DialogTitle className="text-base font-semibold text-foreground">
+              {activeJsonPayload?.title || "Event details"}
             </DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
-              Raw response returned from Meta Conversions API or internal logger.
+              What Meta&apos;s Conversions API returned for this event, in plain form.
             </DialogDescription>
           </DialogHeader>
-          <pre className="max-h-96 overflow-y-auto rounded-lg bg-muted/40 p-4 font-mono text-xs text-foreground border border-border">
-            {activeJsonPayload?.json
-              ? JSON.stringify(activeJsonPayload.json, null, 2)
-              : "No response payload stored for this event."}
-          </pre>
+          {activeJsonPayload?.json ? (
+            <dl className="max-h-96 space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/40 p-4">
+              {Object.entries(activeJsonPayload.json).map(([key, value]) => (
+                <div key={key} className="flex items-start justify-between gap-4 text-sm">
+                  <dt className="shrink-0 font-medium capitalize text-muted-foreground">
+                    {key.replace(/_/g, " ")}
+                  </dt>
+                  <dd className="break-all text-right font-medium text-foreground">
+                    {value === null || value === undefined
+                      ? "—"
+                      : Array.isArray(value)
+                        ? `${value.length} item${value.length === 1 ? "" : "s"}`
+                        : typeof value === "object"
+                          ? "Details recorded"
+                          : String(value)}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : (
+            <p className="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+              No response details stored for this event.
+            </p>
+          )}
         </DialogContent>
       </Dialog>
     </div>
