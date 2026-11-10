@@ -31,6 +31,7 @@ export default function VisaExplorerClient({
   visaTypes,
   brand,
   initialDestinationId,
+  initialTypeId,
 }: {
   services: VisaServiceWithRefs[];
   destinations: Destination[];
@@ -45,10 +46,16 @@ export default function VisaExplorerClient({
    * re-navigation to another country remounts and re-seeds.
    */
   initialDestinationId?: string | null;
+  /**
+   * Visa type resolved server-side from the `?type=<slug>` deep-link
+   * (the homepage Student Visa tab). Seeds the type filter the same way
+   * initialDestinationId seeds the destination filter.
+   */
+  initialTypeId?: string | null;
 }) {
   const [search, setSearch] = useState("");
   const [selectedDestId, setSelectedDestId] = useState<string>(initialDestinationId ?? "all");
-  const [selectedTypeId, setSelectedTypeId] = useState<string>("all");
+  const [selectedTypeId, setSelectedTypeId] = useState<string>(initialTypeId ?? "all");
 
   const [inquiryVisa, setInquiryVisa] = useState<VisaServiceWithRefs | null>(null);
   const [checklistVisa, setChecklistVisa] = useState<VisaServiceWithRefs | null>(null);
