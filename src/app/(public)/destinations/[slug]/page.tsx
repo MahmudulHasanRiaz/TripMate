@@ -5,12 +5,10 @@ import { Suspense } from "react";
 import { cacheLife, cacheTag } from "next/cache";
 import {
   ChevronRight,
-  Clock,
   Compass,
   FileCheck2,
   Home as HomeIcon,
   MapPin,
-  ShieldCheck,
 } from "lucide-react";
 
 import { CACHE_TAGS } from "@/lib/cache-tags";
@@ -27,7 +25,7 @@ import { Gallery } from "@/components/site/Gallery";
 import { VideoGallery } from "@/components/site/VideoGallery";
 import { buildVideoObject } from "@/lib/videos";
 import { CTASection } from "@/components/site/CTASection";
-import { formatMoney } from "@/components/site/currency";
+import DestinationVisaCard from "./_components/DestinationVisaCard";
 import { JsonLd } from "@/components/site/JsonLd";
 
 type DestinationPageProps = {
@@ -304,60 +302,11 @@ async function DestinationPageBody({ params }: { params: Promise<{ slug: string 
 
             <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
               {visas.map((v) => (
-                <div
+                <DestinationVisaCard
                   key={v.id}
-                  className="flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="rounded-md bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground">
-                        {v.visaType.name}
-                      </span>
-                      {v.processingTime ? (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="size-3 text-primary" aria-hidden="true" />
-                          <span>{v.processingTime}</span>
-                        </div>
-                      ) : null}
-                    </div>
-
-                    <h3 className="mt-4 font-display text-xl font-bold tracking-tight text-foreground">
-                      {v.title}
-                    </h3>
-
-                    <div className="mt-4 rounded-xl border border-border bg-secondary/30 p-3.5">
-                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        All-in Processing Fee
-                      </span>
-                      <p className="font-mono text-xl font-bold tracking-tight text-foreground mt-0.5">
-                        {formatMoney(v.price, "BDT")}
-                      </p>
-                    </div>
-
-                    {v.requirements.length > 0 ? (
-                      <div className="mt-4 space-y-1.5">
-                        <p className="text-xs font-semibold text-foreground">Essential Requirements</p>
-                        <ul className="space-y-1">
-                          {v.requirements.slice(0, 3).map((req, i) => (
-                            <li key={i} className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                              <ShieldCheck className="size-3 text-success shrink-0 mt-0.5" aria-hidden="true" />
-                              <span className="line-clamp-1">{req}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-border">
-                    <Link
-                      href={`/visa?destination=${encodeURIComponent(destination.name)}`}
-                      className="inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-primary px-4 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
-                    >
-                      Apply for {v.visaType.name}
-                    </Link>
-                  </div>
-                </div>
+                  visa={v}
+                  brand={site.title?.trim() || "TripMate"}
+                />
               ))}
             </div>
           </section>
