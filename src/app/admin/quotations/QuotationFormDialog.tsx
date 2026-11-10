@@ -226,7 +226,7 @@ export default function QuotationFormDialog({
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <Label className="text-sm font-semibold">Quotation Line Items</Label>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Add items manually or select packages directly from the catalog.
                 </p>
               </div>
@@ -270,7 +270,7 @@ export default function QuotationFormDialog({
                   className="flex flex-col sm:flex-row gap-2 rounded-xl border border-border bg-muted/20 p-3 items-end"
                 >
                   <div className="flex-1 space-y-1">
-                    <span className="text-[11px] font-medium text-muted-foreground">
+                    <span className="text-xs font-medium text-muted-foreground">
                       Description
                     </span>
                     <Input
@@ -282,7 +282,7 @@ export default function QuotationFormDialog({
                   </div>
 
                   <div className="w-20 space-y-1">
-                    <span className="text-[11px] font-medium text-muted-foreground">Qty</span>
+                    <span className="text-xs font-medium text-muted-foreground">Qty</span>
                     <Input
                       type="number"
                       min="1"
@@ -295,7 +295,7 @@ export default function QuotationFormDialog({
                   </div>
 
                   <div className="w-28 space-y-1">
-                    <span className="text-[11px] font-medium text-muted-foreground">
+                    <span className="text-xs font-medium text-muted-foreground">
                       Sale Price (BDT)
                     </span>
                     <Input
@@ -311,7 +311,7 @@ export default function QuotationFormDialog({
                   </div>
 
                   <div className="w-28 space-y-1">
-                    <span className="text-[11px] font-medium text-muted-foreground">
+                    <span className="text-xs font-medium text-muted-foreground">
                       Cost Price (BDT)
                     </span>
                     <Input
@@ -329,7 +329,7 @@ export default function QuotationFormDialog({
                     <div className="text-xs font-semibold text-foreground">
                       {formatMoney(item.quantity * item.unitPrice)}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       Cost: {formatMoney(item.quantity * item.unitCost)}
                     </div>
                   </div>

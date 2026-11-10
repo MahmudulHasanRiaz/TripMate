@@ -163,6 +163,13 @@ export async function seedDemoData() {
       alt: "Kuala Lumpur skyline and Petronas Towers at sunset",
       fallbackSvg: generateTravelSvg("Malaysia Family Travel Tips", "What to see, eat and experience", "158 64% 25%"),
     },
+    pkgPassportCover: {
+      name: "pkg-passport-service.jpg",
+      sourceUrl: "https://upload.wikimedia.org/wikipedia/commons/e/e9/Bangladeshi_E_Passport.jpg",
+      mime: "image/jpeg",
+      alt: "Bangladeshi e-passport cover",
+      fallbackSvg: generateTravelSvg("Passport Services", "New, renewal & correction assistance", "160 60% 25%"),
+    },
     certCaab: {
       name: "cert-caab-sample.svg",
       sourceUrl: "https://invalid.example/sample-certificate-caab",
@@ -397,6 +404,19 @@ export async function seedDemoData() {
           kind: "inquiry_based",
           icon: "book-open",
           sortOrder: 8,
+          isActive: true,
+        },
+        {
+          // eSIM is a pure redirect category (owner spec 2026-11-10): the
+          // homepage eSIM tab sends visitors to this URL; the placeholder
+          // host counts as not-configured until a real provider URL is set
+          // in Admin → Categories.
+          name: "eSIM",
+          slug: "esim",
+          kind: "redirect",
+          redirectUrl: "https://esim.tripmate.example",
+          icon: "smartphone",
+          sortOrder: 9,
           isActive: true,
         },
       ])
@@ -785,6 +805,7 @@ export async function seedDemoData() {
     const umrahCat = cats.find((c) => c.slug === "umrah")!;
     const tourCat = cats.find((c) => c.slug === "tour-packages")!;
     const medicalCat = cats.find((c) => c.slug === "medical-travel")!;
+    const passportCat = cats.find((c) => c.slug === "passport")!;
 
     const makkahDest = dests.find((d) => d.slug === "makkah-madinah")!;
     const dubaiDest = dests.find((d) => d.slug === "dubai")!;
@@ -1058,6 +1079,74 @@ export async function seedDemoData() {
         ],
         exclusions: ["Any additional surgeries or specialist follow-up treatments"],
         status: "published",
+      },
+      {
+        categoryId: passportCat.id,
+        title: "New e-Passport Application — Full Assistance",
+        slug: "new-e-passport-application-assistance",
+        summary: "Complete guidance for your first Bangladeshi e-passport: online form, appointment, document check and biometric-day support.",
+        description: "## Your First e-Passport, Without the Queue Anxiety\n\nOur passport desk prepares your application end to end — accurate online form fill-up, the right document set for your case, appointment scheduling at your chosen passport office, and a briefing for biometric day so nothing gets rejected or delayed.",
+        coverImage: {
+          url: storedUrls.pkgPassportCover || "",
+          alt: "Bangladeshi e-passport cover",
+        },
+        gallery: [
+          { url: storedUrls.pkgPassportCover || "", alt: "Bangladeshi e-passport cover" },
+        ],
+        videos: [],
+        durationDays: 21,
+        rating: "4.90",
+        price: "6500",
+        costPrice: "4000",
+        startingPrice: "6500",
+        currency: "BDT",
+        isFeatured: false,
+        inclusions: [
+          "Online application form fill-up with full accuracy check",
+          "Personalised document checklist (NID, birth certificate, profession proof)",
+          "Appointment scheduling at your preferred regional passport office",
+          "Biometric-day briefing and application status tracking",
+        ],
+        exclusions: ["Government passport fees (paid directly at the bank/sonali counter)"],
+        status: "published",
+        seo: {
+          title: "New e-Passport Application Assistance | TripMate Bangladesh",
+          description: "Full assistance for a new Bangladeshi e-passport: form, documents, appointment and biometric guidance.",
+        },
+      },
+      {
+        categoryId: passportCat.id,
+        title: "Passport Renewal & Information Correction",
+        slug: "passport-renewal-correction-service",
+        summary: "Renew an expiring passport or correct name, date-of-birth and address information with a verified, rejection-safe application.",
+        description: "## Renew or Correct Your Passport, Done Right\n\nCorrections are where most applications get stuck. We audit your existing passport and supporting documents first, prepare the correction affidavit set where required, and file a renewal or reissue application that matches NID records exactly.",
+        coverImage: {
+          url: storedUrls.pkgPassportCover || "",
+          alt: "Bangladeshi e-passport cover",
+        },
+        gallery: [
+          { url: storedUrls.pkgPassportCover || "", alt: "Bangladeshi e-passport cover" },
+        ],
+        videos: [],
+        durationDays: 15,
+        rating: "4.85",
+        price: "5500",
+        costPrice: "3500",
+        startingPrice: "5500",
+        currency: "BDT",
+        isFeatured: false,
+        inclusions: [
+          "Existing passport and NID consistency audit",
+          "Correction documentation guidance (affidavit and supporting papers)",
+          "Renewal or reissue application fill-up and submission support",
+          "Delivery-slot tracking with SMS updates from our desk",
+        ],
+        exclusions: ["Government passport fees (paid directly at the bank/sonali counter)"],
+        status: "published",
+        seo: {
+          title: "Passport Renewal & Correction Service | TripMate Bangladesh",
+          description: "Renew your Bangladeshi passport or correct personal information with a verified, rejection-safe application.",
+        },
       },
     ])
     .onConflictDoNothing();

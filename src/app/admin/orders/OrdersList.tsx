@@ -195,7 +195,7 @@ export default function OrdersList({
                       </Link>
                     </TableCell>
                     <TableCell className="py-3.5 px-3">
-                      <Badge variant="outline" className="text-[11px] uppercase font-semibold">
+                      <Badge variant="outline" className="text-xs uppercase font-semibold">
                         {order.type}
                       </Badge>
                     </TableCell>

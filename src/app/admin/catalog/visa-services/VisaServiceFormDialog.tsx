@@ -337,7 +337,7 @@ export default function VisaServiceFormDialog({
                 size="sm"
                 onClick={addRequirement}
                 disabled={busy}
-                className="h-8 px-3 rounded-md text-xs font-medium"
+                className="h-9 px-3 rounded-md text-xs font-medium"
               >
                 <Plus className="mr-1 size-3.5" /> Add Document
               </Button>

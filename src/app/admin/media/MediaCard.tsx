@@ -168,7 +168,7 @@ export default function MediaCard({ file }: { file: MediaItem }) {
             type="button"
             variant="secondary"
             size="icon"
-            className="h-8 w-8 rounded-lg shadow-xs"
+            className="h-9 w-9 rounded-lg shadow-xs"
             aria-label={`Edit alt for ${file.name}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -183,7 +183,7 @@ export default function MediaCard({ file }: { file: MediaItem }) {
                 type="button"
                 variant="secondary"
                 size="icon"
-                className="h-8 w-8 rounded-lg text-muted-foreground hover:text-destructive shadow-xs"
+                className="h-9 w-9 rounded-lg text-muted-foreground hover:text-destructive shadow-xs"
                 aria-label={`Trash ${file.name}`}
                 onClick={(e) => e.stopPropagation()}
               >
@@ -259,13 +259,13 @@ export default function MediaCard({ file }: { file: MediaItem }) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-8 text-xs font-semibold rounded-lg"
+                className="h-9 text-xs font-semibold rounded-lg"
                 disabled={busy}
                 onClick={() => setEditing(false)}
               >
                 Cancel
               </Button>
-              <Button type="submit" size="sm" className="h-8 text-xs font-semibold rounded-lg" disabled={busy}>
+              <Button type="submit" size="sm" className="h-9 text-xs font-semibold rounded-lg" disabled={busy}>
                 {busy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden="true" />}
                 Save
               </Button>

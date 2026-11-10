@@ -124,8 +124,21 @@ export default async function Home() {
       ? categories.find((c) => c.slug.includes("hajj") && c.slug.includes("umrah"))
       : undefined;
 
+  // Medical + Passport panel tabs (owner spec 2026-11-10): each shows its
+  // category's published listings as slider cards, like Hajj & Umrah. The
+  // eSIM tab is a pure redirect tab bound to the "esim" category's URL.
+  const medicalCategory =
+    categories.find((c) => c.slug === "medical-travel") ??
+    categories.find((c) => c.slug.includes("medical"));
+  const passportCategory =
+    categories.find((c) => c.slug === "passport") ??
+    categories.find((c) => c.slug.includes("passport"));
+  const esimCategory =
+    categories.find((c) => c.slug === "esim") ??
+    categories.find((c) => c.slug.includes("esim") || c.name.toLowerCase().includes("esim"));
+
   const emptyListings = { items: [], total: 0 };
-  const [hajjListings, umrahListings, pilgrimListings, visaServices] = await Promise.all([
+  const [hajjListings, umrahListings, pilgrimListings, medicalListings, passportListings, visaServices] = await Promise.all([
     hajjCategory
       ? listPublishedListings({ categorySlug: hajjCategory.slug, perPage: 12 })
       : Promise.resolve(emptyListings),
@@ -134,6 +147,12 @@ export default async function Home() {
       : Promise.resolve(emptyListings),
     pilgrimCategory
       ? listPublishedListings({ categorySlug: pilgrimCategory.slug, perPage: 12 })
+      : Promise.resolve(emptyListings),
+    medicalCategory
+      ? listPublishedListings({ categorySlug: medicalCategory.slug, perPage: 12 })
+      : Promise.resolve(emptyListings),
+    passportCategory
+      ? listPublishedListings({ categorySlug: passportCategory.slug, perPage: 12 })
       : Promise.resolve(emptyListings),
     listVisaServices({ activeOnly: true }).catch(() => []),
   ]);
@@ -190,6 +209,12 @@ export default async function Home() {
         pilgrimPackages={pilgrimListings.items.map(toPanelPackage)}
         pilgrimSlug={pilgrimCategory?.slug}
         visaServices={panelVisaServices}
+        medicalPackages={medicalListings.items.map(toPanelPackage)}
+        medicalSlug={medicalCategory?.slug}
+        passportPackages={passportListings.items.map(toPanelPackage)}
+        passportSlug={passportCategory?.slug}
+        esimRedirectUrl={esimCategory?.redirectUrl}
+        esimSlug={esimCategory?.slug ?? "esim"}
       />
 
       <div className="mt-12 sm:mt-16">

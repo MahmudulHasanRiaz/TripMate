@@ -36,7 +36,7 @@ export function ContentNav() {
             className={cn(
               "inline-flex items-center whitespace-nowrap rounded-[7px] px-3 py-1.5 text-xs font-medium transition-colors",
               active
-                ? "bg-card text-foreground shadow-[0_1px_2px_rgba(16,24,20,.08)]"
+                ? "bg-card text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

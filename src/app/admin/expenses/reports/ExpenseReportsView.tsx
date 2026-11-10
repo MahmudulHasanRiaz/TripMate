@@ -266,9 +266,17 @@ export default function ExpenseReportsView({
           </CardHeader>
           <CardContent className="space-y-4">
             {report.expenseByCategory.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No approved expenses recorded in this period.
-              </p>
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                  <BarChart2 className="size-6" aria-hidden="true" />
+                </div>
+                <div>
+                  <h4 className="text-base font-semibold text-foreground">No approved expenses in this period</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Approved expense entries will appear here as a category breakdown.
+                  </p>
+                </div>
+              </div>
             ) : (
               report.expenseByCategory.map((cat) => {
                 const pct =
@@ -314,9 +322,17 @@ export default function ExpenseReportsView({
           </CardHeader>
           <CardContent>
             {sortedMonths.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                No transaction data available for the selected period.
-              </p>
+              <div className="flex flex-col items-center justify-center gap-3 py-8 text-center">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                  <Calendar className="size-6" aria-hidden="true" />
+                </div>
+                <div>
+                  <h4 className="text-base font-semibold text-foreground">No transactions in this period</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Verified income and approved expenses will appear here as a monthly trend.
+                  </p>
+                </div>
+              </div>
             ) : (
               <div className="space-y-4 pt-1">
                 <div className="flex items-center gap-4 text-sm font-medium">
@@ -394,8 +410,16 @@ export default function ExpenseReportsView({
             <TableBody className="divide-y divide-border/60">
               {margins.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-28 text-center text-sm text-muted-foreground">
-                    No order-linked margins available for this range.
+                  <TableCell colSpan={5} className="h-28 text-center">
+                    <div className="flex flex-col items-center justify-center gap-2 py-4">
+                      <div className="flex size-10 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                        <DollarSign className="size-5" aria-hidden="true" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">No order-linked margins in this range</p>
+                      <p className="text-sm text-muted-foreground">
+                        Margins appear once delivered orders in the range carry cost data.
+                      </p>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : (

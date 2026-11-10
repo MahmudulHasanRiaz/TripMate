@@ -331,7 +331,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
             <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground font-mono">
               <span>/l/{slug}</span>
               <span className="text-border">•</span>
-              <Badge variant={status === "published" ? "success" : "secondary"} className="text-[10px] h-4">
+              <Badge variant={status === "published" ? "success" : "secondary"} className="text-xs h-4">
                 {status}
               </Badge>
             </div>
@@ -495,21 +495,21 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
             {/* Add Section Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 px-2 text-xs gap-1">
+                <Button variant="outline" size="sm" className="h-9 px-2 text-xs gap-1">
                   <Plus className="size-3.5" aria-hidden="true" />
                   Add
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-[11px] text-muted-foreground">Core</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Core</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => addSection("hero")}>Hero Section</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => addSection("benefits")}>Benefits Grid</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => addSection("form")}>Lead Form Island</DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-[11px] text-muted-foreground">Content</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Content</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => addSection("packageShowcase")}>Package Showcase</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => addSection("gallery")}>Image Gallery</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => addSection("testimonials")}>Testimonials</DropdownMenuItem>
@@ -517,7 +517,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuLabel className="text-[11px] text-muted-foreground">Conversion</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground">Conversion</DropdownMenuLabel>
                   <DropdownMenuItem onClick={() => addSection("countdown")}>Countdown Urgency</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => addSection("stickyCta")}>Sticky Phone CTA</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => addSection("whatsappCta")}>WhatsApp Deep Link</DropdownMenuItem>
@@ -564,7 +564,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                   <div className="min-w-0 flex-1 truncate">
                     <span className="capitalize text-foreground">{section.type}</span>
                     {labelToken ? (
-                      <span className="ml-1.5 text-[11px] font-normal text-muted-foreground truncate">
+                      <span className="ml-1.5 text-xs font-normal text-muted-foreground truncate">
                         — {labelToken}
                       </span>
                     ) : null}
@@ -619,7 +619,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
         <div className="lg:col-span-5 rounded-xl border border-border bg-card p-3 shadow-sm flex flex-col items-center">
           <div className="w-full flex items-center justify-between pb-2 border-b border-border/60 text-xs text-muted-foreground">
             <span className="font-medium">Live Canvas Preview</span>
-            <span className="font-mono text-[11px]">{previewDevice === "mobile" ? "375px viewport" : "Responsive 100%"}</span>
+            <span className="font-mono text-xs">{previewDevice === "mobile" ? "375px viewport" : "Responsive 100%"}</span>
           </div>
 
           <div
@@ -646,7 +646,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                 Configuring: <span className="text-foreground capitalize">{selectedSection?.type}</span>
               </h3>
             </div>
-            <Badge variant="outline" className="text-[10px] uppercase font-mono">
+            <Badge variant="outline" className="text-xs uppercase font-mono">
               Section #{selectedIndex + 1}
             </Badge>
           </div>
@@ -656,7 +656,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
           ) : selectedSection.type === "form" ? (
             /* Special Form & Field Builder */
             <div className="space-y-4 text-xs">
-              <div className="rounded-lg bg-primary/10 border border-primary/20 p-2.5 text-primary text-[11px] flex items-start gap-2">
+              <div className="rounded-lg bg-primary/10 border border-primary/20 p-2.5 text-primary text-xs flex items-start gap-2">
                 <HelpCircle className="size-4 shrink-0 mt-0.5" aria-hidden="true" />
                 <span>
                   <strong>Lead Form Guarantee:</strong> Keep at least one phone or email field so inquiries are reachable. Standard keys (<code className="font-mono">name</code>, <code className="font-mono">phone</code>) ensure clean board presentation.
@@ -701,7 +701,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                       };
                       setFormConfig({ ...formConfig, fields: [...formConfig.fields, newField] });
                     }}
-                    className="h-7 px-2 text-[11px]"
+                    className="h-9 px-2 text-xs"
                   >
                     <Plus className="size-3 mr-1" aria-hidden="true" />
                     Add Field
@@ -734,7 +734,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                               setFormConfig({ ...formConfig, fields: updatedFields });
                             }}
                             placeholder="Field Label"
-                            className="h-7 text-xs font-medium"
+                            className="h-9 text-xs font-medium"
                           />
                           <Button
                             type="button"
@@ -752,7 +752,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
 
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <Label className="text-[10px] text-muted-foreground">Stored Key</Label>
+                            <Label className="text-xs text-muted-foreground">Stored Key</Label>
                             <Input
                               value={field.key}
                               onChange={(e) => {
@@ -762,14 +762,14 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                 setFormConfig({ ...formConfig, fields: updated });
                               }}
                               className={cn(
-                                "h-7 text-[11px] font-mono",
+                                "h-9 text-xs font-mono",
                                 isHoneypot && "border-destructive text-destructive focus-visible:ring-destructive",
                               )}
                             />
                           </div>
 
                           <div>
-                            <Label className="text-[10px] text-muted-foreground">Type</Label>
+                            <Label className="text-xs text-muted-foreground">Type</Label>
                             <Select
                               value={field.type}
                               onValueChange={(val: LandingFormFieldType) => {
@@ -782,7 +782,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                 setFormConfig({ ...formConfig, fields: updated });
                               }}
                             >
-                              <SelectTrigger className="h-7 text-[11px]">
+                              <SelectTrigger className="h-9 text-xs">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -798,28 +798,28 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
 
                         {/* Special auto-slugging helper tags (User revision 4) */}
                         {isNameKey ? (
-                          <p className="text-[10px] text-success font-medium flex items-center gap-1">
+                          <p className="text-xs text-success font-medium flex items-center gap-1">
                             <Check className="size-3" aria-hidden="true" />
                             Uses standard key for lead inbox name capture
                           </p>
                         ) : isPhoneKey ? (
-                          <p className="text-[10px] text-success font-medium flex items-center gap-1">
+                          <p className="text-xs text-success font-medium flex items-center gap-1">
                             <Check className="size-3" aria-hidden="true" />
                             Uses standard key for lead inbox phone capture
                           </p>
                         ) : null}
 
                         {isHoneypot ? (
-                          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-[11px] text-destructive">
+                          <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-xs text-destructive">
                             <p className="font-semibold">&quot;company_website&quot; is reserved by the bot-filter.</p>
-                            <p className="text-[10px] mt-0.5">Saving is disabled while this key is used. Please rename or delete this field.</p>
+                            <p className="text-xs mt-0.5">Saving is disabled while this key is used. Please rename or delete this field.</p>
                           </div>
                         ) : null}
 
                         {/* Options editor for select */}
                         {field.type === "select" ? (
                           <div>
-                            <Label className="text-[10px] text-muted-foreground">Options (comma-separated)</Label>
+                            <Label className="text-xs text-muted-foreground">Options (comma-separated)</Label>
                             <Input
                               value={(field.options || []).join(", ")}
                               onChange={(e) => {
@@ -829,7 +829,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                 setFormConfig({ ...formConfig, fields: updated });
                               }}
                               placeholder="e.g. Dhaka, Chittagong, Sylhet"
-                              className="h-7 text-xs"
+                              className="h-9 text-xs"
                             />
                           </div>
                         ) : null}
@@ -845,7 +845,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                 setFormConfig({ ...formConfig, fields: updated });
                               }}
                             />
-                            <Label htmlFor={`req-${fIdx}`} className="text-[11px] cursor-pointer">
+                            <Label htmlFor={`req-${fIdx}`} className="text-xs cursor-pointer">
                               Required
                             </Label>
                           </div>
@@ -858,7 +858,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                               setFormConfig({ ...formConfig, fields: updated });
                             }}
                             placeholder="Placeholder text..."
-                            className="h-6 w-36 text-[10px]"
+                            className="h-6 w-36 text-xs"
                           />
                         </div>
                       </div>
@@ -918,7 +918,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                           onPick={(url) => updateSelectedConfig(fieldDef.key, url)}
                         />
                       </div>
-                      <p className="mt-1 text-[10px] text-muted-foreground">
+                      <p className="mt-1 text-xs text-muted-foreground">
                         Pick from the Media Library (upload there too), or paste an external image link.
                       </p>
                     </div>
@@ -946,7 +946,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                             else if (selectedSection.type === "faq") newItem = { q: "Question?", a: "Answer details." };
                             updateSelectedConfig(fieldDef.key, [...items, newItem]);
                           }}
-                          className="h-6 px-2 text-[10px]"
+                          className="h-6 px-2 text-xs"
                         >
                           <Plus className="size-3 mr-1" aria-hidden="true" />
                           Add
@@ -957,7 +957,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                         {items.map((item, itIdx) => (
                           <div key={itIdx} className="rounded-lg border border-border/80 bg-secondary/20 p-2.5 space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="text-[10px] font-semibold text-muted-foreground">Item #{itIdx + 1}</span>
+                              <span className="text-xs font-semibold text-muted-foreground">Item #{itIdx + 1}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -983,7 +983,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                     updateSelectedConfig(fieldDef.key, next);
                                   }}
                                   placeholder="Title"
-                                  className="h-7 text-xs"
+                                  className="h-9 text-xs"
                                 />
                                 <Textarea
                                   value={strVal(item.text)}
@@ -1008,7 +1008,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                       updateSelectedConfig(fieldDef.key, next);
                                     }}
                                     placeholder="Image URL"
-                                    className="h-7 flex-1 text-xs"
+                                    className="h-9 flex-1 text-xs"
                                   />
                                   <MediaPickerButton
                                     label={`Browse media library for gallery image ${itIdx + 1}`}
@@ -1028,7 +1028,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                     updateSelectedConfig(fieldDef.key, next);
                                   }}
                                   placeholder="Alt Text"
-                                  className="h-7 text-xs"
+                                  className="h-9 text-xs"
                                 />
                               </>
                             ) : selectedSection.type === "testimonials" ? (
@@ -1053,7 +1053,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                       updateSelectedConfig(fieldDef.key, next);
                                     }}
                                     placeholder="Name"
-                                    className="h-7 text-xs"
+                                    className="h-9 text-xs"
                                   />
                                   <Input
                                     value={strVal(item.trip)}
@@ -1063,7 +1063,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                       updateSelectedConfig(fieldDef.key, next);
                                     }}
                                     placeholder="Trip Tag"
-                                    className="h-7 text-xs"
+                                    className="h-9 text-xs"
                                   />
                                 </div>
                               </>
@@ -1077,7 +1077,7 @@ export default function LandingBuilder({ initialData }: LandingBuilderProps) {
                                     updateSelectedConfig(fieldDef.key, next);
                                   }}
                                   placeholder="Question"
-                                  className="h-7 text-xs font-medium"
+                                  className="h-9 text-xs font-medium"
                                 />
                                 <Textarea
                                   value={strVal(item.a)}

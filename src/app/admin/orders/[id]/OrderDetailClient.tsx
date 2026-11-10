@@ -304,7 +304,7 @@ export default function OrderDetailClient({
           <span className="font-mono text-base font-bold tracking-tight text-foreground">
             {order.orderNo}
           </span>
-          <Badge variant="outline" className="text-[10px] uppercase font-semibold">
+          <Badge variant="outline" className="text-xs uppercase font-semibold">
             {order.type}
           </Badge>
           <Badge variant={STATUS_BADGE_VARIANTS[order.status]} className="capitalize text-xs font-semibold">
@@ -399,11 +399,11 @@ export default function OrderDetailClient({
                   Customer Information
                 </span>
                 {order.userName ? (
-                  <Badge variant="secondary" className="text-[10px] font-normal">
+                  <Badge variant="secondary" className="text-xs font-normal">
                     Account: {order.userName}
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[10px] font-normal">
+                  <Badge variant="outline" className="text-xs font-normal">
                     Guest Order
                   </Badge>
                 )}
@@ -742,7 +742,7 @@ export default function OrderDetailClient({
               {/* Financial Balance Summary */}
               <div className="grid gap-3 sm:grid-cols-3 rounded-lg border border-border bg-secondary/30 p-3.5">
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                     Agreed Quote
                   </p>
                   <p className="text-sm font-semibold font-mono text-foreground mt-0.5">
@@ -752,7 +752,7 @@ export default function OrderDetailClient({
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                     Paid Total (Verified)
                   </p>
                   <p data-testid="paid-total" className="text-sm font-semibold font-mono text-success mt-0.5">
@@ -760,7 +760,7 @@ export default function OrderDetailClient({
                   </p>
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                     Balance Due
                   </p>
                   <p className="text-sm font-semibold font-mono text-foreground mt-0.5">
@@ -806,11 +806,11 @@ export default function OrderDetailClient({
                             {formatMoney(p.amount, p.currency)}
                           </TableCell>
                           <TableCell>
-                            <div className="font-mono text-[11px] text-foreground font-semibold">
+                            <div className="font-mono text-xs text-foreground font-semibold">
                               {p.methodTxnId || "—"}
                             </div>
                             {p.senderNumber ? (
-                              <div className="font-mono text-[10px] text-muted-foreground">
+                              <div className="font-mono text-xs text-muted-foreground">
                                 from {p.senderNumber}
                               </div>
                             ) : null}
@@ -826,7 +826,7 @@ export default function OrderDetailClient({
                                       ? "warning"
                                       : "secondary"
                               }
-                              className="capitalize text-[10px]"
+                              className="capitalize text-xs"
                             >
                               {p.status}
                             </Badge>
@@ -846,7 +846,7 @@ export default function OrderDetailClient({
                                     variant="outline"
                                     onClick={() => handleVerifyPayment(p.id)}
                                     disabled={isPending}
-                                    className="h-7 px-2 text-[11px] text-success border-success/30 hover:bg-success/10 hover:text-success"
+                                    className="h-9 px-2 text-xs text-success border-success/30 hover:bg-success/10 hover:text-success"
                                   >
                                     Verify
                                   </Button>
@@ -858,13 +858,13 @@ export default function OrderDetailClient({
                                       setRejectReason("");
                                     }}
                                     disabled={isPending}
-                                    className="h-7 px-2 text-[11px] text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                                    className="h-9 px-2 text-xs text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
                                   >
                                     Reject
                                   </Button>
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground text-[11px]">—</span>
+                                <span className="text-muted-foreground text-xs">—</span>
                               )}
                             </TableCell>
                           ) : null}
@@ -1040,7 +1040,7 @@ export default function OrderDetailClient({
                           {event.fromStatus ? `${STATUS_TITLES[event.fromStatus]} → ` : "Created as "}
                           {STATUS_TITLES[event.toStatus]}
                         </span>
-                        <time className="text-[10px] text-muted-foreground shrink-0 font-mono">
+                        <time className="text-xs text-muted-foreground shrink-0 font-mono">
                           {new Date(event.createdAt).toLocaleDateString("en-GB", {
                             day: "numeric",
                             month: "short",
@@ -1049,7 +1049,7 @@ export default function OrderDetailClient({
                           })}
                         </time>
                       </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         by {event.actorName || "System / Customer"}
                       </p>
                       {event.note ? (

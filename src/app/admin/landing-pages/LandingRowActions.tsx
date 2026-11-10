@@ -100,7 +100,7 @@ export default function LandingRowActions({
           <button
             type="button"
             onClick={() => setErrorMessage(null)}
-            className="underline text-[10px] ml-1"
+            className="underline text-xs ml-1"
           >
             ✕
           </button>
