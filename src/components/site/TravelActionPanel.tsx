@@ -25,7 +25,6 @@ import {
   Plane,
   Search,
   Smartphone,
-  Stamp,
   Star,
   Users,
 } from "lucide-react";
@@ -53,24 +52,63 @@ export type PanelPackage = {
 };
 
 /** Kaaba glyph for the Hajj & Umrah tab — lucide has no Kaaba, so the cube
- *  with its band is drawn in the same 24px outline style (ShareTrip's Umrah
- *  tab carries the same glyph type). Stroke follows currentColor, so the
- *  active brand-accent treatment applies unchanged. */
-function KaabaIcon({ className }: { className?: string }) {
+ *  is drawn in the same outline style as the rest of the set: flat-topped
+ *  cube in slight perspective, the gold band (hizam) across the upper
+ *  front, and the door — the glyph type ShareTrip's Umrah tab carries.
+ *  Stroke follows currentColor, so the active brand treatment applies. */
+function KaabaIcon({
+  className,
+  strokeWidth = 2,
+}: {
+  className?: string;
+  strokeWidth?: number;
+}) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={2}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
       aria-hidden="true"
     >
-      <path d="M4 9.2 12 6l8 3.2V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19Z" />
-      <path d="M4 12.4h16" />
-      <path d="M10.4 20.5v-3.4h3.2v3.4" />
+      <path d="M5 11 8 8.5h12V19a1 1 0 0 1-1 1H5Z" />
+      <path d="M5 11h12v9" />
+      <path d="M17 11l3-2.5" />
+      <path d="M5 13.8h12" />
+      <path d="M17 13.8l3-.9" />
+      <path d="M13.6 20v-3.6h2.6V20" />
+    </svg>
+  );
+}
+
+/** Passport-booklet glyph for the Visa tab — ShareTrip's Visa tab carries a
+ *  passport booklet (portrait booklet, circular emblem, two lines), which
+ *  lucide does not ship; drawn here in the same outline style. */
+function PassportBookletIcon({
+  className,
+  strokeWidth = 2,
+}: {
+  className?: string;
+  strokeWidth?: number;
+}) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M7 3.5h11V20.5H7.5A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1-1.5Z" />
+      <path d="M6 17.5h12" />
+      <circle cx="12" cy="10" r="2.3" />
+      <path d="M9.8 14.6h4.4" />
     </svg>
   );
 }
@@ -80,10 +118,10 @@ function KaabaIcon({ className }: { className?: string }) {
  *  Student Visa, eSIM. Icon types follow ShareTrip's tab bar (verified
  *  2026-11-10): ~24px outline glyphs — plane, Kaaba, visa stamp, palm,
  *  building, heart-pulse, ID card, graduation cap, phone. */
-const TABS: { id: ActionTab; label: string; Icon: ComponentType<{ className?: string }> }[] = [
+const TABS: { id: ActionTab; label: string; Icon: ComponentType<{ className?: string; strokeWidth?: number }> }[] = [
   { id: "flights", label: "Flights", Icon: Plane },
   { id: "umrah", label: "Hajj & Umrah", Icon: KaabaIcon },
-  { id: "visa", label: "Visa", Icon: Stamp },
+  { id: "visa", label: "Visa", Icon: PassportBookletIcon },
   { id: "packages", label: "Tour Packages", Icon: Palmtree },
   { id: "hotels", label: "Hotels", Icon: Building2 },
   { id: "medical", label: "Medical", Icon: HeartPulse },
@@ -299,14 +337,15 @@ export default function TravelActionPanel({
                 type="button"
                 onClick={() => setActiveTab(id)}
                 aria-pressed={isActive}
-                className={`relative flex flex-col items-center gap-1 whitespace-nowrap px-3 pt-2.5 pb-3 text-xs transition-colors sm:flex-row sm:gap-2 sm:px-3.5 sm:py-3.5 sm:text-sm ${
+                className={`relative flex flex-col items-center gap-1 whitespace-nowrap px-2.5 pt-2 pb-2.5 text-xs transition-colors sm:flex-row sm:gap-2 sm:px-3.5 sm:py-3.5 sm:text-sm ${
                   isActive
                     ? "font-bold text-foreground"
                     : "font-medium text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Icon
-                  className={`size-6 shrink-0 ${isActive ? "fill-primary/20 text-primary" : ""}`}
+                  strokeWidth={1.7}
+                  className={`size-5 shrink-0 sm:size-6 ${isActive ? "fill-primary/20 text-primary" : ""}`}
                 />
                 {label}
                 {isActive ? (
