@@ -215,7 +215,7 @@ export default async function Home() {
         passportPackages={passportListings.items.map(toPanelPackage)}
         passportSlug={passportCategory?.slug}
         esimRedirectUrl={esimCategory?.redirectUrl}
-        esimSlug={esimCategory?.slug ?? "esim"}
+        esimSlug={esimCategory?.slug}
       />
 
       <div className="mt-12 sm:mt-16">

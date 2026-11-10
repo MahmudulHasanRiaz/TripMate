@@ -159,7 +159,7 @@ export default function TravelActionPanel({
   passportPackages,
   passportSlug,
   esimRedirectUrl,
-  esimSlug = "esim",
+  esimSlug,
 }: TravelActionPanelProps) {
   // FU-28 placeholder firewall: seed/placeholder redirect hosts
   // (.example etc.) count as NOT configured — the tabs then offer the
@@ -706,13 +706,17 @@ export default function TravelActionPanel({
                       <ExternalLink className="size-3.5" />
                     </a>
                   </Button>
-                ) : (
+                ) : esimSlug ? (
                   <Button asChild size="sm" className="rounded-lg h-10 gap-1.5">
                     <Link href={`/services/${esimSlug}` as Route}>
                       <span>eSIM Services</span>
                     </Link>
                   </Button>
-                )}
+                ) : null}
+                {/* No category yet in Admin → Categories: the tab offers the
+                    travel desk only — never a link to a not-found page. The
+                    primary button appears the moment the category (and its
+                    redirect URL) is configured. */}
               </div>
             </div>
           )}
