@@ -12,6 +12,7 @@ import { getPublicHomeSettings, getPublicSiteSettings } from "@/modules/settings
 import { getSetting } from "@/modules/settings/service";
 import { listCategories, listPublishedListings, listDestinationsWithStats } from "@/modules/catalog/service";
 import { listVisaServices } from "@/modules/catalog/visa-service";
+import { getServicePageData } from "@/app/(public)/services/_lib/service-data";
 import { listPublishedPosts } from "@/modules/content/service";
 import { getPublicTestimonials } from "@/modules/content/testimonials-service";
 import type { ServiceKind } from "@/modules/catalog/validation";
@@ -138,7 +139,7 @@ export default async function Home() {
     categories.find((c) => c.slug.includes("esim") || c.name.toLowerCase().includes("esim"));
 
   const emptyListings = { items: [], total: 0 };
-  const [hajjListings, umrahListings, pilgrimListings, medicalListings, passportListings, visaServices] = await Promise.all([
+  const [hajjListings, umrahListings, pilgrimListings, medicalListings, passportListings, passportService, visaServices] = await Promise.all([
     hajjCategory
       ? listPublishedListings({ categorySlug: hajjCategory.slug, perPage: 12 })
       : Promise.resolve(emptyListings),
@@ -154,6 +155,13 @@ export default async function Home() {
     passportCategory
       ? listPublishedListings({ categorySlug: passportCategory.slug, perPage: 12 })
       : Promise.resolve(emptyListings),
+    // Passport is an inquiry_based category: its real, orderable content
+    // is the service OPTIONS (the e-passport plans on /services/passport),
+    // so the panel tab leads with those (owner, 2026-11-10) — one source
+    // of truth, one price list, one order flow.
+    passportCategory
+      ? getServicePageData(passportCategory.slug).catch(() => null)
+      : Promise.resolve(null),
     listVisaServices({ activeOnly: true }).catch(() => []),
   ]);
 
@@ -213,6 +221,7 @@ export default async function Home() {
         medicalPackages={medicalListings.items.map(toPanelPackage)}
         medicalSlug={medicalCategory?.slug}
         passportPackages={passportListings.items.map(toPanelPackage)}
+        passportOptions={passportService?.serviceOptions ?? []}
         passportSlug={passportCategory?.slug}
         esimRedirectUrl={esimCategory?.redirectUrl}
         esimSlug={esimCategory?.slug}

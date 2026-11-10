@@ -58,6 +58,18 @@ export type PanelPackage = {
   createdAt?: string;
 };
 
+/** A service option (plan) shown as a panel card — the Passport tab's
+ *  cards mirror the orderable plans of /services/<category> so the tab
+ *  and the service page are one system (owner, 2026-11-10). */
+export type PanelPassportOption = {
+  id: string;
+  title: string;
+  slug: string;
+  duration?: string | null;
+  price: number;
+  deliveryTime?: string | null;
+};
+
 /** Kaaba glyph for the Hajj & Umrah tab — the exact glyph ShareTrip ships
  *  (element supplied by the owner, 2026-11-10): a SOLID cube whose facet,
  *  band and door lines are knocked out of the fill via evenodd, not a
@@ -162,6 +174,11 @@ export type TravelActionPanelProps = {
   /** Passport tab: published listings of the passport category, as slider
    *  cards exactly like the Hajj & Umrah tab (owner spec 2026-11-10). */
   passportPackages?: PanelPackage[];
+  /** The passport category's service options (the orderable e-passport
+   *  plans from /services/passport). When present, the Passport tab leads
+   *  with these — the same plans, prices and order flow as the service
+   *  page — instead of package-style listings (owner, 2026-11-10). */
+  passportOptions?: PanelPassportOption[];
   passportSlug?: string;
   /** eSIM tab: a pure redirect tab like Flights/Hotels — the URL lives on
    *  the "esim" category (Admin → Categories), never in code. */
@@ -187,6 +204,7 @@ export default function TravelActionPanel({
   medicalPackages,
   medicalSlug,
   passportPackages,
+  passportOptions,
   passportSlug,
   esimRedirectUrl,
   esimSlug,
@@ -199,6 +217,7 @@ export default function TravelActionPanel({
   const esimUrl = usableRedirectUrl(esimRedirectUrl);
   const medicalList = medicalPackages ?? [];
   const passportList = passportPackages ?? [];
+  const passportOptionList = passportOptions ?? [];
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActionTab>("flights");
 
@@ -679,7 +698,20 @@ export default function TravelActionPanel({
               until the first passport service is published (owner spec
               2026-11-10). */}
           {activeTab === "passport" && (
-            passportList.length > 0 ? (
+            passportOptionList.length > 0 ? (
+              <CardSlider
+                viewAllHref={`/services/${encodeURIComponent(passportSlug ?? "passport")}`}
+                viewAllLabel="View all Passport services"
+              >
+                {passportOptionList.map((option) => (
+                  <PanelOptionCard
+                    key={option.id}
+                    option={option}
+                    categorySlug={passportSlug ?? "passport"}
+                  />
+                ))}
+              </CardSlider>
+            ) : passportList.length > 0 ? (
               <CardSlider
                 viewAllHref={`/packages?cat=${encodeURIComponent(passportSlug ?? "passport")}`}
                 viewAllLabel="View all Passport services"
@@ -881,6 +913,56 @@ function PanelPackageCard({ pkg }: { pkg: PanelPackage }) {
             {typeof pkg.price === "number" && pkg.price > 0 && (
               <span className="text-xs font-medium text-muted-foreground">/ person</span>
             )}
+          </span>
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-200 group-hover:translate-x-0.5">
+            <ArrowRight className="size-3.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function PanelOptionCard({
+  option,
+  categorySlug,
+}: {
+  option: PanelPassportOption;
+  categorySlug: string;
+}) {
+  return (
+    <Link
+      href={`/services/${categorySlug}?option=${encodeURIComponent(option.slug)}` as Route}
+      className={PANEL_CARD_SHELL}
+    >
+      <div className="relative flex aspect-[16/10] w-full flex-col justify-between overflow-hidden bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-3.5">
+        <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <IdCard className="size-5" />
+        </span>
+        {option.duration ? (
+          <span className="font-display text-xl font-bold leading-none text-foreground">
+            {option.duration}
+            <span className="ml-2 align-middle text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              validity
+            </span>
+          </span>
+        ) : null}
+      </div>
+      <div className="flex flex-1 flex-col p-3.5">
+        <h5 className="font-display text-sm font-bold leading-snug text-foreground line-clamp-2">
+          {option.title}
+        </h5>
+        {option.deliveryTime ? (
+          <span className="mt-1.5 inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Clock className="size-3 shrink-0 text-primary" />
+            Delivery in {option.deliveryTime}
+          </span>
+        ) : null}
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/70 pt-2.5">
+          <span className="flex items-baseline gap-1 pt-1">
+            <span className="font-display text-base font-bold tabular-nums text-foreground">
+              {formatMoney(option.price, "BDT")}
+            </span>
           </span>
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-200 group-hover:translate-x-0.5">
             <ArrowRight className="size-3.5" />
