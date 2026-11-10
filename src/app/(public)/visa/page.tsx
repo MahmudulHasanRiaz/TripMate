@@ -52,6 +52,17 @@ export default async function VisaPage(props: PageProps<"/visa">) {
     destinations.filter((d) => serviceDestinationIds.has(d.id)),
   );
 
+  // Same deep-link contract for the visa TYPE (owner, 2026-11-10): the
+  // homepage panel's Student Visa tab links here with ?type=student-visa,
+  // and "View all" must land on the explorer already filtered to the
+  // category the visitor came from - never on the unfiltered default. An
+  // unknown slug resolves to null and the explorer opens unfiltered, the
+  // same fallback the destination param uses.
+  const typeSlug = Array.isArray(searchParams.type) ? searchParams.type[0] : searchParams.type;
+  const initialTypeId = typeSlug
+    ? (visaTypes.find((t) => t.slug === typeSlug)?.id ?? null)
+    : null;
+
   return (
     <main className="min-h-screen bg-background pb-20">
       {/* Hero Header */}
@@ -98,12 +109,13 @@ export default async function VisaPage(props: PageProps<"/visa">) {
           // Keyed by the resolved deep-link: a same-page navigation to a
           // different ?destination= (e.g. another panel visa card) remounts
           // the explorer so its filter state re-seeds from the new param.
-          key={initialDestinationId ?? "all"}
+          key={`${initialDestinationId ?? "all"}-${initialTypeId ?? "all"}`}
           services={services}
           destinations={destinations}
           visaTypes={visaTypes}
           brand={brand}
           initialDestinationId={initialDestinationId}
+          initialTypeId={initialTypeId}
         />
       </section>
 

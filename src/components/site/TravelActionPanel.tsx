@@ -319,7 +319,7 @@ export default function TravelActionPanel({
             theme brand colour on the icon, a bold label and a 3px brand
             underline — no pill background. Horizontal scroll + right-edge
             fade so a clipped tab reads as swipeable on narrow phones. */}
-        <div className="flex gap-1 overflow-x-auto border-b border-border/60 sm:justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_0%,black_calc(100%_-_36px),transparent_100%)]">
+        <div className="flex gap-1 overflow-x-auto overscroll-x-contain border-b border-border/60 sm:justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_0%,black_calc(100%_-_36px),transparent_100%)]">
           {TABS.map(({ id, label, Icon }) => {
             const isActive = activeTab === id;
             return (
@@ -491,7 +491,7 @@ export default function TravelActionPanel({
                     5-star luxury packages, economy group departures, and personalized private VIP arrangements.
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 sm:shrink-0">
                   <Button asChild variant="outline" className="rounded-lg h-11">
                     <a href={telLink(phone ?? "") ?? "/services"}>
                       <Headphones className="mr-2 size-4" />
@@ -514,7 +514,10 @@ export default function TravelActionPanel({
           {activeTab === "visa" && (
             visaList.length > 0 ? (
               <div className="space-y-4">
-                <CardSlider viewAllHref="/visa" viewAllLabel="View all visa services">
+                <CardSlider
+                  viewAllHref={selectedVisaDest ? `/visa?destination=${encodeURIComponent(selectedVisaDest)}` : "/visa"}
+                  viewAllLabel="View all visa services"
+                >
                   {visaList.map((service) => (
                     <PanelVisaCard key={service.id} service={service} />
                   ))}
@@ -533,7 +536,10 @@ export default function TravelActionPanel({
           {activeTab === "student" && (
             studentVisaList.length > 0 ? (
               <div className="space-y-4">
-                <CardSlider viewAllHref="/visa" viewAllLabel="View all visa services">
+                <CardSlider
+                  viewAllHref={`/visa?type=student-visa${selectedVisaDest ? `&destination=${encodeURIComponent(selectedVisaDest)}` : ""}`}
+                  viewAllLabel="View all student visa services"
+                >
                   {studentVisaList.map((service) => (
                     <PanelVisaCard key={service.id} service={service} />
                   ))}
@@ -651,7 +657,7 @@ export default function TravelActionPanel({
                     Hospital matching, doctor appointments, medical visas and travel — coordinated by our medical travel desk.
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 sm:shrink-0">
                   <Button asChild variant="outline" className="rounded-lg h-11">
                     <a href={telLink(phone ?? "") ?? "/services"}>
                       <Headphones className="mr-2 size-4" />
@@ -692,7 +698,7 @@ export default function TravelActionPanel({
                     Fresh e-passport applications, renewals, information corrections and lost-passport replacement, guided step by step.
                   </p>
                 </div>
-                <div className="flex gap-2 shrink-0">
+                <div className="flex flex-wrap gap-2 sm:shrink-0">
                   <Button asChild variant="outline" className="rounded-lg h-11">
                     <a href={telLink(phone ?? "") ?? "/services"}>
                       <Headphones className="mr-2 size-4" />
@@ -782,7 +788,7 @@ function CardSlider({
   };
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="mb-2 flex items-center justify-end gap-1.5">
         <button
           type="button"
@@ -803,7 +809,7 @@ function CardSlider({
       </div>
       <div
         ref={trackRef}
-        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {children}
         <Link
