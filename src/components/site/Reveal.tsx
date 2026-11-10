@@ -39,6 +39,23 @@ export function Reveal({ children, className, delay = 0, rise = 14 }: RevealProp
       return;
     }
 
+    // Already on screen at mount — the reload case, where the browser
+    // restores the scroll position and this section is simply THERE:
+    // show it instantly, with no fade. Leaving it SSR-hidden until the
+    // observer fires paints an invisible patch that pops in late over
+    // ~500ms, which reads as a broken page flashing before it settles
+    // (owner report, 2026-11-10). The gentle rise stays for sections
+    // that scroll into view AFTER load — that is what it was for.
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      el.style.transition = "none";
+      reveal(el);
+      requestAnimationFrame(() => {
+        el.style.transition = "";
+      });
+      return;
+    }
+
     // -8% bottom margin: elements begin rising just before they are fully
     // scrolled into view — feels responsive rather than late.
     const io = new IntersectionObserver(
