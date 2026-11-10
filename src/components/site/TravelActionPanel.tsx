@@ -29,6 +29,13 @@ import {
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { usableRedirectUrl } from "@/lib/redirect-url";
 import { formatMoney, telLink } from "./currency";
 
@@ -278,20 +285,22 @@ export default function TravelActionPanel({
         <label htmlFor="panel-visa-country" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Select Country for Visa Processing
         </label>
-        <select
-          id="panel-visa-country"
-          aria-label="Select country for visa processing"
-          value={selectedVisaDest}
-          onChange={(e) => setSelectedVisaDest(e.target.value)}
-          className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        <Select
+          value={selectedVisaDest === "" ? "__empty" : selectedVisaDest}
+          onValueChange={(v) => setSelectedVisaDest(v === "__empty" ? "" : v)}
         >
-          <option value="">Choose Country (Dubai, Malaysia, Singapore, Saudi Arabia, etc.)...</option>
-          {destinations.map((d) => (
-            <option key={d.id} value={d.name}>
-              {d.name}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger id="panel-visa-country" type="button" aria-label="Select country for visa processing" className="h-12 w-full rounded-lg px-3.5 text-sm font-medium">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="max-h-72 rounded-lg">
+            <SelectItem value="__empty">Choose Country (Dubai, Malaysia, Singapore, Saudi Arabia, etc.)...</SelectItem>
+            {destinations.map((d) => (
+              <SelectItem key={d.id} value={d.name}>
+                {d.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <Button type="submit" className="h-12 rounded-lg text-sm font-bold gap-2">
@@ -350,39 +359,43 @@ export default function TravelActionPanel({
                 <label htmlFor="panel-destination" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Where to?
                 </label>
-                <select
-                  id="panel-destination"
-                  aria-label="Where to?"
-                  value={selectedDestination}
-                  onChange={(e) => setSelectedDestination(e.target.value)}
-                  className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                <Select
+                  value={selectedDestination === "" ? "__empty" : selectedDestination}
+                  onValueChange={(v) => setSelectedDestination(v === "__empty" ? "" : v)}
                 >
-                  <option value="">All Destinations</option>
-                  {destinations.map((d) => (
-                    <option key={d.id} value={d.slug}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger id="panel-destination" type="button" aria-label="Where to?" className="h-12 w-full rounded-lg px-3.5 text-sm font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72 rounded-lg">
+                    <SelectItem value="__empty">All Destinations</SelectItem>
+                    {destinations.map((d) => (
+                      <SelectItem key={d.id} value={d.slug}>
+                        {d.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5">
                 <label htmlFor="panel-duration" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Trip Duration
                 </label>
-                <select
-                  id="panel-duration"
-                  aria-label="Trip duration"
-                  value={selectedDuration}
-                  onChange={(e) => setSelectedDuration(e.target.value)}
-                  className="h-12 w-full rounded-lg border border-input bg-background px-3.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                <Select
+                  value={selectedDuration === "" ? "__empty" : selectedDuration}
+                  onValueChange={(v) => setSelectedDuration(v === "__empty" ? "" : v)}
                 >
-                  <option value="">Any Duration</option>
-                  <option value="1-3">Short Getaway (1–3 Days)</option>
-                  <option value="4-7">Holiday (4–7 Days)</option>
-                  <option value="8-14">Extended (8–14 Days)</option>
-                  <option value="15+">Long Journey (15+ Days)</option>
-                </select>
+                  <SelectTrigger id="panel-duration" type="button" aria-label="Trip duration" className="h-12 w-full rounded-lg px-3.5 text-sm font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-lg">
+                    <SelectItem value="__empty">Any Duration</SelectItem>
+                    <SelectItem value="1-3">Short Getaway (1–3 Days)</SelectItem>
+                    <SelectItem value="4-7">Holiday (4–7 Days)</SelectItem>
+                    <SelectItem value="8-14">Extended (8–14 Days)</SelectItem>
+                    <SelectItem value="15+">Long Journey (15+ Days)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-1.5 hidden lg:block">

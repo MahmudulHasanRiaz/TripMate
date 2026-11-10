@@ -3,10 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
-import { ChevronDown, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 import { DURATION_OPTIONS } from "@/lib/package-filters";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export type PackageFilterSelectOption = { value: string; label: string };
 
@@ -21,11 +28,6 @@ const DEBOUNCE_MS = 300;
 /** Shared field chrome — matches the SiteFooter newsletter input exactly. */
 const FIELD =
   "h-11 w-full min-w-0 rounded-md border border-input bg-background text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring";
-
-const FIELD_SELECT = cn(
-  FIELD,
-  "cursor-pointer appearance-none pl-3 pr-9 disabled:cursor-not-allowed disabled:opacity-50",
-);
 
 const FIELD_SEARCH = cn(FIELD, "pl-9");
 
@@ -147,24 +149,27 @@ export function PackageFilters({ options }: { options: PackageFilterOptions }) {
           <label className="sr-only" htmlFor="package-category">
             Category
           </label>
-          <select
-            id="package-category"
-            className={cn(FIELD_SELECT, fields.cat === "" && "text-muted-foreground")}
-            aria-label="Category"
-            value={fields.cat}
-            onChange={(e) => changeField("cat", e.target.value, true)}
+          <Select
+            value={fields.cat === "" ? "__empty" : fields.cat}
+            onValueChange={(v) => changeField("cat", v === "__empty" ? "" : v, true)}
           >
-            <option value="">All categories</option>
-            {options.categories.map((c) => (
-              <option key={c.value} value={c.value} className="text-foreground">
-                {c.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
+            <SelectTrigger
+              id="package-category"
+              type="button"
+              aria-label="Category"
+              className={cn(FIELD, "cursor-pointer px-3", fields.cat === "" && "text-muted-foreground")}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-72 rounded-lg">
+              <SelectItem value="__empty">All categories</SelectItem>
+              {options.categories.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Destination */}
@@ -172,24 +177,27 @@ export function PackageFilters({ options }: { options: PackageFilterOptions }) {
           <label className="sr-only" htmlFor="package-destination">
             Destination
           </label>
-          <select
-            id="package-destination"
-            className={cn(FIELD_SELECT, fields.dest === "" && "text-muted-foreground")}
-            aria-label="Destination"
-            value={fields.dest}
-            onChange={(e) => changeField("dest", e.target.value, true)}
+          <Select
+            value={fields.dest === "" ? "__empty" : fields.dest}
+            onValueChange={(v) => changeField("dest", v === "__empty" ? "" : v, true)}
           >
-            <option value="">All destinations</option>
-            {options.destinations.map((d) => (
-              <option key={d.value} value={d.value} className="text-foreground">
-                {d.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
+            <SelectTrigger
+              id="package-destination"
+              type="button"
+              aria-label="Destination"
+              className={cn(FIELD, "cursor-pointer px-3", fields.dest === "" && "text-muted-foreground")}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-72 rounded-lg">
+              <SelectItem value="__empty">All destinations</SelectItem>
+              {options.destinations.map((d) => (
+                <SelectItem key={d.value} value={d.value}>
+                  {d.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Duration */}
@@ -197,24 +205,27 @@ export function PackageFilters({ options }: { options: PackageFilterOptions }) {
           <label className="sr-only" htmlFor="package-duration">
             Duration
           </label>
-          <select
-            id="package-duration"
-            className={cn(FIELD_SELECT, fields.duration === "" && "text-muted-foreground")}
-            aria-label="Duration"
-            value={fields.duration}
-            onChange={(e) => changeField("duration", e.target.value, true)}
+          <Select
+            value={fields.duration === "" ? "__empty" : fields.duration}
+            onValueChange={(v) => changeField("duration", v === "__empty" ? "" : v, true)}
           >
-            <option value="">Any duration</option>
-            {DURATION_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value} className="text-foreground">
-                {o.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown
-            className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
+            <SelectTrigger
+              id="package-duration"
+              type="button"
+              aria-label="Duration"
+              className={cn(FIELD, "cursor-pointer px-3", fields.duration === "" && "text-muted-foreground")}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg">
+              <SelectItem value="__empty">Any duration</SelectItem>
+              {DURATION_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Max price */}

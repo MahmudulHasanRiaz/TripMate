@@ -15,6 +15,13 @@ import {
 } from "lucide-react";
 import { WhatsAppIcon } from "./brand-icons";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { submitConsultationAction } from "@/modules/leads/actions";
 
 export type HumanConciergeProps = {
@@ -219,18 +226,25 @@ export function HumanConcierge({
                       </label>
                       <div className="relative">
                         <Users className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                        <select
-                          id="concierge-travelers"
-                          value={travelersCount}
-                          onChange={(e) => setTravelersCount(Number(e.target.value))}
-                          className="w-full rounded-xl border border-border bg-background py-2.5 pl-10 pr-4 text-xs font-medium text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        <Select
+                          value={String(travelersCount)}
+                          onValueChange={(v) => setTravelersCount(Number(v))}
                         >
-                          <option value={1}>1 Person (Solo)</option>
-                          <option value={2}>2 Persons (Couple / Pair)</option>
-                          <option value={3}>3–4 Persons (Small Family)</option>
-                          <option value={6}>5–8 Persons (Family Group)</option>
-                          <option value={10}>10+ Persons (Large Delegation)</option>
-                        </select>
+                          <SelectTrigger
+                            id="concierge-travelers"
+                            type="button"
+                            className="h-auto w-full rounded-xl border-border bg-background py-2.5 pl-10 pr-4 text-xs font-medium text-foreground focus:border-primary focus:ring-1 focus:ring-primary"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="1">1 Person (Solo)</SelectItem>
+                            <SelectItem value="2">2 Persons (Couple / Pair)</SelectItem>
+                            <SelectItem value="3">3–4 Persons (Small Family)</SelectItem>
+                            <SelectItem value="6">5–8 Persons (Family Group)</SelectItem>
+                            <SelectItem value="10">10+ Persons (Large Delegation)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </div>
@@ -242,18 +256,22 @@ export function HumanConcierge({
                         WhatsApp Contact Number
                       </label>
                       <div className="flex gap-2">
-                        <select
-                          aria-label="Country code"
-                          value={countryCode}
-                          onChange={(e) => setCountryCode(e.target.value)}
-                          className="rounded-xl border border-border bg-background px-2.5 py-2.5 text-xs font-medium text-foreground focus:border-primary focus:outline-none"
-                        >
-                          {COUNTRY_CODES.map((c) => (
-                            <option key={c.code} value={c.code}>
-                              {c.flag} {c.code}
-                            </option>
-                          ))}
-                        </select>
+                        <Select value={countryCode} onValueChange={setCountryCode}>
+                          <SelectTrigger
+                            type="button"
+                            aria-label="Country code"
+                            className="h-auto w-auto shrink-0 rounded-xl border-border bg-background px-2.5 py-2.5 text-xs font-medium text-foreground focus:border-primary"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="max-h-72 rounded-xl">
+                            {COUNTRY_CODES.map((c) => (
+                              <SelectItem key={c.code} value={c.code}>
+                                {c.flag} {c.code}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <input
                           id="concierge-phone"
                           type="tel"
