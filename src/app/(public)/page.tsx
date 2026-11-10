@@ -181,6 +181,7 @@ export default async function Home() {
     destinationName: v.destination.name,
     destinationImage: v.destination.image,
     visaTypeName: v.visaType.name,
+    visaTypeSlug: v.visaType.slug,
   }));
 
   return (

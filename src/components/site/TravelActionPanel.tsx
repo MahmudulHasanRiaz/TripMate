@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ import {
   Compass,
   ExternalLink,
   FileCheck2,
+  GraduationCap,
   Headphones,
   HeartPulse,
   IdCard,
@@ -24,6 +25,7 @@ import {
   Plane,
   Search,
   Smartphone,
+  Stamp,
   Star,
   Users,
 } from "lucide-react";
@@ -31,7 +33,7 @@ import { Button } from "@/components/ui/button";
 import { usableRedirectUrl } from "@/lib/redirect-url";
 import { formatMoney, telLink } from "./currency";
 
-type ActionTab = "flights" | "umrah" | "packages" | "visa" | "hotels" | "medical" | "passport" | "esim";
+type ActionTab = "flights" | "umrah" | "visa" | "packages" | "hotels" | "medical" | "passport" | "student" | "esim";
 
 /** Slim serializable package shape for the panel sliders (Follow-up 12). */
 export type PanelPackage = {
@@ -50,6 +52,46 @@ export type PanelPackage = {
   createdAt?: string;
 };
 
+/** Kaaba glyph for the Hajj & Umrah tab — lucide has no Kaaba, so the cube
+ *  with its band is drawn in the same 24px outline style (ShareTrip's Umrah
+ *  tab carries the same glyph type). Stroke follows currentColor, so the
+ *  active brand-accent treatment applies unchanged. */
+function KaabaIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M4 9.2 12 6l8 3.2V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19Z" />
+      <path d="M4 12.4h16" />
+      <path d="M10.4 20.5v-3.4h3.2v3.4" />
+    </svg>
+  );
+}
+
+/** The hero panel's tab serial — owner's order, corrected 2026-11-10:
+ *  Flights, Hajj & Umrah, Visa, Tour Packages, Hotels, Medical, Passport,
+ *  Student Visa, eSIM. Icon types follow ShareTrip's tab bar (verified
+ *  2026-11-10): ~24px outline glyphs — plane, Kaaba, visa stamp, palm,
+ *  building, heart-pulse, ID card, graduation cap, phone. */
+const TABS: { id: ActionTab; label: string; Icon: ComponentType<{ className?: string }> }[] = [
+  { id: "flights", label: "Flights", Icon: Plane },
+  { id: "umrah", label: "Hajj & Umrah", Icon: KaabaIcon },
+  { id: "visa", label: "Visa", Icon: Stamp },
+  { id: "packages", label: "Tour Packages", Icon: Palmtree },
+  { id: "hotels", label: "Hotels", Icon: Building2 },
+  { id: "medical", label: "Medical", Icon: HeartPulse },
+  { id: "passport", label: "Passport", Icon: IdCard },
+  { id: "student", label: "Student Visa", Icon: GraduationCap },
+  { id: "esim", label: "eSIM", Icon: Smartphone },
+];
+
 /** Slim serializable visa-service shape for the panel slider (Follow-up 12). */
 export type PanelVisaService = {
   id: string;
@@ -60,6 +102,7 @@ export type PanelVisaService = {
   destinationName: string;
   destinationImage?: string | null;
   visaTypeName: string;
+  visaTypeSlug: string;
 };
 
 export type TravelActionPanelProps = {
@@ -157,6 +200,9 @@ export default function TravelActionPanel({
   const umrahList = umrahPackages ?? [];
   const pilgrimList = pilgrimPackages ?? [];
   const visaList = visaServices ?? [];
+  // Student Visa tab: the catalogue's own Student Visa type, surfaced on
+  // its own tab (owner, 2026-11-10) — filtered by the type's stable slug.
+  const studentVisaList = visaList.filter((v) => v.visaTypeSlug === "student-visa");
   const allPilgrimList = [...hajjList, ...umrahList].sort((a, b) => {
     if (!!a.featured !== !!b.featured) return a.featured ? -1 : 1;
     const byDate = (b.createdAt ?? "").localeCompare(a.createdAt ?? "");
@@ -238,116 +284,37 @@ export default function TravelActionPanel({
       style={{ animationDelay: "240ms" }}
     >
       <div className="rounded-xl border border-border bg-card p-4 shadow-2xl sm:p-6">
-        {/* Tab Navigation — horizontal scroll with snap + right-edge fade
-            affordance so the clipped "next tab" reads as swipeable on
-            narrow phones instead of looking silently cut off.
-            Order + labels are the owner's serial (2026-11-10): Flights,
-            Hajj & Umrah, Tour Packages, Visa, Hotels, Medical, Passport,
-            eSIM. */}
-        <div className="flex gap-1 overflow-x-auto border-b border-border/60 pb-2.5 sm:justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_0%,black_calc(100%_-_36px),transparent_100%)]">
-          <button
-            type="button"
-            onClick={() => setActiveTab("flights")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "flights"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <Plane className="size-4" />
-            Flights
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("umrah")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "umrah"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <Moon className="size-4" />
-            Hajj & Umrah
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("packages")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "packages"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <Palmtree className="size-4" />
-            Tour Packages
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("visa")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "visa"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <FileCheck2 className="size-4" />
-            Visa
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("hotels")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "hotels"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <Building2 className="size-4" />
-            Hotels
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("medical")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "medical"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <HeartPulse className="size-4" />
-            Medical
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("passport")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "passport"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <IdCard className="size-4" />
-            Passport
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveTab("esim")}
-            className={`flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-xs sm:text-sm font-semibold transition-all ${
-              activeTab === "esim"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            <Smartphone className="size-4" />
-            eSIM
-          </button>
+        {/* Tab Navigation — ShareTrip-style flat strip (owner, 2026-11-10):
+            ~24px outline glyphs; on small screens the icon stacks above the
+            label, from sm up they sit side by side; the active tab takes the
+            theme brand colour on the icon, a bold label and a 3px brand
+            underline — no pill background. Horizontal scroll + right-edge
+            fade so a clipped tab reads as swipeable on narrow phones. */}
+        <div className="flex gap-1 overflow-x-auto border-b border-border/60 sm:justify-start [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,black_0%,black_calc(100%_-_36px),transparent_100%)]">
+          {TABS.map(({ id, label, Icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveTab(id)}
+                aria-pressed={isActive}
+                className={`relative flex flex-col items-center gap-1 whitespace-nowrap px-3 pt-2.5 pb-3 text-xs transition-colors sm:flex-row sm:gap-2 sm:px-3.5 sm:py-3.5 sm:text-sm ${
+                  isActive
+                    ? "font-bold text-foreground"
+                    : "font-medium text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon
+                  className={`size-6 shrink-0 ${isActive ? "fill-primary/20 text-primary" : ""}`}
+                />
+                {label}
+                {isActive ? (
+                  <span className="absolute inset-x-0 bottom-0 h-[3px] bg-primary" aria-hidden="true" />
+                ) : null}
+              </button>
+            );
+          })}
         </div>
 
         {/* Tab Content Panels */}
@@ -515,6 +482,25 @@ export default function TravelActionPanel({
               <div className="space-y-4">
                 <CardSlider viewAllHref="/visa" viewAllLabel="View all visa services">
                   {visaList.map((service) => (
+                    <PanelVisaCard key={service.id} service={service} />
+                  ))}
+                </CardSlider>
+                <div className="border-t border-border/60 pt-4">{visaCountryForm}</div>
+              </div>
+            ) : (
+              visaCountryForm
+            )
+          )}
+
+          {/* Student Visa — the catalogue's Student Visa type on its own
+              tab (owner, 2026-11-10): the same service slider + country
+              picker as the Visa tab, filtered to student-type services;
+              the picker alone is the fallback when none are published. */}
+          {activeTab === "student" && (
+            studentVisaList.length > 0 ? (
+              <div className="space-y-4">
+                <CardSlider viewAllHref="/visa" viewAllLabel="View all visa services">
+                  {studentVisaList.map((service) => (
                     <PanelVisaCard key={service.id} service={service} />
                   ))}
                 </CardSlider>
